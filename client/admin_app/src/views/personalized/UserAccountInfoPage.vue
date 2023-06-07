@@ -661,21 +661,25 @@ export default defineComponent({
     }
 
     const getUserAccount = async (accountId: number | null, emailAddress: string | null) => {
-      const response = await getUserAccountByEitherAccountIdOrEmailAddress(accountId, emailAddress)
-      if (!(response instanceof UserAccountRetrievalResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getUserAccountByEitherAccountIdOrEmailAddress(accountId, emailAddress)
+        if (!(response instanceof UserAccountRetrievalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          outerErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        outerErrorMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getResult()
+        userAccount.value = result.user_account
+      } catch (e) {
+        outerErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getResult()
-      userAccount.value = result.user_account
     }
 
     const accountEnableDisableConfirmation = ref(false)
@@ -692,22 +696,27 @@ export default defineComponent({
         accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
         return
       }
-      const response = await postDisableUserAccountReqFunc(ua.user_account_id)
-      if (!(response instanceof PostDisableUserAccountReqResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await postDisableUserAccountReqFunc(ua.user_account_id)
+        if (!(response instanceof PostDisableUserAccountReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getUserAccountRetrievalResult()
+        userAccount.value = result.user_account
+      } catch (e) {
+        accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        accountEnableDisableConfirmation.value = false
       }
-      const result = response.getUserAccountRetrievalResult()
-      userAccount.value = result.user_account
-      accountEnableDisableConfirmation.value = false
     }
 
     const {
@@ -721,22 +730,27 @@ export default defineComponent({
         accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
         return
       }
-      const response = await postEnableUserAccountReqFunc(ua.user_account_id)
-      if (!(response instanceof PostEnableUserAccountReqResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await postEnableUserAccountReqFunc(ua.user_account_id)
+        if (!(response instanceof PostEnableUserAccountReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getUserAccountRetrievalResult()
+        userAccount.value = result.user_account
+      } catch (e) {
+        accountEnableDisableErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        accountEnableDisableConfirmation.value = false
       }
-      const result = response.getUserAccountRetrievalResult()
-      userAccount.value = result.user_account
-      accountEnableDisableConfirmation.value = false
     }
 
     const disableMfaConfirmation = ref(false)
@@ -753,21 +767,25 @@ export default defineComponent({
         disableMfaErrorMessage.value = `${Message.UNEXPECTED_ERR}: userAccount.value is null`
         return
       }
-      const response = await postDisableMfaReqFunc(ua.user_account_id)
-      if (!(response instanceof PostDisableMfaReqResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await postDisableMfaReqFunc(ua.user_account_id)
+        if (!(response instanceof PostDisableMfaReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          disableMfaErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        disableMfaErrorMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getUserAccountRetrievalResult()
+        userAccount.value = result.user_account
+      } catch (e) {
+        disableMfaErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getUserAccountRetrievalResult()
-      userAccount.value = result.user_account
     }
 
     const selectUserAccountId = (userAccount: UserAccount | null, userAccountId: number | null) => {
@@ -788,21 +806,25 @@ export default defineComponent({
     const agreementsErrMessage = ref(null as string | null)
 
     const findAgreements = async (accountId: number) => {
-      const response = await getAgreementsByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetAgreementsByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getAgreementsByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetAgreementsByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          agreementsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        agreementsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getAgreementsResult()
+        agreements.value = result.agreements
+      } catch (e) {
+        agreementsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getAgreementsResult()
-      agreements.value = result.agreements
     }
 
     const identity = ref(null as Identity | null)
@@ -813,21 +835,25 @@ export default defineComponent({
     const identityErrMessage = ref(null as string | null)
 
     const findIdentity = async (accountId: number) => {
-      const response = await getIdentityOptionByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetIdentityOptionByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getIdentityOptionByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetIdentityOptionByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          identityErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        identityErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getIdentityResult()
+        identity.value = result.identity_option
+      } catch (e) {
+        identityErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getIdentityResult()
-      identity.value = result.identity_option
     }
 
     const careers = ref([] as Career[])
@@ -838,21 +864,25 @@ export default defineComponent({
     const careersErrMessage = ref(null as string | null)
 
     const findCareers = async (accountId: number) => {
-      const response = await getCareersByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetCareersByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getCareersByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetCareersByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          careersErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        careersErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getCareersResult()
+        careers.value = result.careers
+      } catch (e) {
+        careersErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getCareersResult()
-      careers.value = result.careers
     }
 
     const feePerHourInYen = ref(null as number | null)
@@ -863,21 +893,25 @@ export default defineComponent({
     const feePerHourInYenErrMessage = ref(null as string | null)
 
     const findFeePerHourInYen = async (accountId: number) => {
-      const response = await getFeePerHourInYenByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetFeePerHourInYenByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getFeePerHourInYenByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetFeePerHourInYenByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          feePerHourInYenErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        feePerHourInYenErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getFeePerHourInYenResult()
+        feePerHourInYen.value = result.fee_per_hour_in_yen
+      } catch (e) {
+        feePerHourInYenErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getFeePerHourInYenResult()
-      feePerHourInYen.value = result.fee_per_hour_in_yen
     }
 
     const tenantId = ref(null as string | null)
@@ -888,21 +922,25 @@ export default defineComponent({
     const tenantIdErrMessage = ref(null as string | null)
 
     const findTenantId = async (accountId: number) => {
-      const response = await getTenantIdByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetTenantIdByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getTenantIdByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetTenantIdByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          tenantIdErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        tenantIdErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getTenantIdResult()
+        tenantId.value = result.tenant_id
+      } catch (e) {
+        tenantIdErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getTenantIdResult()
-      tenantId.value = result.tenant_id
     }
 
     const consultationReqs = ref([] as ConsultationReq[])
@@ -913,21 +951,25 @@ export default defineComponent({
     const consultationReqsErrMessage = ref(null as string | null)
 
     const findConsultationReqs = async (accountId: number) => {
-      const response = await getConsultationReqsByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetConsultationReqsByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getConsultationReqsByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetConsultationReqsByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultationReqsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        consultationReqsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getConsultationReqsResult()
+        consultationReqs.value = result.consultation_reqs
+      } catch (e) {
+        consultationReqsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getConsultationReqsResult()
-      consultationReqs.value = result.consultation_reqs
     }
 
     const consultationOffers = ref([] as ConsultationReq[])
@@ -938,21 +980,25 @@ export default defineComponent({
     const consultationOffersErrMessage = ref(null as string | null)
 
     const findConsultationOffers = async (accountId: number) => {
-      const response = await getConsultationReqsByConsultantIdFunc(accountId.toString())
-      if (!(response instanceof GetConsultationReqsByConsultantIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getConsultationReqsByConsultantIdFunc(accountId.toString())
+        if (!(response instanceof GetConsultationReqsByConsultantIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultationOffersErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        consultationOffersErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getConsultationReqsResult()
+        consultationOffers.value = result.consultation_reqs
+      } catch (e) {
+        consultationOffersErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getConsultationReqsResult()
-      consultationOffers.value = result.consultation_reqs
     }
 
     const consultationsAsUser = ref([] as Consultation[])
@@ -963,21 +1009,25 @@ export default defineComponent({
     const consultationsAsUserErrMessage = ref(null as string | null)
 
     const findConsultationsAsUser = async (accountId: number) => {
-      const response = await getConsultationsByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetConsultationsByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getConsultationsByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetConsultationsByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultationsAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        consultationsAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getConsultationsResult()
+        consultationsAsUser.value = result.consultations
+      } catch (e) {
+        consultationsAsUserErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getConsultationsResult()
-      consultationsAsUser.value = result.consultations
     }
 
     const consultationsAsConsultant = ref([] as Consultation[])
@@ -988,21 +1038,25 @@ export default defineComponent({
     const consultationsAsConsultantErrMessage = ref(null as string | null)
 
     const findConsultationsAsConsultant = async (accountId: number) => {
-      const response = await getConsultationsByConsultantIdFunc(accountId.toString())
-      if (!(response instanceof GetConsultationsByConsultantIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getConsultationsByConsultantIdFunc(accountId.toString())
+        if (!(response instanceof GetConsultationsByConsultantIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultationsAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        consultationsAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getConsultationsResult()
+        consultationsAsConsultant.value = result.consultations
+      } catch (e) {
+        consultationsAsConsultantErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getConsultationsResult()
-      consultationsAsConsultant.value = result.consultations
     }
 
     const moveToConsultationRelatedInfoPage = async (consultationId: number) => {
@@ -1017,20 +1071,24 @@ export default defineComponent({
     const ratingInfoAsUserErrMessage = ref(null as string | null)
 
     const findRatingInfoAsUser = async (accountId: number) => {
-      const response = await getRatingInfoByUserAccountIdFunc(accountId.toString())
-      if (!(response instanceof GetRatingInfoByUserAccountIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getRatingInfoByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetRatingInfoByUserAccountIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          ratingInfoAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        ratingInfoAsUserErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        ratingInfoAsUser.value = response.getRatingInfoResult()
+      } catch (e) {
+        ratingInfoAsUserErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      ratingInfoAsUser.value = response.getRatingInfoResult()
     }
 
     const ratingInfoAsConsultant = ref({ average_rating: null, count: 0 } as RatingInfoResult)
@@ -1041,20 +1099,24 @@ export default defineComponent({
     const ratingInfoAsConsultantErrMessage = ref(null as string | null)
 
     const findRatingInfoAsConsultant = async (accountId: number) => {
-      const response = await getRatingInfoByConsultantIdFunc(accountId.toString())
-      if (!(response instanceof GetRatingInfoByConsultantIdResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getRatingInfoByConsultantIdFunc(accountId.toString())
+        if (!(response instanceof GetRatingInfoByConsultantIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          ratingInfoAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        ratingInfoAsConsultantErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        ratingInfoAsConsultant.value = response.getRatingInfoResult()
+      } catch (e) {
+        ratingInfoAsConsultantErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      ratingInfoAsConsultant.value = response.getRatingInfoResult()
     }
 
     const identityCreationApprovalRecord = ref(null as IdentityCreationApprovalRecord | null)
@@ -1065,28 +1127,32 @@ export default defineComponent({
     const identityCreationApprovalRecordErrMessage = ref(null as string | null)
 
     const findIdentityCreationApprovalRecord = async (accountId: number) => {
-      const response = await getIdentityCreationApprovalRecordFunc(accountId.toString())
-      if (!(response instanceof GetIdentityCreationApprovalRecordResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getIdentityCreationApprovalRecordFunc(accountId.toString())
+        if (!(response instanceof GetIdentityCreationApprovalRecordResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          identityCreationApprovalRecordErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        identityCreationApprovalRecordErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
-      }
-      const result = response.getIdentityCreationApprovalRecordResult()
-      const approvalRecord = result.approval_record
-      if (approvalRecord) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
-        approvalRecord.image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image1_file_name_without_ext}`
-        if (approvalRecord.image2_file_name_without_ext) {
-          approvalRecord.image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image2_file_name_without_ext}`
+        const result = response.getIdentityCreationApprovalRecordResult()
+        const approvalRecord = result.approval_record
+        if (approvalRecord) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+          approvalRecord.image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image1_file_name_without_ext}`
+          if (approvalRecord.image2_file_name_without_ext) {
+            approvalRecord.image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecord.user_account_id}/${approvalRecord.image2_file_name_without_ext}`
+          }
         }
+        identityCreationApprovalRecord.value = approvalRecord
+      } catch (e) {
+        identityCreationApprovalRecordErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      identityCreationApprovalRecord.value = approvalRecord
     }
 
     const identityCreationRejectionRecords = ref([] as IdentityCreationRejectionRecord[])
@@ -1097,21 +1163,25 @@ export default defineComponent({
     const identityCreationRejectionRecordsErrMessage = ref(null as string | null)
 
     const findIdentityCreationRejectionRecords = async (accountId: number) => {
-      const response = await getIdentityCreationRejectionRecordsFunc(accountId.toString())
-      if (!(response instanceof GetIdentityCreationRejectionRecordsResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getIdentityCreationRejectionRecordsFunc(accountId.toString())
+        if (!(response instanceof GetIdentityCreationRejectionRecordsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          identityCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        identityCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getIdentityCreationRejectionRecordsResult()
+        identityCreationRejectionRecords.value = result.rejection_records
+      } catch (e) {
+        identityCreationRejectionRecordsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getIdentityCreationRejectionRecordsResult()
-      identityCreationRejectionRecords.value = result.rejection_records
     }
 
     const identityUpdateApprovalRecords = ref([] as IdentityUpdateApprovalRecord[])
@@ -1122,28 +1192,32 @@ export default defineComponent({
     const identityUpdateApprovalRecordsErrMessage = ref(null as string | null)
 
     const findIdentityUpdateApprovalRecords = async (accountId: number) => {
-      const response = await getIdentityUpdateApprovalRecordsFunc(accountId.toString())
-      if (!(response instanceof GetIdentityUpdateApprovalRecordsResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getIdentityUpdateApprovalRecordsFunc(accountId.toString())
+        if (!(response instanceof GetIdentityUpdateApprovalRecordsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          identityUpdateApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        identityUpdateApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
-      }
-      const result = response.getIdentityUpdateApprovalRecordsResult()
-      const approvalRecords = result.approval_records
-      for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
-        approvalRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
-        if (approvalRecords[i].image2_file_name_without_ext) {
-          approvalRecords[i].image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+        const result = response.getIdentityUpdateApprovalRecordsResult()
+        const approvalRecords = result.approval_records
+        for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+          approvalRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
+          if (approvalRecords[i].image2_file_name_without_ext) {
+            approvalRecords[i].image2_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+          }
         }
+        identityUpdateApprovalRecords.value = approvalRecords
+      } catch (e) {
+        identityUpdateApprovalRecordsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      identityUpdateApprovalRecords.value = approvalRecords
     }
 
     const identityUpdateRejectionRecords = ref([] as IdentityUpdateRejectionRecord[])
@@ -1154,21 +1228,25 @@ export default defineComponent({
     const identityUpdateRejectionRecordsErrMessage = ref(null as string | null)
 
     const findIdentityUpdateRejectionRecords = async (accountId: number) => {
-      const response = await getIdentityUpdateRejectionRecordsFunc(accountId.toString())
-      if (!(response instanceof GetIdentityUpdateRejectionRecordsResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getIdentityUpdateRejectionRecordsFunc(accountId.toString())
+        if (!(response instanceof GetIdentityUpdateRejectionRecordsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          identityUpdateRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        identityUpdateRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getIdentityUpdateRejectionRecordsResult()
+        identityUpdateRejectionRecords.value = result.rejection_records
+      } catch (e) {
+        identityUpdateRejectionRecordsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getIdentityUpdateRejectionRecordsResult()
-      identityUpdateRejectionRecords.value = result.rejection_records
     }
 
     const careerCreationApprovalRecords = ref([] as CareerCreationApprovalRecord[])
@@ -1179,28 +1257,32 @@ export default defineComponent({
     const careerCreationApprovalRecordsErrMessage = ref(null as string | null)
 
     const findCareerCreationApprovalRecords = async (accountId: number) => {
-      const response = await getCareerCreationApprovalRecordsFunc(accountId.toString())
-      if (!(response instanceof GetCareerCreationApprovalRecordsResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getCareerCreationApprovalRecordsFunc(accountId.toString())
+        if (!(response instanceof GetCareerCreationApprovalRecordsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          careerCreationApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        careerCreationApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
-      }
-      const result = response.getCareerCreationApprovalRecordsResult()
-      const approvalRecords = result.approval_records
-      for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
-        approvalRecords[i].image1_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
-        if (approvalRecords[i].image2_file_name_without_ext) {
-          approvalRecords[i].image2_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+        const result = response.getCareerCreationApprovalRecordsResult()
+        const approvalRecords = result.approval_records
+        for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
+          approvalRecords[i].image1_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
+          if (approvalRecords[i].image2_file_name_without_ext) {
+            approvalRecords[i].image2_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image2_file_name_without_ext}`
+          }
         }
+        careerCreationApprovalRecords.value = approvalRecords
+      } catch (e) {
+        careerCreationApprovalRecordsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      careerCreationApprovalRecords.value = approvalRecords
     }
 
     const careerCreationRejectionRecords = ref([] as CareerCreationRejectionRecord[])
@@ -1211,21 +1293,25 @@ export default defineComponent({
     const careerCreationRejectionRecordsErrMessage = ref(null as string | null)
 
     const findCareerCreationRejectionRecords = async (accountId: number) => {
-      const response = await getCareerCreationRejectionRecordsFunc(accountId.toString())
-      if (!(response instanceof GetCareerCreationRejectionRecordsResp)) {
-        if (!(response instanceof ApiErrorResp)) {
-          throw new Error(`unexpected result on getting request detail: ${response}`)
-        }
-        const code = response.getApiError().getCode()
-        if (code === Code.UNAUTHORIZED) {
-          await router.push('/login')
+      try {
+        const response = await getCareerCreationRejectionRecordsFunc(accountId.toString())
+        if (!(response instanceof GetCareerCreationRejectionRecordsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          careerCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        careerCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
-        return
+        const result = response.getCareerCreationRejectionRecordsResult()
+        careerCreationRejectionRecords.value = result.rejection_records
+      } catch (e) {
+        careerCreationRejectionRecordsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
-      const result = response.getCareerCreationRejectionRecordsResult()
-      careerCreationRejectionRecords.value = result.rejection_records
     }
 
     onMounted(async () => {
