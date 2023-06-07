@@ -45,6 +45,24 @@ jest.mock('@/util/personalized/user-account-info/career/useGetCareersByUserAccou
   })
 }))
 
+const getFeePerHourInYenByUserAccountIdDoneMock = ref(true)
+const getFeePerHourInYenByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePerHourInYenByUserAccountId', () => ({
+  useGetFeePerHourInYenByUserAccountId: () => ({
+    getFeePerHourInYenByUserAccountIdDone: getFeePerHourInYenByUserAccountIdDoneMock,
+    getFeePerHourInYenByUserAccountIdFunc: getFeePerHourInYenByUserAccountIdFuncMock
+  })
+}))
+
+const getTenantIdByUserAccountIdDoneMock = ref(true)
+const getTenantIdByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId', () => ({
+  useGetTenantIdByUserAccountId: () => ({
+    getTenantIdByUserAccountIdDone: getTenantIdByUserAccountIdDoneMock,
+    getTenantIdByUserAccountIdFunc: getTenantIdByUserAccountIdFuncMock
+  })
+}))
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -57,6 +75,10 @@ describe('UserAccountInfoPage.vue', () => {
     getIdentityOptionByUserAccountIdFuncMock.mockReset()
     getCareersByUserAccountIdDoneMock.value = true
     getCareersByUserAccountIdFuncMock.mockReset()
+    getFeePerHourInYenByUserAccountIdDoneMock.value = true
+    getFeePerHourInYenByUserAccountIdFuncMock.mockReset()
+    getTenantIdByUserAccountIdDoneMock.value = true
+    getTenantIdByUserAccountIdFuncMock.mockReset()
   })
 
   it('tests', () => {
