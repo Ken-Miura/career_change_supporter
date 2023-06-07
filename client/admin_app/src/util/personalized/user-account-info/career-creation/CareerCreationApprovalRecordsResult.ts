@@ -1,6 +1,6 @@
 import { CareerCreationApprovalRecord } from './CareerCreationApprovalRecord'
 
-export type CareerCreationApprovalRecordResult = {
+export type CareerCreationApprovalRecordsResult = {
     /* eslint-disable camelcase */
     approval_records: CareerCreationApprovalRecord[]
     /* eslint-enable camelcase */

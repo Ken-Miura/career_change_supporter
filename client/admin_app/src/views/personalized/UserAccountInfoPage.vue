@@ -616,11 +616,11 @@ import { IdentityUpdateApprovalRecord } from '@/util/personalized/user-account-i
 import { useGetIdentityUpdateApprovalRecords } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateApprovalRecords'
 import { GetIdentityUpdateApprovalRecordsResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateApprovalRecordsResp'
 import { CareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationApprovalRecord'
-import { useGetCareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationApprovalRecord'
-import { GetCareerCreationApprovalRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordResp'
+import { useGetCareerCreationApprovalRecords } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationApprovalRecords'
+import { GetCareerCreationApprovalRecordsResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordsResp'
 import { CareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationRejectionRecord'
-import { useGetCareerCreationRejectionRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationRejectionRecord'
-import { GetCareerCreationRejectionRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordResp'
+import { useGetCareerCreationRejectionRecords } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationRejectionRecords'
+import { GetCareerCreationRejectionRecordsResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordsResp'
 import { usePostDisableMfaReq } from '@/util/personalized/user-account-info/disable-mfa-req/usePostDisableMfaReq'
 import { PostDisableMfaReqResp } from '@/util/personalized/user-account-info/disable-mfa-req/PostDisableMfaReqResp'
 import { usePostDisableUserAccountReq } from '@/util/personalized/user-account-info/disable-user-account-req/usePostDisableUserAccountReq'
@@ -1173,14 +1173,14 @@ export default defineComponent({
 
     const careerCreationApprovalRecords = ref([] as CareerCreationApprovalRecord[])
     const {
-      getCareerCreationApprovalRecordDone,
-      getCareerCreationApprovalRecordFunc
-    } = useGetCareerCreationApprovalRecord()
+      getCareerCreationApprovalRecordsDone,
+      getCareerCreationApprovalRecordsFunc
+    } = useGetCareerCreationApprovalRecords()
     const careerCreationApprovalRecordsErrMessage = ref(null as string | null)
 
     const findCareerCreationApprovalRecords = async (accountId: number) => {
-      const response = await getCareerCreationApprovalRecordFunc(accountId.toString())
-      if (!(response instanceof GetCareerCreationApprovalRecordResp)) {
+      const response = await getCareerCreationApprovalRecordsFunc(accountId.toString())
+      if (!(response instanceof GetCareerCreationApprovalRecordsResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
         }
@@ -1192,7 +1192,7 @@ export default defineComponent({
         careerCreationApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = response.getCareerCreationApprovalRecordResult()
+      const result = response.getCareerCreationApprovalRecordsResult()
       const approvalRecords = result.approval_records
       for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
         approvalRecords[i].image1_file_name_without_ext = `/admin/api/career-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
@@ -1205,14 +1205,14 @@ export default defineComponent({
 
     const careerCreationRejectionRecords = ref([] as CareerCreationRejectionRecord[])
     const {
-      getCareerCreationRejectionRecordDone,
-      getCareerCreationRejectionRecordFunc
-    } = useGetCareerCreationRejectionRecord()
+      getCareerCreationRejectionRecordsDone,
+      getCareerCreationRejectionRecordsFunc
+    } = useGetCareerCreationRejectionRecords()
     const careerCreationRejectionRecordsErrMessage = ref(null as string | null)
 
     const findCareerCreationRejectionRecords = async (accountId: number) => {
-      const response = await getCareerCreationRejectionRecordFunc(accountId.toString())
-      if (!(response instanceof GetCareerCreationRejectionRecordResp)) {
+      const response = await getCareerCreationRejectionRecordsFunc(accountId.toString())
+      if (!(response instanceof GetCareerCreationRejectionRecordsResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
         }
@@ -1224,7 +1224,7 @@ export default defineComponent({
         careerCreationRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = response.getCareerCreationRejectionRecordResult()
+      const result = response.getCareerCreationRejectionRecordsResult()
       careerCreationRejectionRecords.value = result.rejection_records
     }
 
@@ -1288,8 +1288,8 @@ export default defineComponent({
         getIdentityCreationRejectionRecordsDone.value &&
         getIdentityUpdateApprovalRecordsDone.value &&
         getIdentityUpdateRejectionRecordsDone.value &&
-        getCareerCreationApprovalRecordDone.value &&
-        getCareerCreationRejectionRecordDone.value &&
+        getCareerCreationApprovalRecordsDone.value &&
+        getCareerCreationRejectionRecordsDone.value &&
         postDisableUserAccountReqDone.value &&
         postEnableUserAccountReqDone.value &&
         postDisableMfaReqDone.value)
