@@ -610,11 +610,11 @@ import { IdentityCreationRejectionRecord } from '@/util/personalized/user-accoun
 import { useGetIdentityCreationRejectionRecords } from '@/util/personalized/user-account-info/identity-creation/useGetIdentityCreationRejectionRecords'
 import { GetIdentityCreationRejectionRecordsResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationRejectionRecordsResp'
 import { IdentityUpdateRejectionRecord } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateRejectionRecord'
-import { useGetIdentityUpdateRejectionRecord } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateRejectionRecord'
-import { GetIdentityUpdateRejectionRecordResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateRejectionRecordResp'
+import { useGetIdentityUpdateRejectionRecords } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateRejectionRecords'
+import { GetIdentityUpdateRejectionRecordsResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateRejectionRecordsResp'
 import { IdentityUpdateApprovalRecord } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateApprovalRecord'
-import { useGetIdentityUpdateApprovalRecord } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateApprovalRecord'
-import { GetIdentityUpdateApprovalRecordResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateApprovalRecordResp'
+import { useGetIdentityUpdateApprovalRecords } from '@/util/personalized/user-account-info/identity-update/useGetIdentityUpdateApprovalRecords'
+import { GetIdentityUpdateApprovalRecordsResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateApprovalRecordsResp'
 import { CareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/CareerCreationApprovalRecord'
 import { useGetCareerCreationApprovalRecord } from '@/util/personalized/user-account-info/career-creation/useGetCareerCreationApprovalRecord'
 import { GetCareerCreationApprovalRecordResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordResp'
@@ -1116,14 +1116,14 @@ export default defineComponent({
 
     const identityUpdateApprovalRecords = ref([] as IdentityUpdateApprovalRecord[])
     const {
-      getIdentityUpdateApprovalRecordDone,
-      getIdentityUpdateApprovalRecordFunc
-    } = useGetIdentityUpdateApprovalRecord()
+      getIdentityUpdateApprovalRecordsDone,
+      getIdentityUpdateApprovalRecordsFunc
+    } = useGetIdentityUpdateApprovalRecords()
     const identityUpdateApprovalRecordsErrMessage = ref(null as string | null)
 
     const findIdentityUpdateApprovalRecords = async (accountId: number) => {
-      const response = await getIdentityUpdateApprovalRecordFunc(accountId.toString())
-      if (!(response instanceof GetIdentityUpdateApprovalRecordResp)) {
+      const response = await getIdentityUpdateApprovalRecordsFunc(accountId.toString())
+      if (!(response instanceof GetIdentityUpdateApprovalRecordsResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
         }
@@ -1135,7 +1135,7 @@ export default defineComponent({
         identityUpdateApprovalRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = response.getIdentityUpdateApprovalRecordResult()
+      const result = response.getIdentityUpdateApprovalRecordsResult()
       const approvalRecords = result.approval_records
       for (let i = 0; i < approvalRecords.length; i++) { // imgタグのv-bind:src内でそのまま指定して使えるように調整する
         approvalRecords[i].image1_file_name_without_ext = `/admin/api/identity-images/${approvalRecords[i].user_account_id}/${approvalRecords[i].image1_file_name_without_ext}`
@@ -1148,14 +1148,14 @@ export default defineComponent({
 
     const identityUpdateRejectionRecords = ref([] as IdentityUpdateRejectionRecord[])
     const {
-      getIdentityUpdateRejectionRecordDone,
-      getIdentityUpdateRejectionRecordFunc
-    } = useGetIdentityUpdateRejectionRecord()
+      getIdentityUpdateRejectionRecordsDone,
+      getIdentityUpdateRejectionRecordsFunc
+    } = useGetIdentityUpdateRejectionRecords()
     const identityUpdateRejectionRecordsErrMessage = ref(null as string | null)
 
     const findIdentityUpdateRejectionRecords = async (accountId: number) => {
-      const response = await getIdentityUpdateRejectionRecordFunc(accountId.toString())
-      if (!(response instanceof GetIdentityUpdateRejectionRecordResp)) {
+      const response = await getIdentityUpdateRejectionRecordsFunc(accountId.toString())
+      if (!(response instanceof GetIdentityUpdateRejectionRecordsResp)) {
         if (!(response instanceof ApiErrorResp)) {
           throw new Error(`unexpected result on getting request detail: ${response}`)
         }
@@ -1167,7 +1167,7 @@ export default defineComponent({
         identityUpdateRejectionRecordsErrMessage.value = createErrorMessage(response.getApiError().getCode())
         return
       }
-      const result = response.getIdentityUpdateRejectionRecordResult()
+      const result = response.getIdentityUpdateRejectionRecordsResult()
       identityUpdateRejectionRecords.value = result.rejection_records
     }
 
@@ -1286,8 +1286,8 @@ export default defineComponent({
         getRatingInfoByConsultantIdDone.value &&
         getIdentityCreationApprovalRecordDone.value &&
         getIdentityCreationRejectionRecordsDone.value &&
-        getIdentityUpdateApprovalRecordDone.value &&
-        getIdentityUpdateRejectionRecordDone.value &&
+        getIdentityUpdateApprovalRecordsDone.value &&
+        getIdentityUpdateRejectionRecordsDone.value &&
         getCareerCreationApprovalRecordDone.value &&
         getCareerCreationRejectionRecordDone.value &&
         postDisableUserAccountReqDone.value &&
