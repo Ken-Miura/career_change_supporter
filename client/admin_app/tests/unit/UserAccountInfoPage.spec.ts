@@ -27,6 +27,24 @@ jest.mock('@/util/personalized/user-account-info/terms-of-use/useGetAgreementsBy
   })
 }))
 
+const getIdentityOptionByUserAccountIdDoneMock = ref(true)
+const getIdentityOptionByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/identity/useGetIdentityOptionByUserAccountId', () => ({
+  useGetIdentityOptionByUserAccountId: () => ({
+    getIdentityOptionByUserAccountIdDone: getIdentityOptionByUserAccountIdDoneMock,
+    getIdentityOptionByUserAccountIdFunc: getIdentityOptionByUserAccountIdFuncMock
+  })
+}))
+
+const getCareersByUserAccountIdDoneMock = ref(true)
+const getCareersByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/career/useGetCareersByUserAccountId', () => ({
+  useGetCareersByUserAccountId: () => ({
+    getCareersByUserAccountIdDone: getCareersByUserAccountIdDoneMock,
+    getCareersByUserAccountIdFunc: getCareersByUserAccountIdFuncMock
+  })
+}))
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -35,6 +53,10 @@ describe('UserAccountInfoPage.vue', () => {
     postUserAccountRetrievalByEmailAddressFuncMock.mockReset()
     getAgreementsByUserAccountIdDoneMock.value = true
     getAgreementsByUserAccountIdFuncMock.mockReset()
+    getIdentityOptionByUserAccountIdDoneMock.value = true
+    getIdentityOptionByUserAccountIdFuncMock.mockReset()
+    getCareersByUserAccountIdDoneMock.value = true
+    getCareersByUserAccountIdFuncMock.mockReset()
   })
 
   it('tests', () => {
