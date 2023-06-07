@@ -99,6 +99,24 @@ jest.mock('@/util/personalized/user-account-info/consultation/useGetConsultation
   })
 }))
 
+const getRatingInfoByUserAccountIdDoneMock = ref(true)
+const getRatingInfoByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/rating-info/useGetRatingInfoByUserAccountId', () => ({
+  useGetRatingInfoByUserAccountId: () => ({
+    getRatingInfoByUserAccountIdDone: getRatingInfoByUserAccountIdDoneMock,
+    getRatingInfoByUserAccountIdFunc: getRatingInfoByUserAccountIdFuncMock
+  })
+}))
+
+const getRatingInfoByConsultantIdDoneMock = ref(true)
+const getRatingInfoByConsultantIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/rating-info/useGetRatingInfoByConsultantId', () => ({
+  useGetRatingInfoByConsultantId: () => ({
+    getRatingInfoByConsultantIdDone: getRatingInfoByConsultantIdDoneMock,
+    getRatingInfoByConsultantIdFunc: getRatingInfoByConsultantIdFuncMock
+  })
+}))
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -123,6 +141,10 @@ describe('UserAccountInfoPage.vue', () => {
     getConsultationsByUserAccountIdFuncMock.mockReset()
     getConsultationsByConsultantIdDoneMock.value = true
     getConsultationsByConsultantIdFuncMock.mockReset()
+    getRatingInfoByUserAccountIdDoneMock.value = true
+    getRatingInfoByUserAccountIdFuncMock.mockReset()
+    getRatingInfoByConsultantIdDoneMock.value = true
+    getRatingInfoByConsultantIdFuncMock.mockReset()
   })
 
   it('tests', () => {
