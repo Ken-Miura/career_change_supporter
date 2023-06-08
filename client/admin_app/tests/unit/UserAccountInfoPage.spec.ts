@@ -1,4 +1,12 @@
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import TheHeader from '@/components/TheHeader.vue'
+import UserAccountInfoPage from '@/views/personalized/UserAccountInfoPage.vue'
+import { UserAccountRetrievalResp } from '@/util/personalized/user-account-info/UserAccountRetrievalResp'
+import { UserAccountRetrievalResult } from '@/util/personalized/user-account-info/UserAccountRetrievalResult'
+import { UserAccount } from '@/util/personalized/user-account-info/UserAccount'
+import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -171,6 +179,15 @@ jest.mock('@/util/personalized/user-account-info/career-creation/useGetCareerCre
   })
 }))
 
+let userAccountSearchParamMock = null as UserAccountSearchParam | null
+jest.mock('vuex', () => ({
+  useStore: () => ({
+    state: {
+      userAccountSearchParam: userAccountSearchParamMock
+    }
+  })
+}))
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -211,9 +228,40 @@ describe('UserAccountInfoPage.vue', () => {
     getCareerCreationApprovalRecordsFuncMock.mockReset()
     getCareerCreationRejectionRecordsDoneMock.value = true
     getCareerCreationRejectionRecordsFuncMock.mockReset()
+    userAccountSearchParamMock = {
+      accountId: 1,
+      emailAddress: null
+    } as UserAccountSearchParam
   })
 
-  it('tests', () => {
+  it('has WaitingCircle and TheHeader during Xxx', async () => {
     console.log('test')
+    // const resp1 = UserAccountRetrievalResp.create({
+    //   user_account: {
+    //     user_account_id: 1,
+    //     email_address: 'test0@test.com',
+    //     last_login_time: '2023-04-13T14:12:53.4242+09:00',
+    //     created_at: '2023-04-12T14:12:53.4242+09:00',
+    //     mfa_enabled_at: null,
+    //     disabled_at: null
+    //   } as UserAccount
+    // } as UserAccountRetrievalResult)
+    // postUserAccountRetrievalByUserAccountIdFuncMock.mockResolvedValue(resp1)
+
+    // const wrapper = mount(UserAccountInfoPage, {
+    //   global: {
+    //     stubs: {
+    //       RouterLink: RouterLinkStub
+    //     }
+    //   }
+    // })
+    // await flushPromises()
+
+    // const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    // expect(waitingCircles.length).toBe(1)
+    // const headers = wrapper.findAllComponents(TheHeader)
+    // expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
   })
 })
