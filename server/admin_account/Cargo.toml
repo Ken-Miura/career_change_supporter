@@ -10,4 +10,4 @@ chrono = "0.4.26"
 common = { path = "../common" }
 dotenv = "0.15.0"
 entity = { path = "../entity" }
-tokio = { version = "1.27.0", features = ["full"] }
+tokio = { version = "1.28.2", features = ["full"] }
