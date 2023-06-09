@@ -7,6 +7,34 @@ import { UserAccountRetrievalResp } from '@/util/personalized/user-account-info/
 import { UserAccountRetrievalResult } from '@/util/personalized/user-account-info/UserAccountRetrievalResult'
 import { UserAccount } from '@/util/personalized/user-account-info/UserAccount'
 import { UserAccountSearchParam } from '@/util/personalized/user-account-search/UserAccountSearchParam'
+import { GetAgreementsByUserAccountIdResp } from '@/util/personalized/user-account-info/terms-of-use/GetAgreementsByUserAccountIdResp'
+import { AgreementsResult } from '@/util/personalized/user-account-info/terms-of-use/AgreementsResult'
+import { GetIdentityOptionByUserAccountIdResp } from '@/util/personalized/user-account-info/identity/GetIdentityOptionByUserAccountIdResp'
+import { IdentityResult } from '@/util/personalized/user-account-info/identity/IdentityResult'
+import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/career/GetCareersByUserAccountIdResp'
+import { CareersResult } from '@/util/personalized/user-account-info/career/CareersResult'
+import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
+import { FeePerHourInYenResult } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/FeePerHourInYenResult'
+import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
+import { TenantIdResult } from '@/util/personalized/user-account-info/tenant/TenantIdResult'
+import { GetConsultationReqsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByConsultantIdResp'
+import { ConsultationReqsResult } from '@/util/personalized/user-account-info/consultation-req/ConsultationReqsResult'
+import { GetConsultationReqsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByUserAccountIdResp'
+import { GetRatingInfoByUserAccountIdResp } from '@/util/personalized/user-account-info/rating-info/GetRatingInfoByUserAccountIdResp'
+import { RatingInfoResult } from '@/util/personalized/user-account-info/rating-info/RatingInfoResult'
+import { GetRatingInfoByConsultantIdResp } from '@/util/personalized/user-account-info/rating-info/GetRatingInfoByConsultantIdResp'
+import { GetIdentityCreationApprovalRecordResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationApprovalRecordResp'
+import { IdentityCreationApprovalRecordResult } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationApprovalRecordResult'
+import { GetIdentityCreationRejectionRecordsResp } from '@/util/personalized/user-account-info/identity-creation/GetIdentityCreationRejectionRecordsResp'
+import { IdentityCreationRejectionRecordsResult } from '@/util/personalized/user-account-info/identity-creation/IdentityCreationRejectionRecordsResult'
+import { GetIdentityUpdateApprovalRecordsResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateApprovalRecordsResp'
+import { IdentityUpdateApprovalRecordsResult } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateApprovalRecordsResult'
+import { GetIdentityUpdateRejectionRecordsResp } from '@/util/personalized/user-account-info/identity-update/GetIdentityUpdateRejectionRecordsResp'
+import { IdentityUpdateRejectionRecordsResult } from '@/util/personalized/user-account-info/identity-update/IdentityUpdateRejectionRecordsResult'
+import { GetCareerCreationRejectionRecordsResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationRejectionRecordsResp'
+import { CareerCreationRejectionRecordsResult } from '@/util/personalized/user-account-info/career-creation/CareerCreationRejectionRecordsResult'
+import { GetCareerCreationApprovalRecordsResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordsResp'
+import { CareerCreationApprovalRecordsResult } from '@/util/personalized/user-account-info/career-creation/CareerCreationApprovalRecordsResult'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -188,6 +216,69 @@ jest.mock('vuex', () => ({
   })
 }))
 
+function prepareInitValue () {
+  const resp1 = UserAccountRetrievalResp.create({
+    user_account: {
+      user_account_id: 1,
+      email_address: 'test0@test.com',
+      last_login_time: '2023-04-13T14:12:53.4242+09:00',
+      created_at: '2023-04-12T14:12:53.4242+09:00',
+      mfa_enabled_at: null,
+      disabled_at: null
+    } as UserAccount
+  } as UserAccountRetrievalResult)
+  postUserAccountRetrievalByUserAccountIdFuncMock.mockResolvedValue(resp1)
+
+  // postUserAccountRetrievalByUserAccountIdFuncを呼び出すのでこちらを使ったらエラーとする
+  const errDetail = 'connection error'
+  postUserAccountRetrievalByEmailAddressFuncMock.mockRejectedValue(new Error(errDetail))
+
+  const resp2 = GetAgreementsByUserAccountIdResp.create({ agreements: [] } as AgreementsResult)
+  getAgreementsByUserAccountIdFuncMock.mockResolvedValue(resp2)
+
+  const resp3 = GetIdentityOptionByUserAccountIdResp.create({ identity_option: null } as IdentityResult)
+  getIdentityOptionByUserAccountIdFuncMock.mockResolvedValue(resp3)
+
+  const resp4 = GetCareersByUserAccountIdResp.create({ careers: [] } as CareersResult)
+  getCareersByUserAccountIdFuncMock.mockResolvedValue(resp4)
+
+  const resp5 = GetFeePerHourInYenByUserAccountIdResp.create({ fee_per_hour_in_yen: null } as FeePerHourInYenResult)
+  getFeePerHourInYenByUserAccountIdFuncMock.mockResolvedValue(resp5)
+
+  const resp6 = GetTenantIdByUserAccountIdResp.create({ tenant_id: null } as TenantIdResult)
+  getTenantIdByUserAccountIdFuncMock.mockResolvedValue(resp6)
+
+  const resp7 = GetConsultationReqsByUserAccountIdResp.create({ consultation_reqs: [] } as ConsultationReqsResult)
+  getConsultationReqsByUserAccountIdFuncMock.mockResolvedValue(resp7)
+
+  const resp8 = GetConsultationReqsByConsultantIdResp.create({ consultation_reqs: [] } as ConsultationReqsResult)
+  getConsultationsByConsultantIdFuncMock.mockResolvedValue(resp8)
+
+  const resp9 = GetRatingInfoByUserAccountIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
+  getRatingInfoByUserAccountIdFuncMock.mockResolvedValue(resp9)
+
+  const resp10 = GetRatingInfoByConsultantIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
+  getRatingInfoByConsultantIdFuncMock.mockResolvedValue(resp10)
+
+  const resp11 = GetIdentityCreationApprovalRecordResp.create({ approval_record: null } as IdentityCreationApprovalRecordResult)
+  getIdentityCreationApprovalRecordFuncMock.mockResolvedValue(resp11)
+
+  const resp12 = GetIdentityCreationRejectionRecordsResp.create({ rejection_records: [] } as IdentityCreationRejectionRecordsResult)
+  getIdentityCreationRejectionRecordsFuncMock.mockResolvedValue(resp12)
+
+  const resp13 = GetIdentityUpdateApprovalRecordsResp.create({ approval_records: [] } as IdentityUpdateApprovalRecordsResult)
+  getIdentityUpdateApprovalRecordsFuncMock.mockResolvedValue(resp13)
+
+  const resp14 = GetIdentityUpdateRejectionRecordsResp.create({ rejection_records: [] } as IdentityUpdateRejectionRecordsResult)
+  getIdentityUpdateRejectionRecordsFuncMock.mockResolvedValue(resp14)
+
+  const resp15 = GetCareerCreationApprovalRecordsResp.create({ approval_records: [] } as CareerCreationApprovalRecordsResult)
+  getCareerCreationApprovalRecordsFuncMock.mockResolvedValue(resp15)
+
+  const resp16 = GetCareerCreationRejectionRecordsResp.create({ rejection_records: [] } as CareerCreationRejectionRecordsResult)
+  getCareerCreationRejectionRecordsFuncMock.mockResolvedValue(resp16)
+}
+
 describe('UserAccountInfoPage.vue', () => {
   beforeEach(() => {
     routerPushMock.mockClear()
@@ -234,33 +325,23 @@ describe('UserAccountInfoPage.vue', () => {
     } as UserAccountSearchParam
   })
 
-  it('has WaitingCircle and TheHeader during Xxx', async () => {
-    console.log('test')
-    // const resp1 = UserAccountRetrievalResp.create({
-    //   user_account: {
-    //     user_account_id: 1,
-    //     email_address: 'test0@test.com',
-    //     last_login_time: '2023-04-13T14:12:53.4242+09:00',
-    //     created_at: '2023-04-12T14:12:53.4242+09:00',
-    //     mfa_enabled_at: null,
-    //     disabled_at: null
-    //   } as UserAccount
-    // } as UserAccountRetrievalResult)
-    // postUserAccountRetrievalByUserAccountIdFuncMock.mockResolvedValue(resp1)
+  it('has WaitingCircle and TheHeader during postUserAccountRetrieval by user account id', async () => {
+    prepareInitValue()
+    postUserAccountRetrievalDoneMock.value = false
 
-    // const wrapper = mount(UserAccountInfoPage, {
-    //   global: {
-    //     stubs: {
-    //       RouterLink: RouterLinkStub
-    //     }
-    //   }
-    // })
-    // await flushPromises()
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
 
-    // const waitingCircles = wrapper.findAllComponents(WaitingCircle)
-    // expect(waitingCircles.length).toBe(1)
-    // const headers = wrapper.findAllComponents(TheHeader)
-    // expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
