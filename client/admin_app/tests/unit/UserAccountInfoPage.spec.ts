@@ -345,4 +345,43 @@ describe('UserAccountInfoPage.vue', () => {
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
+
+  it('has WaitingCircle and TheHeader during postUserAccountRetrieval by email address', async () => {
+    prepareInitValue()
+    postUserAccountRetrievalDoneMock.value = false
+
+    postUserAccountRetrievalByUserAccountIdFuncMock.mockReset()
+    // postUserAccountRetrievalByEmailAddressFuncを呼び出すのでこちらを使ったらエラーとする
+    const errDetail = 'connection error'
+    postUserAccountRetrievalByUserAccountIdFuncMock.mockRejectedValue(new Error(errDetail))
+
+    postUserAccountRetrievalByEmailAddressFuncMock.mockReset()
+    const resp1 = UserAccountRetrievalResp.create({
+      user_account: {
+        user_account_id: 1,
+        email_address: 'test0@test.com',
+        last_login_time: '2023-04-13T14:12:53.4242+09:00',
+        created_at: '2023-04-12T14:12:53.4242+09:00',
+        mfa_enabled_at: null,
+        disabled_at: null
+      } as UserAccount
+    } as UserAccountRetrievalResult)
+    postUserAccountRetrievalByEmailAddressFuncMock.mockResolvedValue(resp1)
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
 })
