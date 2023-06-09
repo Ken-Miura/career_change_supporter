@@ -1,6 +1,7 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { ref } from 'vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
 import TheHeader from '@/components/TheHeader.vue'
 import UserAccountInfoPage from '@/views/personalized/UserAccountInfoPage.vue'
 import { UserAccountRetrievalResp } from '@/util/personalized/user-account-info/UserAccountRetrievalResp'
@@ -35,6 +36,9 @@ import { GetCareerCreationRejectionRecordsResp } from '@/util/personalized/user-
 import { CareerCreationRejectionRecordsResult } from '@/util/personalized/user-account-info/career-creation/CareerCreationRejectionRecordsResult'
 import { GetCareerCreationApprovalRecordsResp } from '@/util/personalized/user-account-info/career-creation/GetCareerCreationApprovalRecordsResp'
 import { CareerCreationApprovalRecordsResult } from '@/util/personalized/user-account-info/career-creation/CareerCreationApprovalRecordsResult'
+import { GetConsultationsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByUserAccountIdResp'
+import { ConsultationsResult } from '@/util/personalized/user-account-info/consultation/ConsultationsResult'
+import { GetConsultationsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByConsultantIdResp'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -252,31 +256,37 @@ function prepareInitValue () {
   getConsultationReqsByUserAccountIdFuncMock.mockResolvedValue(resp7)
 
   const resp8 = GetConsultationReqsByConsultantIdResp.create({ consultation_reqs: [] } as ConsultationReqsResult)
-  getConsultationsByConsultantIdFuncMock.mockResolvedValue(resp8)
+  getConsultationReqsByConsultantIdFuncMock.mockResolvedValue(resp8)
 
-  const resp9 = GetRatingInfoByUserAccountIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
-  getRatingInfoByUserAccountIdFuncMock.mockResolvedValue(resp9)
+  const resp9 = GetConsultationsByUserAccountIdResp.create({ consultations: [] } as ConsultationsResult)
+  getConsultationsByUserAccountIdFuncMock.mockResolvedValue(resp9)
 
-  const resp10 = GetRatingInfoByConsultantIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
-  getRatingInfoByConsultantIdFuncMock.mockResolvedValue(resp10)
+  const resp10 = GetConsultationsByConsultantIdResp.create({ consultations: [] } as ConsultationsResult)
+  getConsultationsByConsultantIdFuncMock.mockResolvedValue(resp10)
 
-  const resp11 = GetIdentityCreationApprovalRecordResp.create({ approval_record: null } as IdentityCreationApprovalRecordResult)
-  getIdentityCreationApprovalRecordFuncMock.mockResolvedValue(resp11)
+  const resp11 = GetRatingInfoByUserAccountIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
+  getRatingInfoByUserAccountIdFuncMock.mockResolvedValue(resp11)
 
-  const resp12 = GetIdentityCreationRejectionRecordsResp.create({ rejection_records: [] } as IdentityCreationRejectionRecordsResult)
-  getIdentityCreationRejectionRecordsFuncMock.mockResolvedValue(resp12)
+  const resp12 = GetRatingInfoByConsultantIdResp.create({ average_rating: null, count: 0 } as RatingInfoResult)
+  getRatingInfoByConsultantIdFuncMock.mockResolvedValue(resp12)
 
-  const resp13 = GetIdentityUpdateApprovalRecordsResp.create({ approval_records: [] } as IdentityUpdateApprovalRecordsResult)
-  getIdentityUpdateApprovalRecordsFuncMock.mockResolvedValue(resp13)
+  const resp13 = GetIdentityCreationApprovalRecordResp.create({ approval_record: null } as IdentityCreationApprovalRecordResult)
+  getIdentityCreationApprovalRecordFuncMock.mockResolvedValue(resp13)
 
-  const resp14 = GetIdentityUpdateRejectionRecordsResp.create({ rejection_records: [] } as IdentityUpdateRejectionRecordsResult)
-  getIdentityUpdateRejectionRecordsFuncMock.mockResolvedValue(resp14)
+  const resp14 = GetIdentityCreationRejectionRecordsResp.create({ rejection_records: [] } as IdentityCreationRejectionRecordsResult)
+  getIdentityCreationRejectionRecordsFuncMock.mockResolvedValue(resp14)
 
-  const resp15 = GetCareerCreationApprovalRecordsResp.create({ approval_records: [] } as CareerCreationApprovalRecordsResult)
-  getCareerCreationApprovalRecordsFuncMock.mockResolvedValue(resp15)
+  const resp15 = GetIdentityUpdateApprovalRecordsResp.create({ approval_records: [] } as IdentityUpdateApprovalRecordsResult)
+  getIdentityUpdateApprovalRecordsFuncMock.mockResolvedValue(resp15)
 
-  const resp16 = GetCareerCreationRejectionRecordsResp.create({ rejection_records: [] } as CareerCreationRejectionRecordsResult)
-  getCareerCreationRejectionRecordsFuncMock.mockResolvedValue(resp16)
+  const resp16 = GetIdentityUpdateRejectionRecordsResp.create({ rejection_records: [] } as IdentityUpdateRejectionRecordsResult)
+  getIdentityUpdateRejectionRecordsFuncMock.mockResolvedValue(resp16)
+
+  const resp17 = GetCareerCreationApprovalRecordsResp.create({ approval_records: [] } as CareerCreationApprovalRecordsResult)
+  getCareerCreationApprovalRecordsFuncMock.mockResolvedValue(resp17)
+
+  const resp18 = GetCareerCreationRejectionRecordsResp.create({ rejection_records: [] } as CareerCreationRejectionRecordsResult)
+  getCareerCreationRejectionRecordsFuncMock.mockResolvedValue(resp18)
 }
 
 describe('UserAccountInfoPage.vue', () => {
@@ -344,6 +354,22 @@ describe('UserAccountInfoPage.vue', () => {
     expect(headers.length).toBe(1)
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
+  })
+
+  it('TODO 改良、または削除', async () => {
+    prepareInitValue()
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(0)
   })
 
   it('has WaitingCircle and TheHeader during postUserAccountRetrieval by email address', async () => {
