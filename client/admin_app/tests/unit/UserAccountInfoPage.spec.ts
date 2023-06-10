@@ -356,22 +356,6 @@ describe('UserAccountInfoPage.vue', () => {
     // mainが出ていないことまで確認しない。
   })
 
-  it('TODO 改良、または削除', async () => {
-    prepareInitValue()
-
-    const wrapper = mount(UserAccountInfoPage, {
-      global: {
-        stubs: {
-          RouterLink: RouterLinkStub
-        }
-      }
-    })
-    await flushPromises()
-
-    const alertMessages = wrapper.findAllComponents(AlertMessage)
-    expect(alertMessages.length).toBe(0)
-  })
-
   it('has WaitingCircle and TheHeader during postUserAccountRetrieval by email address', async () => {
     prepareInitValue()
     postUserAccountRetrievalDoneMock.value = false
@@ -393,6 +377,405 @@ describe('UserAccountInfoPage.vue', () => {
       } as UserAccount
     } as UserAccountRetrievalResult)
     postUserAccountRetrievalByEmailAddressFuncMock.mockResolvedValue(resp1)
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getAgreementsByUserAccountId', async () => {
+    prepareInitValue()
+    getAgreementsByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityOptionByUserAccountId', async () => {
+    prepareInitValue()
+    getIdentityOptionByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getCareersByUserAccountId', async () => {
+    prepareInitValue()
+    getCareersByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getFeePerHourInYenByUserAccountId', async () => {
+    prepareInitValue()
+    getFeePerHourInYenByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getTenantIdByUserAccountId', async () => {
+    prepareInitValue()
+    getTenantIdByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getConsultationReqsByUserAccountId', async () => {
+    prepareInitValue()
+    getConsultationReqsByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getConsultationReqsByConsultantId', async () => {
+    prepareInitValue()
+    getConsultationReqsByConsultantIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getConsultationReqsByConsultantId', async () => {
+    prepareInitValue()
+    getConsultationReqsByConsultantIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getConsultationsByUserAccountId', async () => {
+    prepareInitValue()
+    getConsultationsByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getConsultationsByConsultantId', async () => {
+    prepareInitValue()
+    getConsultationsByConsultantIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getRatingInfoByUserAccountId', async () => {
+    prepareInitValue()
+    getRatingInfoByUserAccountIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getRatingInfoByConsultantId', async () => {
+    prepareInitValue()
+    getRatingInfoByConsultantIdDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityCreationApprovalRecord', async () => {
+    prepareInitValue()
+    getIdentityCreationApprovalRecordDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityCreationRejectionRecords', async () => {
+    prepareInitValue()
+    getIdentityCreationRejectionRecordsDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityUpdateApprovalRecords', async () => {
+    prepareInitValue()
+    getIdentityUpdateApprovalRecordsDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityUpdateRejectionRecords', async () => {
+    prepareInitValue()
+    getIdentityUpdateRejectionRecordsDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getIdentityUpdateRejectionRecords', async () => {
+    prepareInitValue()
+    getIdentityUpdateRejectionRecordsDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getCareerCreationApprovalRecords', async () => {
+    prepareInitValue()
+    getCareerCreationApprovalRecordsDoneMock.value = false
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const waitingCircles = wrapper.findAllComponents(WaitingCircle)
+    expect(waitingCircles.length).toBe(1)
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
+    // mainが出ていないことまで確認しない。
+  })
+
+  it('has WaitingCircle and TheHeader during getCareerCreationRejectionRecords', async () => {
+    prepareInitValue()
+    getCareerCreationRejectionRecordsDoneMock.value = false
 
     const wrapper = mount(UserAccountInfoPage, {
       global: {
