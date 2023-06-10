@@ -811,4 +811,22 @@ describe('UserAccountInfoPage.vue', () => {
     const waitingCircles = wrapper.findAllComponents(AlertMessage)
     expect(waitingCircles.length).toBe(0)
   })
+
+  it('displays user account with user account id', async () => {
+    prepareInitValue()
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const srchCondLabel = wrapper.find('[data-test="search-condition-label"]')
+    expect(srchCondLabel.text()).toContain('検索条件')
+    const srchCondAccountId = wrapper.find('[data-test="search-condition-account-id"]')
+    expect(srchCondAccountId.text()).toContain('アカウントID: 1')
+  })
 })

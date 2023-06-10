@@ -10,9 +10,9 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">検索条件</h3>
-          <p v-if="accountId" class="mt-4 ml-4 text-xl">アカウントID: {{ accountId }}</p>
-          <p v-else-if="emailAddress" class="mt-4 ml-4 text-xl">メールアドレス: {{ emailAddress }}</p>
+          <h3 data-test="search-condition-label" class="font-bold text-2xl">検索条件</h3>
+          <p data-test="search-condition-account-id" v-if="accountId" class="mt-4 ml-4 text-xl">アカウントID: {{ accountId }}</p>
+          <p data-test="search-condition-email-address" v-else-if="emailAddress" class="mt-4 ml-4 text-xl">メールアドレス: {{ emailAddress }}</p>
           <p v-else class="mt-4 ml-4 text-xl">意図しない動作です。管理者に連絡して下さい</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
