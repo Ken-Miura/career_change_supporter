@@ -829,4 +829,6 @@ describe('UserAccountInfoPage.vue', () => {
     const srchCondAccountId = wrapper.find('[data-test="search-condition-account-id"]')
     expect(srchCondAccountId.text()).toContain('アカウントID: 1')
   })
+
+  // TODO: Add tests
 })
