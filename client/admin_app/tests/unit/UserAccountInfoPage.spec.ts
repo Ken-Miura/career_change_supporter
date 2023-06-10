@@ -793,4 +793,22 @@ describe('UserAccountInfoPage.vue', () => {
     // ユーザーに待ち時間を表すためにWaitingCircleが出ていることが確認できれば十分のため、
     // mainが出ていないことまで確認しない。
   })
+
+  it('displays no error if all the requests are successful', async () => {
+    prepareInitValue()
+
+    const wrapper = mount(UserAccountInfoPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const headers = wrapper.findAllComponents(TheHeader)
+    expect(headers.length).toBe(1)
+    const waitingCircles = wrapper.findAllComponents(AlertMessage)
+    expect(waitingCircles.length).toBe(0)
+  })
 })
