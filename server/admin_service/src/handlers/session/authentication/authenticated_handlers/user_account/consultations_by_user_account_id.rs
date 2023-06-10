@@ -10,9 +10,8 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::{
-    validate_account_id_is_positive, Consultation, ConsultationsResult, UserAccountIdQuery,
-};
+use super::{validate_account_id_is_positive, ConsultationsResult, UserAccountIdQuery};
+use crate::handlers::session::authentication::authenticated_handlers::Consultation;
 
 pub(crate) async fn get_consultations_by_user_account_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

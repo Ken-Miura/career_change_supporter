@@ -8,11 +8,10 @@ use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter}
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
+use crate::handlers::session::authentication::authenticated_handlers::Consultation;
 
 use super::super::admin::Admin;
-use super::{
-    validate_account_id_is_positive, ConsultantIdQuery, Consultation, ConsultationsResult,
-};
+use super::{validate_account_id_is_positive, ConsultantIdQuery, ConsultationsResult};
 
 pub(crate) async fn get_consultations_by_consultant_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

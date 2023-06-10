@@ -6,12 +6,14 @@ use common::{
     ErrResp,
 };
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
 
 pub(crate) mod admin;
 pub(crate) mod career_request;
+pub(crate) mod consultation;
 mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
@@ -57,6 +59,17 @@ fn convert_identity(identity_model: entity::identity::Model) -> Identity {
         address_line2: identity_model.address_line2,
         telephone_number: identity_model.telephone_number,
     }
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+struct Consultation {
+    consultation_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
+    meeting_at: String, // RFC 3339形式の文字列
+    room_name: String,
+    user_account_entered_at: Option<String>, // RFC 3339形式の文字列
+    consultant_entered_at: Option<String>,   // RFC 3339形式の文字列
 }
 
 #[cfg(test)]

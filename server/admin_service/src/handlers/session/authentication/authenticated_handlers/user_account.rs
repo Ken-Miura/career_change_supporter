@@ -33,6 +33,8 @@ use tracing::error;
 
 use crate::err::Code;
 
+use super::Consultation;
+
 #[derive(Deserialize)]
 pub(crate) struct UserAccountIdQuery {
     user_account_id: i64,
@@ -94,17 +96,6 @@ struct ConsultationReq {
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct ConsultationsResult {
     consultations: Vec<Consultation>,
-}
-
-#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-struct Consultation {
-    consultation_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    meeting_at: String, // RFC 3339形式の文字列
-    room_name: String,
-    user_account_entered_at: Option<String>, // RFC 3339形式の文字列
-    consultant_entered_at: Option<String>,   // RFC 3339形式の文字列
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
