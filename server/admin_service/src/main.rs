@@ -9,6 +9,7 @@ use crate::handlers::session::authentication::authenticated_handlers::career_req
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::detail::get_create_career_request_detail;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::rejection::post_create_career_request_rejection;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::list::get_create_career_requests;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant_rating_by_consultation_id::get_consultant_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_by_consultation_id::get_consultation_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::user_rating_by_consultation_id::get_user_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::identity_by_user_account_id::get_identity_by_user_account_id;
@@ -368,6 +369,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/user-rating-by-consultation-id",
                     get(get_user_rating_by_consultation_id),
+                )
+                .route(
+                    "/consultant-rating-by-consultation-id",
+                    get(get_consultant_rating_by_consultation_id),
                 )
                 .with_state(state),
         )
