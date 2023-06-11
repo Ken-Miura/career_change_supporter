@@ -66,8 +66,13 @@ import { defineComponent, ref, onMounted, computed } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Consultation } from '@/util/personalized/Consultation'
+import { useGetConsultationByConsultationId } from '@/util/personalized/consultation/useGetConsultationByUserAccountId'
+import { Message } from '@/util/Message'
+import { GetConsultationByConsultationIdResp } from '@/util/personalized/consultation/GetConsultationByConsultationIdResp'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code, createErrorMessage } from '@/util/Error'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -77,18 +82,46 @@ export default defineComponent({
     WaitingCircle
   },
   setup () {
+    const router = useRouter()
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
 
     const consultation = ref(null as Consultation | null)
     const consultationErrMessage = ref(null as string | null)
 
+    const {
+      getConsultationByConsultationIdDone,
+      getConsultationByConsultationIdFunc
+    } = useGetConsultationByConsultationId()
+
+    const findConsultation = async () => {
+      try {
+        const response = await getConsultationByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetConsultationByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultationErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getConsultationResult()
+        consultation.value = result.consultation
+      } catch (e) {
+        consultationErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
-      console.log('onMounted')
+      await findConsultation()
     })
 
     const requestsDone = computed(() => {
-      return true
+      return getConsultationByConsultationIdDone.value
     })
 
     return {
