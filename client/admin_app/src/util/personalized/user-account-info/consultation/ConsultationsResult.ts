@@ -1,4 +1,4 @@
-import { Consultation } from './Consultation'
+import { Consultation } from '../../Consultation'
 
 export type ConsultationsResult = {
   consultations: Consultation[]

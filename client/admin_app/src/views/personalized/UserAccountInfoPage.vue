@@ -593,7 +593,7 @@ import { useGetConsultationReqsByUserAccountId } from '@/util/personalized/user-
 import { ConsultationReq } from '@/util/personalized/user-account-info/consultation-req/ConsultationReq'
 import { GetConsultationReqsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByConsultantIdResp'
 import { useGetConsultationReqsByConsultantId } from '@/util/personalized/user-account-info/consultation-req/useGetConsultationReqsByConsultantId'
-import { Consultation } from '@/util/personalized/user-account-info/consultation/Consultation'
+import { Consultation } from '@/util/personalized/Consultation'
 import { GetConsultationsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByUserAccountIdResp'
 import { useGetConsultationsByUserAccountId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByUserAccountId'
 import { useGetConsultationsByConsultantId } from '@/util/personalized/user-account-info/consultation/useGetConsultationsByConsultantId'

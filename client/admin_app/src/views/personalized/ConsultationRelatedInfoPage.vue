@@ -10,26 +10,24 @@
       </div>
       <div v-else>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談ID: {{ message }}</h3>
-          <!-- <div v-if="!identityErrMessage">
-            <div v-if="identity" class="m-4 text-2xl grid grid-cols-3">
-              <div class="mt-2 justify-self-start col-span-1">氏名</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name }} {{ identity.first_name }}</div>
-              <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name_furigana }} {{ identity.first_name_furigana }}</div>
-              <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-2">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
-              <div class="mt-2 justify-self-start col-span-3">住所</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-2">{{ identity.prefecture }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-2">{{ identity.city }}</div>
-              <div class="mt-2 ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-2">{{ identity.address_line1 }}</div>
-              <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ identity.address_line2 }}</div>
-              <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ identity.telephone_number }}</div>
+          <h3 class="font-bold text-2xl">相談</h3>
+          <div v-if="!consultationErrMessage">
+            <div v-if="consultation" class="m-4 text-2xl grid grid-cols-3">
+              <div class="mt-2 justify-self-start col-span-1">相談番号</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.consultation_id }}</div>
+              <div class="mt-2 justify-self-start col-span-1">コンサルタントID</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.consultant_id }}</div>
+              <div class="mt-2 justify-self-start col-span-1">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.user_account_id }}</div>
+              <div class="mt-2 justify-self-start col-span-1">相談日時</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.meeting_at }}</div>
+              <div class="mt-2 justify-self-start col-span-1">部屋名</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.room_name }}</div>
+              <div class="mt-2 justify-self-start col-span-1">ユーザー入室日時</div><div v-if="consultation.user_account_entered_at" class="mt-2 justify-self-start col-span-2">{{ consultation.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">入室記録なし</div>
+              <div class="mt-2 justify-self-start col-span-1">コンサルタント入室日時</div><div v-if="consultation.consultant_entered_at" class="mt-2 justify-self-start col-span-2">{{ consultation.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">入室記録なし</div>
             </div>
             <div v-else class="m-4 text-2xl">
-              身分情報は見つかりませんでした
+              相談は見つかりませんでした
             </div>
           </div>
           <div v-else>
-            <AlertMessage class="mt-4" v-bind:message="identityErrMessage"/>
-          </div> -->
+            <AlertMessage class="mt-4" v-bind:message="consultationErrMessage"/>
+          </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">ユーザーとしての相談一覧</h3>
@@ -74,6 +72,7 @@ import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute } from 'vue-router'
+import { Consultation } from '@/util/personalized/Consultation'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -85,8 +84,10 @@ export default defineComponent({
   setup () {
     const route = useRoute()
     const consultationId = route.params.consultation_id as string
-    const message = ref(consultationId)
     const outerErrorMessage = ref(null as string | null)
+
+    const consultation = ref(null as Consultation | null)
+    const consultationErrMessage = ref(null as string | null)
 
     onMounted(async () => {
       console.log('onMounted')
@@ -97,9 +98,10 @@ export default defineComponent({
     })
 
     return {
-      message,
       requestsDone,
-      outerErrorMessage
+      outerErrorMessage,
+      consultation,
+      consultationErrMessage
     }
   }
 })
