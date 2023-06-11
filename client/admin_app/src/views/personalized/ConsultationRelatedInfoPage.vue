@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">ユーザーとしての相談一覧</h3>
+        <h3 class="font-bold text-2xl">ユーザーに対する評価</h3>
         <!-- <div v-if="!consultationsAsUserErrMessage">
           <div v-if="consultationsAsUser.length !== 0">
             <ul>
@@ -68,7 +68,7 @@ import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Consultation } from '@/util/personalized/Consultation'
-import { useGetConsultationByConsultationId } from '@/util/personalized/consultation/useGetConsultationByUserAccountId'
+import { useGetConsultationByConsultationId } from '@/util/personalized/consultation/useGetConsultationByConsultationId'
 import { Message } from '@/util/Message'
 import { GetConsultationByConsultationIdResp } from '@/util/personalized/consultation/GetConsultationByConsultationIdResp'
 import { ApiErrorResp } from '@/util/ApiError'
