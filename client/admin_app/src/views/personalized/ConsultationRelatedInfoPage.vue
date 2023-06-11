@@ -8,14 +8,14 @@
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">相談</h3>
         <div v-if="!consultationErrMessage">
-          <div v-if="consultation" class="m-4 text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-1">相談番号</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.consultation_id }}</div>
-            <div class="mt-2 justify-self-start col-span-1">コンサルタントID</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.consultant_id }}</div>
-            <div class="mt-2 justify-self-start col-span-1">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.user_account_id }}</div>
-            <div class="mt-2 justify-self-start col-span-1">相談日時</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.meeting_at }}</div>
-            <div class="mt-2 justify-self-start col-span-1">部屋名</div><div class="mt-2 justify-self-start col-span-2">{{ consultation.room_name }}</div>
-            <div class="mt-2 justify-self-start col-span-1">ユーザー入室日時</div><div v-if="consultation.user_account_entered_at" class="mt-2 justify-self-start col-span-2">{{ consultation.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">入室記録なし</div>
-            <div class="mt-2 justify-self-start col-span-1">コンサルタント入室日時</div><div v-if="consultation.consultant_entered_at" class="mt-2 justify-self-start col-span-2">{{ consultation.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">入室記録なし</div>
+          <div v-if="consultation" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ consultation.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultation.consultant_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultation.user_account_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultation.meeting_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">部屋名</div><div class="mt-2 justify-self-start col-span-4">{{ consultation.room_name }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultation.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultation.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultation.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultation.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
           </div>
           <div v-else class="m-4 text-2xl">
             相談は見つかりませんでした
