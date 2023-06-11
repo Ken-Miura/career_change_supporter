@@ -82,7 +82,7 @@ impl SettlementOperation for SettlementOperationImpl {
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find settlement (consultation_id: {}): {}",
+                    "failed to filter settlement (consultation_id: {}): {}",
                     consultation_id, e
                 );
                 unexpected_err_resp()

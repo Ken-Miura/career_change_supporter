@@ -12,6 +12,7 @@ use crate::handlers::session::authentication::authenticated_handlers::career_req
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant_rating_by_consultation_id::get_consultant_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_by_consultation_id::get_consultation_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::settlement_by_consultation_id::get_settlement_by_consultation_id;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::stopped_settlement_by_consultation_id::get_stopped_settlement_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::user_rating_by_consultation_id::get_user_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::identity_by_user_account_id::get_identity_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::create_request::approval::post_create_identity_request_approval;
@@ -378,6 +379,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/settlement-by-consultation-id",
                     get(get_settlement_by_consultation_id),
+                )
+                .route(
+                    "/stopped-settlement-by-consultation-id",
+                    get(get_stopped_settlement_by_consultation_id),
                 )
                 .with_state(state),
         )
