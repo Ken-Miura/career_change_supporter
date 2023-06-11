@@ -16,13 +16,13 @@
           <p v-else class="mt-4 ml-4 text-xl">意図しない動作です。管理者に連絡して下さい</p>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">アカウント情報</h3>
+          <h3 data-test="account-info-label" class="font-bold text-2xl">アカウント情報</h3>
           <div class="mt-4 ml-2">
             <div v-if="userAccount">
               <div class="m-4 text-2xl grid grid-cols-3">
-                <div class="mt-2 justify-self-start col-span-1">アカウントID</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.user_account_id }}</div>
-                <div class="mt-2 justify-self-start col-span-1">メールアドレス</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.email_address }}</div>
-                <div class="mt-2 justify-self-start col-span-1">アカウント作成日</div><div class="mt-2 justify-self-start col-span-2">{{ userAccount.created_at }}</div>
+                <div data-test="account-id" class="mt-2 justify-self-start col-span-1">アカウントID</div><div data-test="account-id-value" class="mt-2 justify-self-start col-span-2">{{ userAccount.user_account_id }}</div>
+                <div data-test="email-address" class="mt-2 justify-self-start col-span-1">メールアドレス</div><div data-test="email-address-value" class="mt-2 justify-self-start col-span-2">{{ userAccount.email_address }}</div>
+                <div data-test="created-at" class="mt-2 justify-self-start col-span-1">アカウント作成日</div><div data-test="created-at-value" class="mt-2 justify-self-start col-span-2">{{ userAccount.created_at }}</div>
                 <div class="mt-2 justify-self-start col-span-1">最終ログイン日</div><div v-if="userAccount.last_login_time" class="mt-2 justify-self-start col-span-2">{{ userAccount.last_login_time }}</div><div v-else class="mt-2 justify-self-start col-span-2">未ログイン</div>
                 <div class="mt-2 justify-self-start col-span-1">無効化日時</div><div v-if="userAccount.disabled_at" class="mt-2 justify-self-start col-span-2">{{ userAccount.disabled_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">無効化されていません</div>
                 <div class="mt-2 justify-self-start col-span-1">二段階認証設定日</div><div v-if="userAccount.mfa_enabled_at" class="mt-2 justify-self-start col-span-2">{{ userAccount.mfa_enabled_at }}</div><div v-else class="mt-2 justify-self-start col-span-2">二段階認証は設定されていません</div>

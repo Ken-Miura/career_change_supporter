@@ -828,6 +828,17 @@ describe('UserAccountInfoPage.vue', () => {
     expect(srchCondLabel.text()).toContain('検索条件')
     const srchCondAccountId = wrapper.find('[data-test="search-condition-account-id"]')
     expect(srchCondAccountId.text()).toContain('アカウントID: 1')
+
+    const accountInfoLabel = wrapper.find('[data-test="account-info-label"]')
+    expect(accountInfoLabel.text()).toContain('アカウント情報')
+    const accountId = wrapper.find('[data-test="account-id"]')
+    expect(accountId.text()).toContain('アカウントID')
+    const accountIdValue = wrapper.find('[data-test="account-id-value"]')
+    expect(accountIdValue.text()).toContain('1')
+    const emailAddress = wrapper.find('[data-test="email-address"]')
+    expect(emailAddress.text()).toContain('メールアドレス')
+    const emailAddressValue = wrapper.find('[data-test="email-address-value"]')
+    expect(emailAddressValue.text()).toContain('test0@test.com')
   })
 
   // TODO: Add tests
