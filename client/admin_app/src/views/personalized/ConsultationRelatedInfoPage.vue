@@ -26,32 +26,21 @@
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">ユーザーに対する評価</h3>
-        <!-- <div v-if="!consultationsAsUserErrMessage">
-          <div v-if="consultationsAsUser.length !== 0">
-            <ul>
-              <li v-for="consultationAsUser in consultationsAsUser" v-bind:key="consultationAsUser.consultation_id" class="mt-4">
-                <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談番号{{ consultationAsUser.consultation_id }}</div>
-                <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-7">
-                  <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.consultant_id }}</div>
-                  <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.meeting_at }}</div>
-                  <div class="mt-2 justify-self-start col-span-3">部屋名</div><div class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.room_name }}</div>
-                  <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultationAsUser.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
-                  <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultationAsUser.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
-                  <div class="mt-2 w-full justify-self-start col-span-7">
-                    <button v-on:click="moveToConsultationRelatedInfoPage(consultationAsUser.consultation_id)" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">決済、返金、評価状況を確認する</button>
-                  </div>
-                </div>
-              </li>
-            </ul>
+        <h3 class="font-bold text-2xl">コンサルタントからのユーザーに対する評価</h3>
+        <div v-if="!userRatingErrMessage">
+          <div v-if="userRating" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">ユーザー評価番号</div><div class="mt-2 justify-self-start col-span-4">{{ userRating.user_rating_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ userRating.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">評価</div><div v-if="userRating.rating" class="mt-2 justify-self-start col-span-4">{{ userRating.rating }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
+            <div class="mt-2 justify-self-start col-span-3">評価日時</div><div v-if="userRating.rated_at" class="mt-2 justify-self-start col-span-4">{{ userRating.rated_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
           </div>
           <div v-else class="m-4 text-2xl">
-            相談は見つかりませんでした
+            コンサルタントからのユーザーに対する評価は見つかりませんでした
           </div>
         </div>
         <div v-else>
-          <AlertMessage class="mt-4" v-bind:message="consultationsAsUserErrMessage"/>
-        </div> -->
+          <AlertMessage class="mt-4" v-bind:message="userRatingErrMessage"/>
+        </div>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
@@ -73,6 +62,9 @@ import { Message } from '@/util/Message'
 import { GetConsultationByConsultationIdResp } from '@/util/personalized/consultation/GetConsultationByConsultationIdResp'
 import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
+import { useGetUserRatingByConsultationId } from '@/util/personalized/consultation/user-rating/useGetUserRatingByConsultationId'
+import { UserRating } from '@/util/personalized/consultation/user-rating/UserRating'
+import { GetUserRatingByConsultationIdResp } from '@/util/personalized/consultation/user-rating/GetUserRatingByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -116,18 +108,52 @@ export default defineComponent({
       }
     }
 
+    const userRating = ref(null as UserRating | null)
+    const userRatingErrMessage = ref(null as string | null)
+
+    const {
+      getUserRatingByConsultationIdDone,
+      getUserRatingByConsultationIdFunc
+    } = useGetUserRatingByConsultationId()
+
+    const findUserRating = async () => {
+      try {
+        const response = await getUserRatingByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetUserRatingByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          userRatingErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getUserRatingResult()
+        userRating.value = result.user_rating
+      } catch (e) {
+        userRatingErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
+      await findUserRating()
     })
 
     const requestsDone = computed(() => {
-      return getConsultationByConsultationIdDone.value
+      return getConsultationByConsultationIdDone.value &&
+              getUserRatingByConsultationIdDone.value
     })
 
     return {
       requestsDone,
       consultation,
-      consultationErrMessage
+      consultationErrMessage,
+      userRating,
+      userRatingErrMessage
     }
   }
 })
