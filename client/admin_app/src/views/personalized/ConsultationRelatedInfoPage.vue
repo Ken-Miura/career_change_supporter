@@ -59,6 +59,25 @@
           <AlertMessage class="mt-4" v-bind:message="consultantRatingErrMessage"/>
         </div>
       </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">決済情報（確保した与信枠の情報）</h3>
+        <div v-if="!settlementErrMessage">
+          <div v-if="settlement" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.settlement_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.charge_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.platform_fee_rate_in_percentage }}</div>
+            <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.credit_facilities_expired_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            決済情報（確保した与信枠の情報）は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="settlementErrMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
@@ -85,6 +104,9 @@ import { GetUserRatingByConsultationIdResp } from '@/util/personalized/consultat
 import { useGetConsultantRatingByConsultationId } from '@/util/personalized/consultation/consultant-rating/useGetConsultantRatingByConsultationId'
 import { GetConsultantRatingByConsultationIdResp } from '@/util/personalized/consultation/consultant-rating/GetConsultantRatingByConsultationIdResp'
 import { ConsultantRating } from '@/util/personalized/consultation/consultant-rating/ConsultantRating'
+import { Settlement } from '@/util/personalized/consultation/settlement/Settlement'
+import { useSettlementByConsultationId } from '@/util/personalized/consultation/settlement/useGetSettlementByConsultationId'
+import { GetSettlementByConsultationIdResp } from '@/util/personalized/consultation/settlement/GetSettlementByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -188,16 +210,48 @@ export default defineComponent({
       }
     }
 
+    const settlement = ref(null as Settlement | null)
+    const settlementErrMessage = ref(null as string | null)
+
+    const {
+      getSettlementByConsultationIdDone,
+      getSettlementByConsultationIdFunc
+    } = useSettlementByConsultationId()
+
+    const findSettlement = async () => {
+      try {
+        const response = await getSettlementByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetSettlementByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          settlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getSettlementResult()
+        settlement.value = result.settlement
+      } catch (e) {
+        settlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
       await findConsultantRating()
+      await findSettlement()
     })
 
     const requestsDone = computed(() => {
       return getConsultationByConsultationIdDone.value &&
               getUserRatingByConsultationIdDone.value &&
-              getConsultantRatingByConsultationIdDone.value
+              getConsultantRatingByConsultationIdDone.value &&
+              getSettlementByConsultationIdDone.value
     })
 
     return {
@@ -207,7 +261,9 @@ export default defineComponent({
       userRating,
       userRatingErrMessage,
       consultantRating,
-      consultantRatingErrMessage
+      consultantRatingErrMessage,
+      settlement,
+      settlementErrMessage
     }
   }
 })
