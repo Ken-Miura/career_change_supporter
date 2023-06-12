@@ -12,6 +12,6 @@ export async function getUserRatingByConsultationId (consultationId: string): Pr
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const consultationsResult = await response.json() as UserRatingResult
-  return GetUserRatingByConsultationIdResp.create(consultationsResult)
+  const result = await response.json() as UserRatingResult
+  return GetUserRatingByConsultationIdResp.create(result)
 }

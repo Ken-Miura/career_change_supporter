@@ -12,6 +12,6 @@ export async function getConsultationByConsultationId (consultationId: string): 
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const consultationsResult = await response.json() as ConsultationResult
-  return GetConsultationByConsultationIdResp.create(consultationsResult)
+  const result = await response.json() as ConsultationResult
+  return GetConsultationByConsultationIdResp.create(result)
 }

@@ -42,6 +42,23 @@
           <AlertMessage class="mt-4" v-bind:message="userRatingErrMessage"/>
         </div>
       </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">ユーザーからのコンサルタントに対する評価</h3>
+        <div v-if="!consultantRatingErrMessage">
+          <div v-if="consultantRating" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">コンサルタント評価番号</div><div class="mt-2 justify-self-start col-span-4">{{ consultantRating.consultant_rating_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ consultantRating.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">評価</div><div v-if="consultantRating.rating" class="mt-2 justify-self-start col-span-4">{{ consultantRating.rating }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
+            <div class="mt-2 justify-self-start col-span-3">評価日時</div><div v-if="consultantRating.rated_at" class="mt-2 justify-self-start col-span-4">{{ consultantRating.rated_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            ユーザーからのコンサルタントに対する評価は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="consultantRatingErrMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
@@ -65,6 +82,9 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { useGetUserRatingByConsultationId } from '@/util/personalized/consultation/user-rating/useGetUserRatingByConsultationId'
 import { UserRating } from '@/util/personalized/consultation/user-rating/UserRating'
 import { GetUserRatingByConsultationIdResp } from '@/util/personalized/consultation/user-rating/GetUserRatingByConsultationIdResp'
+import { useGetConsultantRatingByConsultationId } from '@/util/personalized/consultation/consultant-rating/useGetConsultantRatingByConsultationId'
+import { GetConsultantRatingByConsultationIdResp } from '@/util/personalized/consultation/consultant-rating/GetConsultantRatingByConsultationIdResp'
+import { ConsultantRating } from '@/util/personalized/consultation/consultant-rating/ConsultantRating'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -138,14 +158,46 @@ export default defineComponent({
       }
     }
 
+    const consultantRating = ref(null as ConsultantRating | null)
+    const consultantRatingErrMessage = ref(null as string | null)
+
+    const {
+      getConsultantRatingByConsultationIdDone,
+      getConsultantRatingByConsultationIdFunc
+    } = useGetConsultantRatingByConsultationId()
+
+    const findConsultantRating = async () => {
+      try {
+        const response = await getConsultantRatingByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetConsultantRatingByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          consultantRatingErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getConsultantRatingResult()
+        consultantRating.value = result.consultant_rating
+      } catch (e) {
+        consultantRatingErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
+      await findConsultantRating()
     })
 
     const requestsDone = computed(() => {
       return getConsultationByConsultationIdDone.value &&
-              getUserRatingByConsultationIdDone.value
+              getUserRatingByConsultationIdDone.value &&
+              getConsultantRatingByConsultationIdDone.value
     })
 
     return {
@@ -153,7 +205,9 @@ export default defineComponent({
       consultation,
       consultationErrMessage,
       userRating,
-      userRatingErrMessage
+      userRatingErrMessage,
+      consultantRating,
+      consultantRatingErrMessage
     }
   }
 })
