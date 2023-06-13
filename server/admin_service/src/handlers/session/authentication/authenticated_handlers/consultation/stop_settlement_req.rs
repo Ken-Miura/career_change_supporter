@@ -5,11 +5,11 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 
 use super::super::admin::Admin;
 
@@ -37,6 +37,15 @@ async fn post_stop_settlement_req_internal(
     op: impl StopSettlementReqOperation,
 ) -> RespResult<StopSettlementReqResult> {
     validate_settlement_id_is_positive(settlement_id)?;
+
+    let opt = op
+        .find_credit_facilities_expired_at_on_the_settlement(settlement_id)
+        .await?;
+    let exp_date_time = opt.ok_or_else(|| {
+        error!("no settlement (settlement_id: {}) found", settlement_id);
+        unexpected_err_resp()
+    })?;
+
     todo!()
 }
 
@@ -54,14 +63,36 @@ fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp>
 }
 
 #[async_trait]
-trait StopSettlementReqOperation {}
+trait StopSettlementReqOperation {
+    async fn find_credit_facilities_expired_at_on_the_settlement(
+        &self,
+        settlement_id: i64,
+    ) -> Result<Option<DateTime<FixedOffset>>, ErrResp>;
+}
 
 struct StopSettlementReqOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl StopSettlementReqOperation for StopSettlementReqOperationImpl {}
+impl StopSettlementReqOperation for StopSettlementReqOperationImpl {
+    async fn find_credit_facilities_expired_at_on_the_settlement(
+        &self,
+        settlement_id: i64,
+    ) -> Result<Option<DateTime<FixedOffset>>, ErrResp> {
+        let model = entity::settlement::Entity::find_by_id(settlement_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find settlement (settlement_id: {}): {}",
+                    settlement_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(model.map(|m| m.credit_facilities_expired_at))
+    }
+}
 
 #[cfg(test)]
 mod tests {}
