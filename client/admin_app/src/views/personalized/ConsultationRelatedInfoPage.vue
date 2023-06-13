@@ -98,6 +98,25 @@
           <AlertMessage class="mt-4" v-bind:message="stoppedSettlementErrMessage"/>
         </div>
       </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">領収書情報</h3>
+        <div v-if="!receiptErrMessage">
+          <div v-if="receipt" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">領収書番号</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.receipt_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.charge_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.platform_fee_rate_in_percentage }}</div>
+            <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.settled_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            領収書情報は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="receiptErrMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
@@ -130,6 +149,9 @@ import { GetSettlementByConsultationIdResp } from '@/util/personalized/consultat
 import { useStoppedSettlementByConsultationId } from '@/util/personalized/consultation/stopped_settlement/useGetStoppedSettlementByConsultationId'
 import { GetStoppedSettlementByConsultationIdResp } from '@/util/personalized/consultation/stopped_settlement/GetStoppeSettlementByConsultationIdResp'
 import { StoppedSettlement } from '@/util/personalized/consultation/stopped_settlement/StoppedSettlement'
+import { Receipt } from '@/util/personalized/consultation/receipt/Receipt'
+import { useReceiptByConsultationId } from '@/util/personalized/consultation/receipt/useGetReceiptByConsultationId'
+import { GetReceiptByConsultationIdResp } from '@/util/personalized/consultation/receipt/GetReceiptByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -293,12 +315,43 @@ export default defineComponent({
       }
     }
 
+    const receipt = ref(null as Receipt | null)
+    const receiptErrMessage = ref(null as string | null)
+
+    const {
+      getReceiptByConsultationIdDone,
+      getReceiptByConsultationIdFunc
+    } = useReceiptByConsultationId()
+
+    const findReceipt = async () => {
+      try {
+        const response = await getReceiptByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetReceiptByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          receiptErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getReceiptResult()
+        receipt.value = result.receipt
+      } catch (e) {
+        receiptErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
       await findConsultantRating()
       await findSettlement()
       await findStoppedSettlement()
+      await findReceipt()
     })
 
     const requestsDone = computed(() => {
@@ -306,7 +359,8 @@ export default defineComponent({
               getUserRatingByConsultationIdDone.value &&
               getConsultantRatingByConsultationIdDone.value &&
               getSettlementByConsultationIdDone.value &&
-              getStoppedSettlementByConsultationIdDone.value
+              getStoppedSettlementByConsultationIdDone.value &&
+              getReceiptByConsultationIdDone.value
     })
 
     return {
@@ -320,7 +374,9 @@ export default defineComponent({
       settlement,
       settlementErrMessage,
       stoppedSettlement,
-      stoppedSettlementErrMessage
+      stoppedSettlementErrMessage,
+      receipt,
+      receiptErrMessage
     }
   }
 })
