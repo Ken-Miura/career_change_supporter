@@ -25,6 +25,7 @@ pub(crate) enum Code {
     NoCreateCareerReqDetailFound = 30013,
     AccountIdIsNotPositive = 30014,
     ConsultationIdIsNotPositive = 30015,
+    SettlementIdIsNotPositive = 30016,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

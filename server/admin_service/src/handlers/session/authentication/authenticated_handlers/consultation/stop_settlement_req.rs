@@ -1,17 +1,17 @@
 // Copyright 2023 Ken Miura
 
-use axum::extract::{Query, State};
+use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
-use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use chrono::{DateTime, FixedOffset, Utc};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::Code;
 
 use super::super::admin::Admin;
-use super::validate_consultation_id_is_positive;
 
 pub(crate) async fn post_stop_settlement_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -19,7 +19,8 @@ pub(crate) async fn post_stop_settlement_req(
     Json(req): Json<StopSettlementReq>,
 ) -> RespResult<StopSettlementReqResult> {
     let op = StopSettlementReqOperationImpl { pool };
-    post_stop_settlement_req_internal(req.settlement_id, op).await
+    let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
+    post_stop_settlement_req_internal(req.settlement_id, current_date_time, op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -32,26 +33,24 @@ pub(crate) struct StopSettlementReqResult {}
 
 async fn post_stop_settlement_req_internal(
     settlement_id: i64,
+    current_date_time: DateTime<FixedOffset>,
     op: impl StopSettlementReqOperation,
 ) -> RespResult<StopSettlementReqResult> {
+    validate_settlement_id_is_positive(settlement_id)?;
     todo!()
-    // validate_consultation_id_is_positive(consultation_id)?;
-    // let stopped_settlements = op
-    //     .get_stopped_settlements_by_consultation_id(consultation_id)
-    //     .await?;
-    // if stopped_settlements.len() > 1 {
-    //     error!(
-    //         "{} stopped_settlements found (consultation_id: {})",
-    //         stopped_settlements.len(),
-    //         consultation_id
-    //     );
-    //     return Err(unexpected_err_resp());
-    // }
-    // let stopped_settlement = stopped_settlements.get(0).cloned();
-    // Ok((
-    //     StatusCode::OK,
-    //     Json(StoppedSettlementResult { stopped_settlement }),
-    // ))
+}
+
+fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp> {
+    if !settlement_id.is_positive() {
+        error!("settlement_id is not positive: {}", settlement_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::SettlementIdIsNotPositive as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 #[async_trait]
