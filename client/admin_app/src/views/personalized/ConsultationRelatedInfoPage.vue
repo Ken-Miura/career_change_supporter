@@ -117,6 +117,26 @@
           <AlertMessage class="mt-4" v-bind:message="receiptErrMessage"/>
         </div>
       </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">返金情報</h3>
+        <div v-if="!refundErrMessage">
+          <div v-if="refund" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">返金番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refund_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ refund.charge_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.platform_fee_rate_in_percentage }}</div>
+            <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.settled_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">返金日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refunded_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            返金情報は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="refundErrMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
@@ -152,6 +172,9 @@ import { StoppedSettlement } from '@/util/personalized/consultation/stopped_sett
 import { Receipt } from '@/util/personalized/consultation/receipt/Receipt'
 import { useReceiptByConsultationId } from '@/util/personalized/consultation/receipt/useGetReceiptByConsultationId'
 import { GetReceiptByConsultationIdResp } from '@/util/personalized/consultation/receipt/GetReceiptByConsultationIdResp'
+import { Refund } from '@/util/personalized/consultation/refund/Refund'
+import { useRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
+import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -345,6 +368,36 @@ export default defineComponent({
       }
     }
 
+    const refund = ref(null as Refund | null)
+    const refundErrMessage = ref(null as string | null)
+
+    const {
+      getRefundByConsultationIdDone,
+      getRefundByConsultationIdFunc
+    } = useRefundByConsultationId()
+
+    const findRefund = async () => {
+      try {
+        const response = await getRefundByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetRefundByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          refundErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getRefundResult()
+        refund.value = result.refund
+      } catch (e) {
+        refundErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
@@ -352,6 +405,7 @@ export default defineComponent({
       await findSettlement()
       await findStoppedSettlement()
       await findReceipt()
+      await findRefund()
     })
 
     const requestsDone = computed(() => {
@@ -360,7 +414,8 @@ export default defineComponent({
               getConsultantRatingByConsultationIdDone.value &&
               getSettlementByConsultationIdDone.value &&
               getStoppedSettlementByConsultationIdDone.value &&
-              getReceiptByConsultationIdDone.value
+              getReceiptByConsultationIdDone.value &&
+              getRefundByConsultationIdDone.value
     })
 
     return {
@@ -376,7 +431,9 @@ export default defineComponent({
       stoppedSettlement,
       stoppedSettlementErrMessage,
       receipt,
-      receiptErrMessage
+      receiptErrMessage,
+      refund,
+      refundErrMessage
     }
   }
 })
