@@ -78,6 +78,26 @@
           <AlertMessage class="mt-4" v-bind:message="settlementErrMessage"/>
         </div>
       </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">停止中の決済情報</h3>
+        <div v-if="!stoppedSettlementErrMessage">
+          <div v-if="stoppedSettlement" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">停止中決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_settlement_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.charge_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.platform_fee_rate_in_percentage }}</div>
+            <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.credit_facilities_expired_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">停止日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            停止中の決済情報は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="stoppedSettlementErrMessage"/>
+        </div>
+      </div>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
@@ -107,6 +127,9 @@ import { ConsultantRating } from '@/util/personalized/consultation/consultant-ra
 import { Settlement } from '@/util/personalized/consultation/settlement/Settlement'
 import { useSettlementByConsultationId } from '@/util/personalized/consultation/settlement/useGetSettlementByConsultationId'
 import { GetSettlementByConsultationIdResp } from '@/util/personalized/consultation/settlement/GetSettlementByConsultationIdResp'
+import { useStoppedSettlementByConsultationId } from '@/util/personalized/consultation/stopped_settlement/useGetStoppedSettlementByConsultationId'
+import { GetStoppedSettlementByConsultationIdResp } from '@/util/personalized/consultation/stopped_settlement/GetStoppeSettlementByConsultationIdResp'
+import { StoppedSettlement } from '@/util/personalized/consultation/stopped_settlement/StoppedSettlement'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -240,18 +263,50 @@ export default defineComponent({
       }
     }
 
+    const stoppedSettlement = ref(null as StoppedSettlement | null)
+    const stoppedSettlementErrMessage = ref(null as string | null)
+
+    const {
+      getStoppedSettlementByConsultationIdDone,
+      getStoppedSettlementByConsultationIdFunc
+    } = useStoppedSettlementByConsultationId()
+
+    const findStoppedSettlement = async () => {
+      try {
+        const response = await getStoppedSettlementByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetStoppedSettlementByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          stoppedSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        const result = response.getStoppedSettlementResult()
+        stoppedSettlement.value = result.stopped_settlement
+      } catch (e) {
+        stoppedSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
       await findConsultantRating()
       await findSettlement()
+      await findStoppedSettlement()
     })
 
     const requestsDone = computed(() => {
       return getConsultationByConsultationIdDone.value &&
               getUserRatingByConsultationIdDone.value &&
               getConsultantRatingByConsultationIdDone.value &&
-              getSettlementByConsultationIdDone.value
+              getSettlementByConsultationIdDone.value &&
+              getStoppedSettlementByConsultationIdDone.value
     })
 
     return {
@@ -263,7 +318,9 @@ export default defineComponent({
       consultantRating,
       consultantRatingErrMessage,
       settlement,
-      settlementErrMessage
+      settlementErrMessage,
+      stoppedSettlement,
+      stoppedSettlementErrMessage
     }
   }
 })
