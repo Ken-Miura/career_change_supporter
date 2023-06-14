@@ -4,8 +4,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+    TransactionError, TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -38,15 +42,10 @@ async fn post_stop_settlement_req_internal(
 ) -> RespResult<StopSettlementReqResult> {
     validate_settlement_id_is_positive(settlement_id)?;
 
-    let opt = op
-        .find_credit_facilities_expired_at_on_the_settlement(settlement_id)
+    op.move_to_stopped_settlement(settlement_id, current_date_time)
         .await?;
-    let exp_date_time = opt.ok_or_else(|| {
-        error!("no settlement (settlement_id: {}) found", settlement_id);
-        unexpected_err_resp()
-    })?;
 
-    todo!()
+    Ok((StatusCode::OK, Json(StopSettlementReqResult {})))
 }
 
 fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp> {
@@ -64,10 +63,11 @@ fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp>
 
 #[async_trait]
 trait StopSettlementReqOperation {
-    async fn find_credit_facilities_expired_at_on_the_settlement(
+    async fn move_to_stopped_settlement(
         &self,
         settlement_id: i64,
-    ) -> Result<Option<DateTime<FixedOffset>>, ErrResp>;
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct StopSettlementReqOperationImpl {
@@ -76,22 +76,92 @@ struct StopSettlementReqOperationImpl {
 
 #[async_trait]
 impl StopSettlementReqOperation for StopSettlementReqOperationImpl {
-    async fn find_credit_facilities_expired_at_on_the_settlement(
+    async fn move_to_stopped_settlement(
         &self,
         settlement_id: i64,
-    ) -> Result<Option<DateTime<FixedOffset>>, ErrResp> {
-        let model = entity::settlement::Entity::find_by_id(settlement_id)
-            .one(&self.pool)
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let s = find_settlement_with_exclusive_lock(settlement_id, txn).await?;
+
+                    let ss = entity::stopped_settlement::ActiveModel {
+                        stopped_settlement_id: NotSet,
+                        consultation_id: Set(s.consultation_id),
+                        charge_id: Set(s.charge_id.clone()),
+                        fee_per_hour_in_yen: Set(s.fee_per_hour_in_yen),
+                        platform_fee_rate_in_percentage: Set(s
+                            .platform_fee_rate_in_percentage
+                            .clone()),
+                        credit_facilities_expired_at: Set(s.credit_facilities_expired_at),
+                        stopped_at: Set(current_date_time),
+                    };
+                    let _ = ss.insert(txn).await.map_err(|e| {
+                        error!(
+                            "failed to insert stopped_settlement (settlement: {:?}): {}",
+                            s, e,
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                    let _ = entity::settlement::Entity::delete_by_id(settlement_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to delete settlement (settlement_id: {}): {}",
+                                settlement_id, e,
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
+                    Ok(())
+                })
+            })
             .await
-            .map_err(|e| {
-                error!(
-                    "failed to find settlement (settlement_id: {}): {}",
-                    settlement_id, e
-                );
-                unexpected_err_resp()
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to move_to_stopped_settlement: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
             })?;
-        Ok(model.map(|m| m.credit_facilities_expired_at))
+        Ok(())
     }
+}
+
+async fn find_settlement_with_exclusive_lock(
+    settlement_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<entity::settlement::Model, ErrRespStruct> {
+    let result = entity::settlement::Entity::find_by_id(settlement_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find settlement (settlement_id: {}): {}",
+                settlement_id, e,
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let model = result.ok_or_else(|| {
+        error!("no settlement (settlement_id: {}) found", settlement_id,);
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(model)
 }
 
 #[cfg(test)]
