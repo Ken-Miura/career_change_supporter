@@ -165,4 +165,47 @@ async fn find_settlement_with_exclusive_lock(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+
+    use chrono::TimeZone;
+
+    use super::*;
+
+    struct StopSettlementReqOperationMock {
+        settlement_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl StopSettlementReqOperation for StopSettlementReqOperationMock {
+        async fn move_to_stopped_settlement(
+            &self,
+            settlement_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.settlement_id, settlement_id);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_success() {
+        let settlement_id = 64431;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let op_mock = StopSettlementReqOperationMock {
+            settlement_id,
+            current_date_time,
+        };
+
+        let result =
+            post_stop_settlement_req_internal(settlement_id, current_date_time, op_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(StopSettlementReqResult {}, resp.1 .0);
+    }
+}
