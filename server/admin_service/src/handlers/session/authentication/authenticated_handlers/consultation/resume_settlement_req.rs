@@ -48,8 +48,22 @@ async fn post_resume_settlement_req_internal(
         );
         unexpected_err_resp()
     })?;
+    if current_date_time > expired_date_time {
+        error!(
+            "credit faclities expiray date ({}) passed current date time ({})",
+            expired_date_time, current_date_time
+        );
+        return Err((
+            StatusCode::OK,
+            Json(ApiError {
+                code: Code::CreditFacilitiesAlreadyExpired as u32,
+            }),
+        ));
+    }
 
-    todo!()
+    op.move_to_settlement(stopped_settlement_id).await?;
+
+    Ok((StatusCode::OK, Json(ResumeSettlementReqResult {})))
 }
 
 fn validate_stopped_settlement_id_is_positive(stopped_settlement_id: i64) -> Result<(), ErrResp> {

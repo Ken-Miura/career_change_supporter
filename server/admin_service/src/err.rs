@@ -27,6 +27,7 @@ pub(crate) enum Code {
     ConsultationIdIsNotPositive = 30015,
     SettlementIdIsNotPositive = 30016,
     StoppedSettlementIdIsNotPositive = 30017,
+    CreditFacilitiesAlreadyExpired = 30018,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
