@@ -4,8 +4,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
+    TransactionError, TransactionTrait,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -116,8 +120,89 @@ impl ResumeSettlementReqOperation for ResumeSettlementReqOperationImpl {
     }
 
     async fn move_to_settlement(&self, stopped_settlement_id: i64) -> Result<(), ErrResp> {
-        todo!()
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let ss = find_stopped_settlement_with_exclusive_lock(stopped_settlement_id, txn).await?;
+
+                    let s = entity::settlement::ActiveModel {
+                        settlement_id: NotSet,
+                        consultation_id: Set(ss.consultation_id),
+                        charge_id: Set(ss.charge_id.clone()),
+                        fee_per_hour_in_yen: Set(ss.fee_per_hour_in_yen),
+                        platform_fee_rate_in_percentage: Set(ss
+                            .platform_fee_rate_in_percentage
+                            .clone()),
+                        credit_facilities_expired_at: Set(ss.credit_facilities_expired_at),
+                    };
+                    let _ = s.insert(txn).await.map_err(|e| {
+                        error!(
+                            "failed to insert settlement (stopped_settlement: {:?}): {}",
+                            ss, e,
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                    let _ = entity::stopped_settlement::Entity::delete_by_id(stopped_settlement_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| {
+                            error!(
+                                "failed to delete stopped_settlement (stopped_settlement_id: {}): {}",
+                                stopped_settlement_id, e,
+                            );
+                            ErrRespStruct {
+                                err_resp: unexpected_err_resp(),
+                            }
+                        })?;
+
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to move_to_stopped_settlement: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+        Ok(())
     }
+}
+
+async fn find_stopped_settlement_with_exclusive_lock(
+    stopped_settlement_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<entity::stopped_settlement::Model, ErrRespStruct> {
+    let result = entity::stopped_settlement::Entity::find_by_id(stopped_settlement_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find stopped_settlement (stopped_settlement_id: {}): {}",
+                stopped_settlement_id, e,
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    let model = result.ok_or_else(|| {
+        error!(
+            "no stopped_settlement (stopped_settlement_id: {}) found",
+            stopped_settlement_id,
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(model)
 }
 
 #[cfg(test)]
