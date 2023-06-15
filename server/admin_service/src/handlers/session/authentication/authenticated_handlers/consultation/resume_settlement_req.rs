@@ -74,6 +74,8 @@ trait ResumeSettlementReqOperation {
         &self,
         stopped_settlement_id: i64,
     ) -> Result<Option<DateTime<FixedOffset>>, ErrResp>;
+
+    async fn move_to_settlement(&self, stopped_settlement_id: i64) -> Result<(), ErrResp>;
 }
 
 struct ResumeSettlementReqOperationImpl {
@@ -97,6 +99,10 @@ impl ResumeSettlementReqOperation for ResumeSettlementReqOperationImpl {
                 unexpected_err_resp()
             })?;
         Ok(model.map(|m| m.credit_facilities_expired_at))
+    }
+
+    async fn move_to_settlement(&self, stopped_settlement_id: i64) -> Result<(), ErrResp> {
+        todo!()
     }
 }
 
