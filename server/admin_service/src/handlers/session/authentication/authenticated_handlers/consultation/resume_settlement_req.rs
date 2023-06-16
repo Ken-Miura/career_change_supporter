@@ -275,4 +275,77 @@ mod tests {
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(ResumeSettlementReqResult {}, resp.1 .0);
     }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_fail_stopped_settlement_id_is_zero() {
+        let stopped_settlement_id = 0;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let credit_facilities_expired_at = current_date_time;
+        let op_mock = ResumeSettlementReqOperationMock {
+            stopped_settlement_id,
+            credit_facilities_expired_at,
+        };
+
+        let result =
+            post_resume_settlement_req_internal(stopped_settlement_id, current_date_time, op_mock)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(
+            Code::StoppedSettlementIdIsNotPositive as u32,
+            resp.1 .0.code
+        );
+    }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_fail_stopped_settlement_id_is_negative() {
+        let stopped_settlement_id = -1;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let credit_facilities_expired_at = current_date_time;
+        let op_mock = ResumeSettlementReqOperationMock {
+            stopped_settlement_id,
+            credit_facilities_expired_at,
+        };
+
+        let result =
+            post_resume_settlement_req_internal(stopped_settlement_id, current_date_time, op_mock)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(
+            Code::StoppedSettlementIdIsNotPositive as u32,
+            resp.1 .0.code
+        );
+    }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_fail_current_date_time_exceeds_credit_facilities_expired_at(
+    ) {
+        let stopped_settlement_id = 53215;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let credit_facilities_expired_at = current_date_time - Duration::seconds(1);
+        let op_mock = ResumeSettlementReqOperationMock {
+            stopped_settlement_id,
+            credit_facilities_expired_at,
+        };
+
+        let result =
+            post_resume_settlement_req_internal(stopped_settlement_id, current_date_time, op_mock)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::CreditFacilitiesAlreadyExpired as u32, resp.1 .0.code);
+    }
 }
