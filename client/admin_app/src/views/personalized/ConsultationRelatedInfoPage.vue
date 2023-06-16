@@ -66,9 +66,26 @@
             <div class="mt-2 justify-self-start col-span-3">決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.settlement_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.fee_per_hour_in_yen }}</div>
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.credit_facilities_expired_at }}</div>
+            <div class="mt-4 col-span-7">
+                <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
+                  <p>決済の停止</p>
+                </div>
+                <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                  <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                    <div class="col-span-5">決済の停止が適正であることを確認しました</div>
+                    <input v-model="stopSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                  </div>
+                </div>
+                <div>
+                  <button v-on:click="stopSettlement" v-bind:disabled="!stopSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を停止する</button>
+                </div>
+                <div v-if="stopSettlementErrMessage" class="mt-4">
+                  <AlertMessage v-bind:message="stopSettlementErrMessage"/>
+                </div>
+              </div>
           </div>
           <div v-else class="m-4 text-2xl">
             決済情報（確保した与信枠の情報）は見つかりませんでした
@@ -85,7 +102,7 @@
             <div class="mt-2 justify-self-start col-span-3">停止中決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_settlement_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.fee_per_hour_in_yen }}</div>
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.credit_facilities_expired_at }}</div>
             <div class="mt-2 justify-self-start col-span-3">停止日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_at }}</div>
@@ -105,7 +122,7 @@
             <div class="mt-2 justify-self-start col-span-3">領収書番号</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.receipt_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.fee_per_hour_in_yen }}</div>
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.settled_at }}</div>
           </div>
@@ -124,7 +141,7 @@
             <div class="mt-2 justify-self-start col-span-3">返金番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refund_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ refund.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.fee_per_hour_in_yen }}</div>
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.settled_at }}</div>
             <div class="mt-2 justify-self-start col-span-3">返金日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refunded_at }}</div>
@@ -175,6 +192,8 @@ import { GetReceiptByConsultationIdResp } from '@/util/personalized/consultation
 import { Refund } from '@/util/personalized/consultation/refund/Refund'
 import { useRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
 import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
+import { usePostStopSettlementReq } from '@/util/personalized/consultation/stop_settlement_req/usePostStopSettlementReq'
+import { PostStopSettlementReqResp } from '@/util/personalized/consultation/stop_settlement_req/PostStopSettlementReqResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -398,6 +417,43 @@ export default defineComponent({
       }
     }
 
+    const {
+      postStopSettlementReqDone,
+      postStopSettlementReqFunc
+    } = usePostStopSettlementReq()
+
+    const stopSettlementConfirmation = ref(false)
+    const stopSettlementErrMessage = ref(null as string | null)
+
+    const stopSettlement = async () => {
+      if (!settlement.value) {
+        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: settlement.value is null`
+        return
+      }
+      const settlementId = settlement.value.settlement_id
+      try {
+        const response = await postStopSettlementReqFunc(settlementId)
+        if (!(response instanceof PostStopSettlementReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          stopSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+      } catch (e) {
+        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        stopSettlementConfirmation.value = false
+      }
+      await findSettlement()
+      await findStoppedSettlement()
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
@@ -415,7 +471,8 @@ export default defineComponent({
               getSettlementByConsultationIdDone.value &&
               getStoppedSettlementByConsultationIdDone.value &&
               getReceiptByConsultationIdDone.value &&
-              getRefundByConsultationIdDone.value
+              getRefundByConsultationIdDone.value &&
+              postStopSettlementReqDone.value
     })
 
     return {
@@ -433,7 +490,10 @@ export default defineComponent({
       receipt,
       receiptErrMessage,
       refund,
-      refundErrMessage
+      refundErrMessage,
+      stopSettlementConfirmation,
+      stopSettlement,
+      stopSettlementErrMessage
     }
   }
 })
