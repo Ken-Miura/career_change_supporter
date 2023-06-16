@@ -58,7 +58,7 @@ async fn post_resume_settlement_req_internal(
             expired_date_time, current_date_time
         );
         return Err((
-            StatusCode::OK,
+            StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::CreditFacilitiesAlreadyExpired as u32,
             }),
@@ -206,4 +206,73 @@ async fn find_stopped_settlement_with_exclusive_lock(
 }
 
 #[cfg(test)]
-mod tests {}
+mod tests {
+    use chrono::{Duration, TimeZone};
+
+    use super::*;
+
+    struct ResumeSettlementReqOperationMock {
+        stopped_settlement_id: i64,
+        credit_facilities_expired_at: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl ResumeSettlementReqOperation for ResumeSettlementReqOperationMock {
+        async fn find_credit_facilities_expired_at_on_the_stopped_settlement(
+            &self,
+            stopped_settlement_id: i64,
+        ) -> Result<Option<DateTime<FixedOffset>>, ErrResp> {
+            assert_eq!(self.stopped_settlement_id, stopped_settlement_id);
+            Ok(Some(self.credit_facilities_expired_at))
+        }
+
+        async fn move_to_settlement(&self, stopped_settlement_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.stopped_settlement_id, stopped_settlement_id);
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_success1() {
+        let stopped_settlement_id = 64431;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let credit_facilities_expired_at = current_date_time + Duration::seconds(1);
+        let op_mock = ResumeSettlementReqOperationMock {
+            stopped_settlement_id,
+            credit_facilities_expired_at,
+        };
+
+        let result =
+            post_resume_settlement_req_internal(stopped_settlement_id, current_date_time, op_mock)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(ResumeSettlementReqResult {}, resp.1 .0);
+    }
+
+    #[tokio::test]
+
+    async fn post_stop_settlement_req_internal_success2() {
+        let stopped_settlement_id = 64431;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let credit_facilities_expired_at = current_date_time;
+        let op_mock = ResumeSettlementReqOperationMock {
+            stopped_settlement_id,
+            credit_facilities_expired_at,
+        };
+
+        let result =
+            post_resume_settlement_req_internal(stopped_settlement_id, current_date_time, op_mock)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(ResumeSettlementReqResult {}, resp.1 .0);
+    }
+}
