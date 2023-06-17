@@ -86,6 +86,23 @@
                 <AlertMessage v-bind:message="stopSettlementErrMessage"/>
               </div>
             </div>
+            <div class="mt-4 col-span-7">
+              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
+                <p>支払いの確定</p>
+              </div>
+              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                  <div class="col-span-5">支払いの確定が適正であることを確認しました</div>
+                  <input v-model="makePaymentConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                </div>
+              </div>
+              <div>
+                <button v-on:click="makePayment" v-bind:disabled="!makePaymentConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">支払いを確定する</button>
+              </div>
+              <div v-if="makePaymentErrMessage" class="mt-4">
+                <AlertMessage v-bind:message="makePaymentErrMessage"/>
+              </div>
+            </div>
           </div>
           <div v-else class="m-4 text-2xl">
             決済情報（確保した与信枠の情報）は見つかりませんでした
@@ -142,6 +159,23 @@
             <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.fee_per_hour_in_yen }}</div>
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ receipt.settled_at }}</div>
+            <div class="mt-4 col-span-7">
+              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
+                <p>返金</p>
+              </div>
+              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                  <div class="col-span-5">返金が適正であることを確認しました</div>
+                  <input v-model="refundReqConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                </div>
+              </div>
+              <div>
+                <button v-on:click="refundReq" v-bind:disabled="!refundReqConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">返金する</button>
+              </div>
+              <div v-if="refundErrMessage" class="mt-4">
+                <AlertMessage v-bind:message="refundErrMessage"/>
+              </div>
+            </div>
           </div>
           <div v-else class="m-4 text-2xl">
             領収書情報は見つかりませんでした
