@@ -70,22 +70,22 @@
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.credit_facilities_expired_at }}</div>
             <div class="mt-4 col-span-7">
-                <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
-                  <p>決済の停止</p>
-                </div>
-                <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-                  <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-                    <div class="col-span-5">決済の停止が適正であることを確認しました</div>
-                    <input v-model="stopSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
-                  </div>
-                </div>
-                <div>
-                  <button v-on:click="stopSettlement" v-bind:disabled="!stopSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を停止する</button>
-                </div>
-                <div v-if="stopSettlementErrMessage" class="mt-4">
-                  <AlertMessage v-bind:message="stopSettlementErrMessage"/>
+              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
+                <p>決済の停止</p>
+              </div>
+              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                  <div class="col-span-5">決済の停止が適正であることを確認しました</div>
+                  <input v-model="stopSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
                 </div>
               </div>
+              <div>
+                <button v-on:click="stopSettlement" v-bind:disabled="!stopSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を停止する</button>
+              </div>
+              <div v-if="stopSettlementErrMessage" class="mt-4">
+                <AlertMessage v-bind:message="stopSettlementErrMessage"/>
+              </div>
+            </div>
           </div>
           <div v-else class="m-4 text-2xl">
             決済情報（確保した与信枠の情報）は見つかりませんでした
@@ -106,6 +106,23 @@
             <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.platform_fee_rate_in_percentage }}</div>
             <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.credit_facilities_expired_at }}</div>
             <div class="mt-2 justify-self-start col-span-3">停止日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_at }}</div>
+            <div class="mt-4 col-span-7">
+              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
+                <p>決済の再開</p>
+              </div>
+              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+                  <div class="col-span-5">決済の再開が適正であることを確認しました</div>
+                  <input v-model="resumeSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+                </div>
+              </div>
+              <div>
+                <button v-on:click="resumeSettlement" v-bind:disabled="!resumeSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を再開する</button>
+              </div>
+              <div v-if="resumeSettlementErrMessage" class="mt-4">
+                <AlertMessage v-bind:message="resumeSettlementErrMessage"/>
+              </div>
+            </div>
           </div>
           <div v-else class="m-4 text-2xl">
             停止中の決済情報は見つかりませんでした
@@ -194,6 +211,8 @@ import { useRefundByConsultationId } from '@/util/personalized/consultation/refu
 import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
 import { usePostStopSettlementReq } from '@/util/personalized/consultation/stop_settlement_req/usePostStopSettlementReq'
 import { PostStopSettlementReqResp } from '@/util/personalized/consultation/stop_settlement_req/PostStopSettlementReqResp'
+import { usePostResumeSettlementReq } from '@/util/personalized/consultation/resume_settlement_req/usePostResumeSettlementReq'
+import { PostResumeSettlementReqResp } from '@/util/personalized/consultation/resume_settlement_req/PostResumeSettlementReqResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -454,6 +473,43 @@ export default defineComponent({
       await findStoppedSettlement()
     }
 
+    const {
+      postResumeSettlementReqDone,
+      postResumeSettlementReqFunc
+    } = usePostResumeSettlementReq()
+
+    const resumeSettlementConfirmation = ref(false)
+    const resumeSettlementErrMessage = ref(null as string | null)
+
+    const resumeSettlement = async () => {
+      if (!stoppedSettlement.value) {
+        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: stoppedSettlement.value is null`
+        return
+      }
+      const stoppedSettlementId = stoppedSettlement.value.stopped_settlement_id
+      try {
+        const response = await postResumeSettlementReqFunc(stoppedSettlementId)
+        if (!(response instanceof PostResumeSettlementReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          resumeSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+      } catch (e) {
+        resumeSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        resumeSettlementConfirmation.value = false
+      }
+      await findSettlement()
+      await findStoppedSettlement()
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
@@ -472,7 +528,8 @@ export default defineComponent({
               getStoppedSettlementByConsultationIdDone.value &&
               getReceiptByConsultationIdDone.value &&
               getRefundByConsultationIdDone.value &&
-              postStopSettlementReqDone.value
+              postStopSettlementReqDone.value &&
+              postResumeSettlementReqDone.value
     })
 
     return {
@@ -493,7 +550,10 @@ export default defineComponent({
       refundErrMessage,
       stopSettlementConfirmation,
       stopSettlement,
-      stopSettlementErrMessage
+      stopSettlementErrMessage,
+      resumeSettlementConfirmation,
+      resumeSettlement,
+      resumeSettlementErrMessage
     }
   }
 })
