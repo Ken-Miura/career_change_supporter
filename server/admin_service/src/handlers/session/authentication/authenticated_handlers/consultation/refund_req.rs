@@ -61,8 +61,8 @@ async fn post_refund_req_internal(
     let refund_limit_date_time = settled_at + Duration::days(REFUNDABLE_DURATION_IN_DAYS);
     if current_date_time > refund_limit_date_time {
         error!(
-            "refund limit date time ({}, settled at {}) passed current date time ({})",
-            refund_limit_date_time, settled_at, current_date_time
+            "current date time ({}) exceeds refund limit date time ({}, settled at {})",
+            current_date_time, refund_limit_date_time, settled_at
         );
         return Err((
             StatusCode::BAD_REQUEST,

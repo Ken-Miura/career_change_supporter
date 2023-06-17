@@ -54,8 +54,8 @@ async fn post_resume_settlement_req_internal(
     })?;
     if current_date_time > expired_date_time {
         error!(
-            "credit faclities expiray date ({}) passed current date time ({})",
-            expired_date_time, current_date_time
+            "current date time ({}) exceeds credit faclities expiray date ({})",
+            current_date_time, expired_date_time
         );
         return Err((
             StatusCode::BAD_REQUEST,
