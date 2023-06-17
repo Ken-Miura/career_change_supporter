@@ -4,18 +4,18 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, QuerySelect, Set,
-    TransactionError, TransactionTrait,
+    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
 };
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
+use super::{find_settlement_with_exclusive_lock, validate_settlement_id_is_positive};
 
 pub(crate) async fn post_stop_settlement_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -46,19 +46,6 @@ async fn post_stop_settlement_req_internal(
         .await?;
 
     Ok((StatusCode::OK, Json(StopSettlementReqResult {})))
-}
-
-fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp> {
-    if !settlement_id.is_positive() {
-        error!("settlement_id is not positive: {}", settlement_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::SettlementIdIsNotPositive as u32,
-            }),
-        ));
-    }
-    Ok(())
 }
 
 #[async_trait]
@@ -138,36 +125,12 @@ impl StopSettlementReqOperation for StopSettlementReqOperationImpl {
     }
 }
 
-async fn find_settlement_with_exclusive_lock(
-    settlement_id: i64,
-    txn: &DatabaseTransaction,
-) -> Result<entity::settlement::Model, ErrRespStruct> {
-    let result = entity::settlement::Entity::find_by_id(settlement_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find settlement (settlement_id: {}): {}",
-                settlement_id, e,
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    let model = result.ok_or_else(|| {
-        error!("no settlement (settlement_id: {}) found", settlement_id,);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(model)
-}
-
 #[cfg(test)]
 mod tests {
 
     use chrono::TimeZone;
+
+    use crate::err::Code;
 
     use super::*;
 
