@@ -26,4 +26,12 @@ export namespace Message {
     export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_EMPTY_MESSAGE = 'アカウントIDとメールアドレスの両方が空です'
     export const BOTH_ACCOUNT_ID_AND_EMAIL_ADDRESS_ARE_FILLED_MESSAGE = 'アカウントIDとメールアドレスの両方が入力されています'
     export const USER_ACCOUNT_SEARCH_PARAM_IS_NULL = '検索に必要なパラメータが設定されていません'
+    export const ACCOUNT_ID_IS_NOT_POSITIVE_MESSAGE = 'アカウントIDが正の数ではありません'
+    export const CONSULTATION_ID_IS_NOT_POSITIVE_MESSAGE = '相談IDが正の数ではありません'
+    export const SETTLEMENT_ID_IS_NOT_POSITIVE_MESSAGE = '決済IDが正の数ではありません'
+    export const STOPPED_SETTLEMENT_ID_IS_NOT_POSITIVE_MESSAGE = '停止中決済IDが正の数ではありません'
+    export const CREDIT_FACILITIES_ALREADY_EXPIRED_MESSAGE = '確保した与信枠の有効期限が過ぎています'
+    export const PAYMENT_RELATED_ERR_MESSAGE = 'PAY.JP関連のエラーです'
+    export const RECEIPT_ID_IS_NOT_POSITIVE_MESSAGE = '領収書IDが正の数ではありません'
+    export const EXCEEDS_REFUND_TIME_LIMIT_MESSAGE = '返金可能な期限を過ぎています'
 }
