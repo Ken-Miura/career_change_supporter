@@ -20,6 +20,7 @@ pub(crate) mod consultation_by_consultation_id;
 pub(crate) mod make_payment_req;
 pub(crate) mod receipt_by_consultation_id;
 pub(crate) mod refund_by_consultation_id;
+pub(crate) mod refund_req;
 pub(crate) mod resume_settlement_req;
 pub(crate) mod settlement_by_consultation_id;
 pub(crate) mod stop_settlement_req;
