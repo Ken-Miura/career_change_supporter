@@ -636,13 +636,19 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.settlement To admin_app;"),
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.settlement To admin_app;"),
             )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT USAGE ON SEQUENCE ccs_schema.settlement_settlement_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.settlement_settlement_id_seq TO admin_app;",
             ))
             .await
             .map(|_| ())?;
