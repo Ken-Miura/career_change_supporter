@@ -213,6 +213,10 @@ import { usePostStopSettlementReq } from '@/util/personalized/consultation/stop_
 import { PostStopSettlementReqResp } from '@/util/personalized/consultation/stop_settlement_req/PostStopSettlementReqResp'
 import { usePostResumeSettlementReq } from '@/util/personalized/consultation/resume_settlement_req/usePostResumeSettlementReq'
 import { PostResumeSettlementReqResp } from '@/util/personalized/consultation/resume_settlement_req/PostResumeSettlementReqResp'
+import { usePostMakePaymentReq } from '@/util/personalized/consultation/make_payment_req/usePostMakePaymentReq'
+import { PostMakePaymentReqResp } from '@/util/personalized/consultation/make_payment_req/PostMakePaymentReqResp'
+import { usePostRefundReq } from '@/util/personalized/consultation/refund_req/usePostRefundReq'
+import { PostRefundReqResp } from '@/util/personalized/consultation/refund_req/PostRefundReqResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -483,7 +487,7 @@ export default defineComponent({
 
     const resumeSettlement = async () => {
       if (!stoppedSettlement.value) {
-        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: stoppedSettlement.value is null`
+        resumeSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: stoppedSettlement.value is null`
         return
       }
       const stoppedSettlementId = stoppedSettlement.value.stopped_settlement_id
@@ -510,6 +514,80 @@ export default defineComponent({
       await findStoppedSettlement()
     }
 
+    const {
+      postMakePaymentReqDone,
+      postMakePaymentReqFunc
+    } = usePostMakePaymentReq()
+
+    const makePaymentConfirmation = ref(false)
+    const makePaymentErrMessage = ref(null as string | null)
+
+    const makePayment = async () => {
+      if (!settlement.value) {
+        makePaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: settlement.value is null`
+        return
+      }
+      const settlementId = settlement.value.settlement_id
+      try {
+        const response = await postMakePaymentReqFunc(settlementId)
+        if (!(response instanceof PostMakePaymentReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          makePaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+      } catch (e) {
+        makePaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        makePaymentConfirmation.value = false
+      }
+      await findSettlement()
+      await findReceipt()
+    }
+
+    const {
+      postRefundReqDone,
+      postRefundReqFunc
+    } = usePostRefundReq()
+
+    const refundReqConfirmation = ref(false)
+    const refundReqErrMessage = ref(null as string | null)
+
+    const refundReq = async () => {
+      if (!receipt.value) {
+        refundReqErrMessage.value = `${Message.UNEXPECTED_ERR}: receipt.value is null`
+        return
+      }
+      const receiptId = receipt.value.receipt_id
+      try {
+        const response = await postRefundReqFunc(receiptId)
+        if (!(response instanceof PostRefundReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          refundReqErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+      } catch (e) {
+        refundReqErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        refundReqConfirmation.value = false
+      }
+      await findReceipt()
+      await findRefund()
+    }
+
     onMounted(async () => {
       await findConsultation()
       await findUserRating()
@@ -529,7 +607,9 @@ export default defineComponent({
               getReceiptByConsultationIdDone.value &&
               getRefundByConsultationIdDone.value &&
               postStopSettlementReqDone.value &&
-              postResumeSettlementReqDone.value
+              postResumeSettlementReqDone.value &&
+              postMakePaymentReqDone.value &&
+              postRefundReqDone.value
     })
 
     return {
@@ -553,7 +633,13 @@ export default defineComponent({
       stopSettlementErrMessage,
       resumeSettlementConfirmation,
       resumeSettlement,
-      resumeSettlementErrMessage
+      resumeSettlementErrMessage,
+      makePaymentConfirmation,
+      makePayment,
+      makePaymentErrMessage,
+      refundReqConfirmation,
+      refundReq,
+      refundReqErrMessage
     }
   }
 })
