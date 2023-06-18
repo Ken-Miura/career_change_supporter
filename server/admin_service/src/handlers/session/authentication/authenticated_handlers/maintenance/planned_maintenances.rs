@@ -148,4 +148,69 @@ mod tests {
             resp.1 .0.planned_maintenances
         );
     }
+
+    fn convert(pm: &PlannedMaintenance) -> Maintenance {
+        Maintenance {
+            maintenance_start_at_in_jst: DateTime::parse_from_rfc3339(
+                pm.maintenance_start_at_in_jst.as_str(),
+            )
+            .expect("failed to get Ok"),
+            maintenance_end_at_in_jst: DateTime::parse_from_rfc3339(
+                pm.maintenance_end_at_in_jst.as_str(),
+            )
+            .expect("failed to get Ok"),
+            description: pm.description.to_string(),
+        }
+    }
+
+    #[tokio::test]
+
+    async fn handle_planned_maintenances_success_1_result() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let m1 = PlannedMaintenance {
+            maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
+            maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
+            description: "test 1".to_string(),
+        };
+        let op = PlannedMaintenancesOperationMock {
+            current_date_time,
+            maintenances: vec![convert(&m1)],
+        };
+
+        let result = handle_planned_maintenances(current_date_time, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(vec![m1], resp.1 .0.planned_maintenances);
+    }
+
+    #[tokio::test]
+
+    async fn handle_planned_maintenances_success_2_results() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let m1 = PlannedMaintenance {
+            maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
+            maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
+            description: "test 1".to_string(),
+        };
+        let m2 = PlannedMaintenance {
+            maintenance_start_at_in_jst: "2023-07-01T20:00:00+09:00".to_string(),
+            maintenance_end_at_in_jst: "2023-07-01T23:00:00+09:00".to_string(),
+            description: "test 1".to_string(),
+        };
+        let op = PlannedMaintenancesOperationMock {
+            current_date_time,
+            maintenances: vec![convert(&m1), convert(&m2)],
+        };
+
+        let result = handle_planned_maintenances(current_date_time, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(vec![m1, m2], resp.1 .0.planned_maintenances);
+    }
 }
