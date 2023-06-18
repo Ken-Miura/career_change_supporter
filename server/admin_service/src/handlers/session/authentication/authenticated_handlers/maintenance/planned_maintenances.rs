@@ -105,3 +105,47 @@ async fn handle_planned_maintenances(
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use chrono::TimeZone;
+
+    use super::*;
+
+    struct PlannedMaintenancesOperationMock {
+        current_date_time: DateTime<FixedOffset>,
+        maintenances: Vec<Maintenance>,
+    }
+
+    #[async_trait]
+    impl PlannedMaintenancesOperation for PlannedMaintenancesOperationMock {
+        async fn filter_maintenance_by_maintenance_end_at(
+            &self,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<Maintenance>, ErrResp> {
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.maintenances.clone())
+        }
+    }
+
+    #[tokio::test]
+
+    async fn handle_planned_maintenances_success_empty_result() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
+            .unwrap();
+        let op = PlannedMaintenancesOperationMock {
+            current_date_time,
+            maintenances: vec![],
+        };
+
+        let result = handle_planned_maintenances(current_date_time, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            Vec::<PlannedMaintenance>::with_capacity(0),
+            resp.1 .0.planned_maintenances
+        );
+    }
+}
