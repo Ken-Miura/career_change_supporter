@@ -32,6 +32,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::rejection::post_update_identity_request_rejection;
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::maintenance::planned_maintenances::get_planned_maintenances;
+use crate::handlers::session::authentication::authenticated_handlers::maintenance::set_maintenance_req::post_set_maintenance_req;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::career_creation::approval_records::get_career_creation_approval_records;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::career_creation::rejection_records::get_career_creation_rejection_records;
@@ -418,6 +419,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/planned-maintenances",
                     get(get_planned_maintenances),
+                )
+                .route(
+                    "/set-maintenance-req",
+                    post(post_set_maintenance_req),
                 )
                 .with_state(state),
         )
