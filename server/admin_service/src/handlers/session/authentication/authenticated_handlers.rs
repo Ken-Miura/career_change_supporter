@@ -17,6 +17,7 @@ pub(crate) mod consultation;
 mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
+pub(crate) mod maintenance;
 pub(crate) mod pagination;
 mod reason_validator;
 pub(crate) mod refresh;
