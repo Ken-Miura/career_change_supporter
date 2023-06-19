@@ -1311,7 +1311,6 @@ impl MigrationTrait for Migration {
                   maintenance_id BIGSERIAL PRIMARY KEY,
                   maintenance_start_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   maintenance_end_at TIMESTAMP WITH TIME ZONE NOT NULL,
-                  description TEXT NOT NULL,
                   CHECK (maintenance_end_at > maintenance_start_at)
                 );",
             ))

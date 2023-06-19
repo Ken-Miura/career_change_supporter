@@ -348,7 +348,6 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     .maintenance_start_at
                     .with_timezone(&*JAPANESE_TIME_ZONE),
                 maintenance_end_at_in_jst: m.maintenance_end_at.with_timezone(&*JAPANESE_TIME_ZONE),
-                description: m.description,
             })
             .collect::<Vec<Maintenance>>())
     }
@@ -1287,7 +1286,6 @@ mod tests {
                             maintenance_info: vec![Maintenance {
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
-                                description: "テスト".to_string(),
                             }],
                             consultation: AcceptedConsultation {
                                 user_account_id,
@@ -1340,7 +1338,6 @@ mod tests {
                             maintenance_info: vec![Maintenance {
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
-                                description: "テスト".to_string(),
                             }],
                             consultation: AcceptedConsultation {
                                 user_account_id,
@@ -2162,7 +2159,6 @@ mod tests {
                             maintenance_info: vec![Maintenance {
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
-                                description: "テスト".to_string(),
                             }],
                             consultation: AcceptedConsultation {
                                 user_account_id,
@@ -2220,7 +2216,6 @@ mod tests {
                             maintenance_info: vec![Maintenance {
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
-                                description: "テスト".to_string(),
                             }],
                             consultation: AcceptedConsultation {
                                 user_account_id,
@@ -2278,7 +2273,6 @@ mod tests {
                             maintenance_info: vec![Maintenance {
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
-                                description: "テスト".to_string(),
                             }],
                             consultation: AcceptedConsultation {
                                 user_account_id,

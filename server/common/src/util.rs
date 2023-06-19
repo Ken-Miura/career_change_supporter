@@ -85,7 +85,6 @@ pub struct Career {
 pub struct Maintenance {
     pub maintenance_start_at_in_jst: DateTime<FixedOffset>,
     pub maintenance_end_at_in_jst: DateTime<FixedOffset>,
-    pub description: String,
 }
 
 #[cfg(test)]

@@ -32,7 +32,6 @@ pub(crate) struct PlannedMaintenancesResult {
 struct PlannedMaintenance {
     maintenance_start_at_in_jst: String, // RFC 3339形式の文字列
     maintenance_end_at_in_jst: String,   // RFC 3339形式の文字列
-    description: String,
 }
 
 #[async_trait]
@@ -71,7 +70,6 @@ impl PlannedMaintenancesOperation for PlannedMaintenancesOperationImpl {
                     .maintenance_start_at
                     .with_timezone(&*JAPANESE_TIME_ZONE),
                 maintenance_end_at_in_jst: m.maintenance_end_at.with_timezone(&*JAPANESE_TIME_ZONE),
-                description: m.description,
             })
             .collect::<Vec<Maintenance>>())
     }
@@ -95,7 +93,6 @@ async fn handle_planned_maintenances(
                 .maintenance_end_at_in_jst
                 .with_timezone(&(*JAPANESE_TIME_ZONE))
                 .to_rfc3339(),
-            description: m.description,
         })
         .collect();
     Ok((
@@ -159,7 +156,6 @@ mod tests {
                 pm.maintenance_end_at_in_jst.as_str(),
             )
             .expect("failed to get Ok"),
-            description: pm.description.to_string(),
         }
     }
 
@@ -172,7 +168,6 @@ mod tests {
         let m1 = PlannedMaintenance {
             maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
-            description: "test 1".to_string(),
         };
         let op = PlannedMaintenancesOperationMock {
             current_date_time,
@@ -195,12 +190,10 @@ mod tests {
         let m1 = PlannedMaintenance {
             maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
-            description: "test 1".to_string(),
         };
         let m2 = PlannedMaintenance {
             maintenance_start_at_in_jst: "2023-07-01T20:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-07-01T23:00:00+09:00".to_string(),
-            description: "test 1".to_string(),
         };
         let op = PlannedMaintenancesOperationMock {
             current_date_time,

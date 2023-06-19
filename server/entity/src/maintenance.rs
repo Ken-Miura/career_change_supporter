@@ -9,8 +9,6 @@ pub struct Model {
     pub maintenance_id: i64,
     pub maintenance_start_at: DateTimeWithTimeZone,
     pub maintenance_end_at: DateTimeWithTimeZone,
-    #[sea_orm(column_type = "Text")]
-    pub description: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
