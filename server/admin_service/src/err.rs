@@ -31,6 +31,8 @@ pub(crate) enum Code {
     PaymentRelatedErr = 30019,
     ReceiptIdIsNotPositive = 30020,
     ExceedsRefundTimeLimit = 30021,
+    IllegalDateTime = 30022,
+    IllegalMaintenanceDateTime = 30023,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
