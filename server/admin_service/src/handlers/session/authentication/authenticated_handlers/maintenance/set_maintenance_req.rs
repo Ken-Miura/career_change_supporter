@@ -2,12 +2,13 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+use common::util::Maintenance;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 pub(crate) async fn post_set_maintenance_req(
@@ -46,14 +47,45 @@ struct MaintenanceTime {
 pub(crate) struct SetMaintenanceReqResult {}
 
 #[async_trait]
-trait SetMaintenanceReqOperation {}
+trait SetMaintenanceReqOperation {
+    async fn filter_maintenance_by_maintenance_end_at(
+        &self,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<Maintenance>, ErrResp>;
+}
 
 struct SetMaintenanceReqOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {}
+impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
+    async fn filter_maintenance_by_maintenance_end_at(
+        &self,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<Maintenance>, ErrResp> {
+        let maintenances = entity::maintenance::Entity::find()
+            .filter(entity::maintenance::Column::MaintenanceEndAt.gte(current_date_time))
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter maintenance (current_date_time: {}): {}",
+                    current_date_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(maintenances
+            .into_iter()
+            .map(|m| Maintenance {
+                maintenance_start_at_in_jst: m
+                    .maintenance_start_at
+                    .with_timezone(&*JAPANESE_TIME_ZONE),
+                maintenance_end_at_in_jst: m.maintenance_end_at.with_timezone(&*JAPANESE_TIME_ZONE),
+            })
+            .collect::<Vec<Maintenance>>())
+    }
+}
 
 async fn handle_set_maintenance_req(
     start_time_in_jst: MaintenanceTime,
@@ -87,6 +119,8 @@ async fn handle_set_maintenance_req(
             }),
         ));
     }
+    ensure_there_is_no_overwrap(current_date_time, st, et, op).await?;
+    // 設定＋決済の停止
     todo!()
 }
 
@@ -111,4 +145,46 @@ fn convert_maintenance_time_type(mt: &MaintenanceTime) -> Result<DateTime<FixedO
             )
         })?;
     Ok(result)
+}
+
+async fn ensure_there_is_no_overwrap(
+    current_date_time: DateTime<FixedOffset>,
+    maintenance_start_time: DateTime<FixedOffset>,
+    maintenance_end_time: DateTime<FixedOffset>,
+    op: &impl SetMaintenanceReqOperation,
+) -> Result<(), ErrResp> {
+    let existing_maintenances = op
+        .filter_maintenance_by_maintenance_end_at(current_date_time)
+        .await?;
+    for existing_maintenance in existing_maintenances {
+        if existing_maintenance.maintenance_start_at_in_jst <= maintenance_start_time
+            && maintenance_start_time <= existing_maintenance.maintenance_end_at_in_jst
+        {
+            error!(
+                "maintenance_start_time {} is in {:?}",
+                maintenance_start_time, existing_maintenance
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::MaintenanceAlreadyHasBeenSet as u32,
+                }),
+            ));
+        }
+        if existing_maintenance.maintenance_start_at_in_jst <= maintenance_end_time
+            && maintenance_end_time <= existing_maintenance.maintenance_end_at_in_jst
+        {
+            error!(
+                "maintenance_end_time {} is in {:?}",
+                maintenance_end_time, existing_maintenance
+            );
+            return Err((
+                StatusCode::BAD_REQUEST,
+                Json(ApiError {
+                    code: Code::MaintenanceAlreadyHasBeenSet as u32,
+                }),
+            ));
+        }
+    }
+    Ok(())
 }
