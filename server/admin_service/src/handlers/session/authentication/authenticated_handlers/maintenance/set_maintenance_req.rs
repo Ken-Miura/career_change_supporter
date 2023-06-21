@@ -189,8 +189,12 @@ async fn ensure_there_is_no_overwrap(
         .filter_maintenance_by_maintenance_end_at(current_date_time)
         .await?;
     for existing_maintenance in existing_maintenances {
+        // ２つの時間帯が重ならない条件（重ならない条件をド・モルガンの法則で反転）
+        // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
         if existing_maintenance.maintenance_start_at_in_jst <= maintenance_start_time
             && maintenance_start_time <= existing_maintenance.maintenance_end_at_in_jst
+        // if maintenance_start_time　<= existing_maintenance.maintenance_end_at_in_jst
+        //   && maintenance_end_time <= existing_maintenance.maintenance_end_at_in_jst
         {
             error!(
                 "maintenance_start_time {} is in {:?}",
