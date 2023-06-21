@@ -11,6 +11,7 @@ use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
 use common::ApiError;
 use common::ErrResp;
+use common::LENGTH_OF_MEETING_IN_MINUTE;
 use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 use serde::Serialize;
 use std::time::Duration;
@@ -27,11 +28,10 @@ const KEY_TO_LOGIN_STATUS: &str = "login_status";
 const LOGIN_STATUS_FINISH: &str = "Finish";
 const LOGIN_STATUS_NEED_MORE_VERIFICATION: &str = "NeedMoreVerification";
 
-const LENGTH_OF_MEETING_IN_MINUTE: u64 = 60;
 const TIME_FOR_SUBSEQUENT_OPERATIONS: u64 = 10;
 /// セッションの有効期限
 const LOGIN_SESSION_EXPIRY: Duration =
-    Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE + TIME_FOR_SUBSEQUENT_OPERATIONS));
+    Duration::from_secs(60 * (LENGTH_OF_MEETING_IN_MINUTE as u64 + TIME_FOR_SUBSEQUENT_OPERATIONS));
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 enum LoginStatus {
