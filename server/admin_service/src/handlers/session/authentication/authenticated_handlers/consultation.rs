@@ -6,14 +6,13 @@ use common::{
         AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
-    ApiError, ErrResp, ErrRespStruct,
+    ApiError, ErrResp,
 };
-use entity::sea_orm::{DatabaseTransaction, EntityTrait, QuerySelect};
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::Code;
 
 pub(crate) mod consultant_rating_by_consultation_id;
 pub(crate) mod consultation_by_consultation_id;
@@ -56,32 +55,6 @@ fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp>
         ));
     }
     Ok(())
-}
-
-async fn find_settlement_with_exclusive_lock(
-    settlement_id: i64,
-    txn: &DatabaseTransaction,
-) -> Result<entity::settlement::Model, ErrRespStruct> {
-    let result = entity::settlement::Entity::find_by_id(settlement_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find settlement (settlement_id: {}): {}",
-                settlement_id, e,
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    let model = result.ok_or_else(|| {
-        error!("no settlement (settlement_id: {}) found", settlement_id,);
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(model)
 }
 
 /// PAY.JPにアクセスするための情報を保持する変数

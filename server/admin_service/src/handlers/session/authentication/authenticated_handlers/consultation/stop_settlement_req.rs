@@ -4,18 +4,12 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::ActiveValue::NotSet;
-use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, EntityTrait, Set, TransactionError, TransactionTrait,
-};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use tracing::error;
-
-use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::{find_settlement_with_exclusive_lock, validate_settlement_id_is_positive};
+use super::validate_settlement_id_is_positive;
 
 pub(crate) async fn post_stop_settlement_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -68,60 +62,7 @@ impl StopSettlementReqOperation for StopSettlementReqOperationImpl {
         settlement_id: i64,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
-        self.pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let s = find_settlement_with_exclusive_lock(settlement_id, txn).await?;
-
-                    let ss = entity::stopped_settlement::ActiveModel {
-                        stopped_settlement_id: NotSet,
-                        consultation_id: Set(s.consultation_id),
-                        charge_id: Set(s.charge_id.clone()),
-                        fee_per_hour_in_yen: Set(s.fee_per_hour_in_yen),
-                        platform_fee_rate_in_percentage: Set(s
-                            .platform_fee_rate_in_percentage
-                            .clone()),
-                        credit_facilities_expired_at: Set(s.credit_facilities_expired_at),
-                        stopped_at: Set(current_date_time),
-                    };
-                    let _ = ss.insert(txn).await.map_err(|e| {
-                        error!(
-                            "failed to insert stopped_settlement (settlement: {:?}): {}",
-                            s, e,
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    let _ = entity::settlement::Entity::delete_by_id(settlement_id)
-                        .exec(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to delete settlement (settlement_id: {}): {}",
-                                settlement_id, e,
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to move_to_stopped_settlement: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
+        super::super::move_to_stopped_settlement(&self.pool, settlement_id, current_date_time).await
     }
 }
 

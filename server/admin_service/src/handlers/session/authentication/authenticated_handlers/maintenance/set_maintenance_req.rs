@@ -67,6 +67,12 @@ trait SetMaintenanceReqOperation {
         start_time: DateTime<FixedOffset>,
         end_time: DateTime<FixedOffset>,
     ) -> Result<Vec<i64>, ErrResp>;
+
+    async fn move_to_stopped_settlement(
+        &self,
+        settlement_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct SetMaintenanceReqOperationImpl {
@@ -158,6 +164,14 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
             })
             .collect::<Result<Vec<i64>, ErrResp>>()
     }
+
+    async fn move_to_stopped_settlement(
+        &self,
+        settlement_id: i64,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        super::super::move_to_stopped_settlement(&self.pool, settlement_id, current_date_time).await
+    }
 }
 
 async fn handle_set_maintenance_req(
@@ -195,8 +209,12 @@ async fn handle_set_maintenance_req(
     ensure_there_is_no_overwrap(current_date_time, st, et, op).await?;
 
     op.set_maintenance(st, et).await?;
-    // 停止対象の決済の収集
-    // 決済の停止を繰り返す（どれくらいレコードがあるか不明なのでトランザクションの外で繰り返し）
+    let settlement_ids = op.filter_settlement_id_on_the_settlement_id(st, et).await?;
+    for settlement_id in settlement_ids {
+        let result = op
+            .move_to_stopped_settlement(settlement_id, current_date_time)
+            .await;
+    }
     todo!()
 }
 

@@ -16,7 +16,8 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 
 use super::super::admin::Admin;
-use super::{find_settlement_with_exclusive_lock, validate_settlement_id_is_positive, ACCESS_INFO};
+use super::super::find_settlement_with_exclusive_lock;
+use super::{validate_settlement_id_is_positive, ACCESS_INFO};
 
 pub(crate) async fn post_make_payment_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
