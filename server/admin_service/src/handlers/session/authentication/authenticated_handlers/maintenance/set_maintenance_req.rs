@@ -1,9 +1,9 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
 use common::util::Maintenance;
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -61,6 +61,12 @@ trait SetMaintenanceReqOperation {
         start_time: DateTime<FixedOffset>,
         end_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
+
+    async fn filter_settlement_id_on_the_settlement_id(
+        &self,
+        start_time: DateTime<FixedOffset>,
+        end_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<i64>, ErrResp>;
 }
 
 struct SetMaintenanceReqOperationImpl {
@@ -113,6 +119,44 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
             unexpected_err_resp()
         })?;
         Ok(())
+    }
+
+    async fn filter_settlement_id_on_the_settlement_id(
+        &self,
+        start_time: DateTime<FixedOffset>,
+        end_time: DateTime<FixedOffset>,
+    ) -> Result<Vec<i64>, ErrResp> {
+        let models = entity::consultation::Entity::find()
+            // ２つの時間帯が重ならない条件（重ならない条件をド・モルガンの法則で反転）
+            // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
+            .filter(entity::consultation::Column::MeetingAt.lt(end_time))
+            .filter(
+                entity::consultation::Column::MeetingAt
+                    .gt(start_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)),
+            )
+            .find_with_related(entity::settlement::Entity)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to filter settlement (start_time: {}, end_time: {}): {}",
+                    start_time, end_time, e
+                );
+                unexpected_err_resp()
+            })?;
+        models
+            .into_iter()
+            .filter(|m| !m.1.is_empty())
+            .map(|m| {
+                // consultationとsettlementは1対1、または1対0の設計
+                // かつ、フィルターで空でないものを抽出しているので必ず一つ要素がある
+                let s = m.1.get(0).ok_or_else(|| {
+                    error!("failed to get settlement (consultation: {:?})", m.0);
+                    unexpected_err_resp()
+                })?;
+                Ok(s.settlement_id)
+            })
+            .collect::<Result<Vec<i64>, ErrResp>>()
     }
 }
 

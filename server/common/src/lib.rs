@@ -169,6 +169,9 @@ pub const VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE: i64 = 10;
 /// 1アカウント当たりに登録可能な職務経歴情報の最大数
 pub const MAX_NUM_OF_CAREER_PER_USER_ACCOUNT: u64 = 8;
 
+/// 相談時間の長さ (分単位)
+pub const LENGTH_OF_MEETING_IN_MINUTE: u32 = 60;
+
 // TODO: リリース前に値を調整する
 /// パスワード、パスコードをハッシュ化する際のストレッチング回数（ストレッチングが2^[BCRYPT_COST]回実行される) <br>
 /// <br>
