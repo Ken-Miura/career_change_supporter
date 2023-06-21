@@ -4,7 +4,10 @@ use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use common::util::Maintenance;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
+};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -52,6 +55,12 @@ trait SetMaintenanceReqOperation {
         &self,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<Maintenance>, ErrResp>;
+
+    async fn set_maintenance(
+        &self,
+        start_time: DateTime<FixedOffset>,
+        end_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
 }
 
 struct SetMaintenanceReqOperationImpl {
@@ -84,6 +93,26 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
                 maintenance_end_at_in_jst: m.maintenance_end_at.with_timezone(&*JAPANESE_TIME_ZONE),
             })
             .collect::<Vec<Maintenance>>())
+    }
+
+    async fn set_maintenance(
+        &self,
+        start_time: DateTime<FixedOffset>,
+        end_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        let m = entity::maintenance::ActiveModel {
+            maintenance_id: NotSet,
+            maintenance_start_at: Set(start_time),
+            maintenance_end_at: Set(end_time),
+        };
+        let _ = m.insert(&self.pool).await.map_err(|e| {
+            error!(
+                "failed to insert maintenance (start_time: {}, end_time: {}): {}",
+                start_time, end_time, e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
     }
 }
 
@@ -120,7 +149,10 @@ async fn handle_set_maintenance_req(
         ));
     }
     ensure_there_is_no_overwrap(current_date_time, st, et, op).await?;
-    // 設定＋決済の停止
+
+    op.set_maintenance(st, et).await?;
+    // 停止対象の決済の収集
+    // 決済の停止を繰り返す（どれくらいレコードがあるか不明なのでトランザクションの外で繰り返し）
     todo!()
 }
 
