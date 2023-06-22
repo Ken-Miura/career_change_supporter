@@ -289,3 +289,73 @@ async fn ensure_there_is_no_overwrap(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use super::*;
+
+    struct SetMaintenanceReqOperationMock {
+        current_date_time: DateTime<FixedOffset>,
+        maintenances: Vec<Maintenance>,
+        start_time: DateTime<FixedOffset>,
+        end_time: DateTime<FixedOffset>,
+        settlement_id_and_status: HashMap<i64, bool>,
+    }
+
+    #[async_trait]
+    impl SetMaintenanceReqOperation for SetMaintenanceReqOperationMock {
+        async fn filter_maintenance_by_maintenance_end_at(
+            &self,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<Maintenance>, ErrResp> {
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.maintenances.clone())
+        }
+
+        async fn set_maintenance(
+            &self,
+            start_time: DateTime<FixedOffset>,
+            end_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.start_time, start_time);
+            assert_eq!(self.end_time, end_time);
+            Ok(())
+        }
+
+        async fn filter_settlement_id_on_the_settlement_id(
+            &self,
+            start_time: DateTime<FixedOffset>,
+            end_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<i64>, ErrResp> {
+            assert_eq!(self.start_time, start_time);
+            assert_eq!(self.end_time, end_time);
+            Ok(self
+                .settlement_id_and_status
+                .clone()
+                .keys()
+                .copied()
+                .collect())
+        }
+
+        async fn move_to_stopped_settlement(
+            &self,
+            settlement_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            let settlement_ids: Vec<i64> =
+                self.settlement_id_and_status.clone().into_keys().collect();
+            assert!(settlement_ids.contains(&settlement_id));
+            assert_eq!(self.current_date_time, current_date_time);
+            let status = self
+                .settlement_id_and_status
+                .get(&settlement_id)
+                .expect("failed to get value");
+            if !status {
+                return Err(unexpected_err_resp());
+            }
+            Ok(())
+        }
+    }
+}
