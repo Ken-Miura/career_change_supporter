@@ -1,3 +1,6 @@
+// Copyright 2023 Ken Miura
+
+use async_session::log::warn;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
@@ -47,7 +50,9 @@ struct MaintenanceTime {
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SetMaintenanceReqResult {}
+pub(crate) struct SetMaintenanceReqResult {
+    failed_settlement_ids: Vec<i64>,
+}
 
 #[async_trait]
 trait SetMaintenanceReqOperation {
@@ -210,12 +215,26 @@ async fn handle_set_maintenance_req(
 
     op.set_maintenance(st, et).await?;
     let settlement_ids = op.filter_settlement_id_on_the_settlement_id(st, et).await?;
+    let mut failed_settlement_ids = Vec::<i64>::with_capacity(settlement_ids.len());
     for settlement_id in settlement_ids {
         let result = op
             .move_to_stopped_settlement(settlement_id, current_date_time)
             .await;
+        if result.is_err() {
+            warn!(
+                "failed to stop settlement (settlement_id: {}): {:?}",
+                settlement_id, result
+            );
+            failed_settlement_ids.push(settlement_id);
+        }
     }
-    todo!()
+
+    Ok((
+        StatusCode::OK,
+        Json(SetMaintenanceReqResult {
+            failed_settlement_ids,
+        }),
+    ))
 }
 
 fn convert_maintenance_time_type(mt: &MaintenanceTime) -> Result<DateTime<FixedOffset>, ErrResp> {
