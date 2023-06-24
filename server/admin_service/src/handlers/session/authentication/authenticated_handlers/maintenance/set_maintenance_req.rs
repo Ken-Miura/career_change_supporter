@@ -808,7 +808,7 @@ mod tests {
     // 停止対象でない決済が含まれていないか確認するテスト
     // ありえないケースだがテストしておく
     #[tokio::test]
-    async fn handle_set_maintenance_req_faie_no_overwrap_with_meeting() {
+    async fn handle_set_maintenance_req_fail_no_overwrap_with_meeting() {
         let start_time_in_jst = MaintenanceTime {
             year: 2023,
             month: 6,
@@ -851,7 +851,7 @@ mod tests {
                     end_time_in_jst.second as u32,
                 )
                 .unwrap(),
-            // 不適切な結果（停止対象でない決済＝メンテナンスと面談日時が重なっていないもの）が返されるようにする
+            // 不適切な結果（停止対象でない決済＝メンテナンスと面談日時が重なっていないもの）がハンドルされるようにする
             settlements: vec![
                 (
                     1,
