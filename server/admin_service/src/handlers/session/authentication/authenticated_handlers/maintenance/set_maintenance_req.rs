@@ -68,11 +68,11 @@ trait SetMaintenanceReqOperation {
         end_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 
-    async fn filter_settlement_id_on_the_settlement_id(
+    async fn filter_settlement_id_and_meeting_at_on_the_settlement(
         &self,
         start_time: DateTime<FixedOffset>,
         end_time: DateTime<FixedOffset>,
-    ) -> Result<Vec<i64>, ErrResp>;
+    ) -> Result<Vec<(i64, DateTime<FixedOffset>)>, ErrResp>;
 
     async fn move_to_stopped_settlement(
         &self,
@@ -133,11 +133,11 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
         Ok(())
     }
 
-    async fn filter_settlement_id_on_the_settlement_id(
+    async fn filter_settlement_id_and_meeting_at_on_the_settlement(
         &self,
         start_time: DateTime<FixedOffset>,
         end_time: DateTime<FixedOffset>,
-    ) -> Result<Vec<i64>, ErrResp> {
+    ) -> Result<Vec<(i64, DateTime<FixedOffset>)>, ErrResp> {
         let models = entity::consultation::Entity::find()
             // ２つの時間帯が重なる条件（重ならない条件をド・モルガンの法則で反転）
             // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
@@ -166,9 +166,9 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
                     error!("failed to get settlement (consultation: {:?})", m.0);
                     unexpected_err_resp()
                 })?;
-                Ok(s.settlement_id)
+                Ok((s.settlement_id, m.0.meeting_at))
             })
-            .collect::<Result<Vec<i64>, ErrResp>>()
+            .collect::<Result<Vec<(i64, DateTime<FixedOffset>)>, ErrResp>>()
     }
 
     async fn move_to_stopped_settlement(
@@ -215,7 +215,20 @@ async fn handle_set_maintenance_req(
     ensure_there_is_no_overwrap(current_date_time, st, et, op).await?;
 
     op.set_maintenance(st, et).await?;
-    let settlement_ids = op.filter_settlement_id_on_the_settlement_id(st, et).await?;
+    let settlement_id_and_meeting_at = op
+        .filter_settlement_id_and_meeting_at_on_the_settlement(st, et)
+        .await?;
+
+    let meeting_date_times = settlement_id_and_meeting_at
+        .iter()
+        .map(|m| m.1)
+        .collect::<Vec<DateTime<FixedOffset>>>();
+    ensure_there_is_overwrap_between_meeting_and_maintenance(st, et, &meeting_date_times)?;
+
+    let settlement_ids = settlement_id_and_meeting_at
+        .into_iter()
+        .map(|m| m.0)
+        .collect::<Vec<i64>>();
     let total_size = settlement_ids.len();
     let mut failed_to_stop_settlement_ids = Vec::<i64>::with_capacity(total_size);
     for settlement_id in settlement_ids {
@@ -293,9 +306,30 @@ async fn ensure_there_is_no_overwrap(
     Ok(())
 }
 
+// データベースにアクセスする際のSQLの間違いや
+// 依存するORMの間違いがあった場合に備えて、本当に決済の停止対象であることを確認する
+// 本来であれば不要な処理だが、お金に関連する内容なのでアプリケーション側でもテストできるようにコードを書いておく
+fn ensure_there_is_overwrap_between_meeting_and_maintenance(
+    maintenance_start_time: DateTime<FixedOffset>,
+    maintenance_end_time: DateTime<FixedOffset>,
+    meeting_date_times: &Vec<DateTime<FixedOffset>>,
+) -> Result<(), ErrResp> {
+    for meeting_date_time in meeting_date_times {
+        let meeting_start_time = *meeting_date_time;
+        let meeting_end_time =
+            *meeting_date_time + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+        // ２つの時間帯が重なる条件（重ならない条件をド・モルガンの法則で反転）
+        // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
+        if maintenance_end_time > meeting_start_time && meeting_end_time > maintenance_start_time {
+            error!("");
+            return Err(unexpected_err_resp());
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
 
     use super::*;
 
@@ -304,7 +338,7 @@ mod tests {
         maintenances: Vec<Maintenance>,
         start_time: DateTime<FixedOffset>,
         end_time: DateTime<FixedOffset>,
-        settlement_id_and_status: HashMap<i64, bool>,
+        settlements: Vec<(i64, DateTime<FixedOffset>, bool)>,
     }
 
     #[async_trait]
@@ -327,19 +361,14 @@ mod tests {
             Ok(())
         }
 
-        async fn filter_settlement_id_on_the_settlement_id(
+        async fn filter_settlement_id_and_meeting_at_on_the_settlement(
             &self,
             start_time: DateTime<FixedOffset>,
             end_time: DateTime<FixedOffset>,
-        ) -> Result<Vec<i64>, ErrResp> {
+        ) -> Result<Vec<(i64, DateTime<FixedOffset>)>, ErrResp> {
             assert_eq!(self.start_time, start_time);
             assert_eq!(self.end_time, end_time);
-            Ok(self
-                .settlement_id_and_status
-                .clone()
-                .keys()
-                .copied()
-                .collect())
+            Ok(self.settlements.iter().map(|m| (m.0, m.1)).collect())
         }
 
         async fn move_to_stopped_settlement(
@@ -347,16 +376,14 @@ mod tests {
             settlement_id: i64,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
-            let settlement_ids: Vec<i64> =
-                self.settlement_id_and_status.clone().into_keys().collect();
+            let settlement_ids: Vec<i64> = self.settlements.iter().map(|m| m.0).collect();
             assert!(settlement_ids.contains(&settlement_id));
             assert_eq!(self.current_date_time, current_date_time);
-            let status = self
-                .settlement_id_and_status
-                .get(&settlement_id)
-                .expect("failed to get value");
-            if !status {
-                return Err(unexpected_err_resp());
+            for settlement in &self.settlements {
+                let success = settlement.2;
+                if settlement.0 == settlement_id && !success {
+                    return Err(unexpected_err_resp());
+                }
             }
             Ok(())
         }
@@ -406,7 +433,7 @@ mod tests {
                     end_time_in_jst.second as u32,
                 )
                 .unwrap(),
-            settlement_id_and_status: HashMap::with_capacity(0),
+            settlements: Vec::with_capacity(0),
         };
 
         let result =
@@ -484,7 +511,7 @@ mod tests {
                     end_time_in_jst.second as u32,
                 )
                 .unwrap(),
-            settlement_id_and_status: HashMap::with_capacity(0),
+            settlements: Vec::with_capacity(0),
         };
 
         let result =
