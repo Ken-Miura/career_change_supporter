@@ -419,4 +419,81 @@ mod tests {
             }
         );
     }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_success_no_overwrap_maintenances() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let m1 = Maintenance {
+            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 8, 0, 0)
+                .unwrap(),
+            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 12, 0, 0)
+                .unwrap(),
+        };
+        let m2 = Maintenance {
+            maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 16, 0, 0)
+                .unwrap(),
+            maintenance_end_at_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 20, 0, 0)
+                .unwrap(),
+        };
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![m1, m2],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlement_id_and_status: HashMap::with_capacity(0),
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            SetMaintenanceReqResult {
+                failed_settlement_ids: Vec::<i64>::with_capacity(0)
+            }
+        );
+    }
 }
