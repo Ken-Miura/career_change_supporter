@@ -51,8 +51,8 @@ struct MaintenanceTime {
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct SetMaintenanceReqResult {
-    target_settlement_ids: Vec<i64>,
-    failed_settlement_ids: Vec<i64>,
+    num_of_target_settlements: usize,
+    failed_to_stop_settlement_ids: Vec<i64>,
 }
 
 #[async_trait]
@@ -216,8 +216,9 @@ async fn handle_set_maintenance_req(
 
     op.set_maintenance(st, et).await?;
     let settlement_ids = op.filter_settlement_id_on_the_settlement_id(st, et).await?;
-    let mut failed_settlement_ids = Vec::<i64>::with_capacity(settlement_ids.len());
-    for settlement_id in settlement_ids.clone() {
+    let total_size = settlement_ids.len();
+    let mut failed_to_stop_settlement_ids = Vec::<i64>::with_capacity(total_size);
+    for settlement_id in settlement_ids {
         let result = op
             .move_to_stopped_settlement(settlement_id, current_date_time)
             .await;
@@ -226,15 +227,15 @@ async fn handle_set_maintenance_req(
                 "failed to stop settlement (settlement_id: {}): {:?}",
                 settlement_id, result
             );
-            failed_settlement_ids.push(settlement_id);
+            failed_to_stop_settlement_ids.push(settlement_id);
         }
     }
 
     Ok((
         StatusCode::OK,
         Json(SetMaintenanceReqResult {
-            target_settlement_ids: settlement_ids,
-            failed_settlement_ids,
+            num_of_target_settlements: total_size,
+            failed_to_stop_settlement_ids,
         }),
     ))
 }
@@ -417,8 +418,8 @@ mod tests {
         assert_eq!(
             resp.1 .0,
             SetMaintenanceReqResult {
-                failed_settlement_ids: Vec::<i64>::with_capacity(0),
-                target_settlement_ids: Vec::<i64>::with_capacity(0)
+                num_of_target_settlements: 0,
+                failed_to_stop_settlement_ids: Vec::<i64>::with_capacity(0),
             }
         );
     }
@@ -495,8 +496,8 @@ mod tests {
         assert_eq!(
             resp.1 .0,
             SetMaintenanceReqResult {
-                failed_settlement_ids: Vec::<i64>::with_capacity(0),
-                target_settlement_ids: Vec::<i64>::with_capacity(0)
+                num_of_target_settlements: 0,
+                failed_to_stop_settlement_ids: Vec::<i64>::with_capacity(0)
             }
         );
     }
