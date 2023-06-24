@@ -759,7 +759,7 @@ async fn ensure_meeting_date_time_does_not_overlap_maintenance(
     let meeting_end_time =
         meeting_date_time + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
     for result in results {
-        // ２つの時間帯が重ならない条件（重ならない条件をド・モルガンの法則で反転）
+        // ２つの時間帯が重なる条件（重ならない条件をド・モルガンの法則で反転）
         // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
         if result.maintenance_end_at_in_jst > meeting_start_time
             && meeting_end_time > result.maintenance_start_at_in_jst

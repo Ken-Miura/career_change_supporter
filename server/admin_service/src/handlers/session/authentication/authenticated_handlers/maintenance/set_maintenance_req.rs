@@ -139,7 +139,7 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
         end_time: DateTime<FixedOffset>,
     ) -> Result<Vec<i64>, ErrResp> {
         let models = entity::consultation::Entity::find()
-            // ２つの時間帯が重ならない条件（重ならない条件をド・モルガンの法則で反転）
+            // ２つの時間帯が重なる条件（重ならない条件をド・モルガンの法則で反転）
             // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
             .filter(entity::consultation::Column::MeetingAt.lt(end_time))
             .filter(
@@ -273,7 +273,7 @@ async fn ensure_there_is_no_overwrap(
         .filter_maintenance_by_maintenance_end_at(current_date_time)
         .await?;
     for existing_maintenance in existing_maintenances {
-        // ２つの時間帯が重ならない条件（重ならない条件をド・モルガンの法則で反転）
+        // ２つの時間帯が重なる条件（重ならない条件をド・モルガンの法則で反転）
         // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
         if existing_maintenance.maintenance_end_at_in_jst > maintenance_start_time
             && maintenance_end_time > existing_maintenance.maintenance_start_at_in_jst
