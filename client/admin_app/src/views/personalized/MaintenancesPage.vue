@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getPlannedMaintenancesDone" class="m-6">
+    <div v-if="!(getPlannedMaintenancesDone && postSetMaintenanceReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -97,6 +97,14 @@
             </div>
           </div>
           <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">メンテナンスを設定する</button>
+          <div v-if="reqResult" class="mt-6">
+            <div class="m-4 text-2xl grid grid-cols-3">
+              <div class="mt-2 w-full text-2xl justify-self-start col-span-3">停止対象となった決済件数: {{ reqResult.num_of_target_settlements }}</div>
+              <div v-if="reqResult.failed_to_stop_settlement_ids.length !== 0" class="mt-2 w-full text-2xl justify-self-start col-span-3">
+                <div><span class=" text-red-500">停止に失敗した決済のID: {{ reqResult.failed_to_stop_settlement_ids }}</span></div>
+              </div>
+            </div>
+          </div>
           <div v-if="setMaintenanceErrMessage" class="mt-6">
             <AlertMessage v-bind:message="setMaintenanceErrMessage"/>
           </div>
@@ -108,6 +116,7 @@
             <div v-if="plannedMaintenances.length !== 0">
               <ul>
                 <li v-for="p in plannedMaintenances" v-bind:key="p.maintenance_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">メンテナンス番号{{ p.maintenance_id }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
                     <div class="mt-2 justify-self-start col-span-1">開始日時</div><div class="mt-2 justify-self-start col-span-2">{{ p.maintenance_start_at_in_jst }}</div>
                     <div class="mt-2 justify-self-start col-span-1">終了日時</div><div class="mt-2 justify-self-start col-span-2">{{ p.maintenance_end_at_in_jst }}</div>
@@ -143,6 +152,11 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
 import { GetPlannedMaintenancesResp } from '@/util/personalized/planned-maintenance/GetPlannedMaintenancesResp'
 import { Message } from '@/util/Message'
+import { usePostSetMaintenanceReq } from '@/util/personalized/set-maintenance-req/usePostSetMaintenanceReq'
+import { PostSetMaintenanceReqResp } from '@/util/personalized/set-maintenance-req/PostSetMaintenanceReqResp'
+import { SetMaintenanceReqResult } from '@/util/personalized/set-maintenance-req/SetMaintenanceReqResult'
+import { SetMaintenanceReq } from '@/util/personalized/set-maintenance-req/SetMaintenanceReq'
+import { MaintenanceTime } from '@/util/personalized/set-maintenance-req/MaintenanceTime'
 
 export default defineComponent({
   name: 'MaintenancesPage',
@@ -211,11 +225,52 @@ export default defineComponent({
       minute: currentDate.getMinutes()
     })
 
+    const reqResult = ref(null as SetMaintenanceReqResult | null)
     const setMaintenanceErrMessage = ref(null as string | null)
 
+    const {
+      postSetMaintenanceReqDone,
+      postSetMaintenanceReqFunc
+    } = usePostSetMaintenanceReq()
+
     const setMaintenance = async () => {
-      console.log(`${startMtForm.year} ${startMtForm.month} ${startMtForm.day} ${startMtForm.hour} ${startMtForm.minute}`)
-      console.log(`${endMtForm.year} ${endMtForm.month} ${endMtForm.day} ${endMtForm.hour} ${endMtForm.minute}`)
+      const req = {
+        start_time_in_jst: {
+          year: startMtForm.year,
+          month: startMtForm.month,
+          day: startMtForm.day,
+          hour: startMtForm.hour,
+          minute: startMtForm.minute,
+          second: 0
+        } as MaintenanceTime,
+        end_time_in_jst: {
+          year: endMtForm.year,
+          month: endMtForm.month,
+          day: endMtForm.day,
+          hour: endMtForm.hour,
+          minute: endMtForm.minute,
+          second: 0
+        } as MaintenanceTime
+      } as SetMaintenanceReq
+      try {
+        const response = await postSetMaintenanceReqFunc(req)
+        if (!(response instanceof PostSetMaintenanceReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          setMaintenanceErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        reqResult.value = response.getSetMaintenanceReqResult()
+        await getPlannedMaintenances()
+      } catch (e) {
+        setMaintenanceErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
@@ -228,7 +283,9 @@ export default defineComponent({
       hourList,
       minuteList,
       setMaintenance,
+      reqResult,
       setMaintenanceErrMessage,
+      postSetMaintenanceReqDone,
       startMtForm,
       endMtForm
     }
