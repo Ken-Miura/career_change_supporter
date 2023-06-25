@@ -6,6 +6,103 @@
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">メンテナンスの計画</h3>
+        <form @submit.prevent="setMaintenance">
+          <div class="m-4 text-2xl grid grid-cols-6">
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              メンテナンス開始日時
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="startMtForm.year" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              年
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="startMtForm.month" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              月
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="startMtForm.day" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              日
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="startMtForm.hour" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              時
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="startMtForm.minute" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="minute in minuteList" v-bind:key="minute" v-bind:value="minute">{{ minute }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              分
+            </div>
+            <div class="mt-6 text-2xl justify-self-start col-span-6 pt-3">
+              メンテナンス終了日時
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="endMtForm.year" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="year in yearList" v-bind:key="year" v-bind:value="year">{{ year }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              年
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="endMtForm.month" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="month in monthList" v-bind:key="month" v-bind:value="month">{{ month }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              月
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="endMtForm.day" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="day in dayList" v-bind:key="day" v-bind:value="day">{{ day }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              日
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="endMtForm.hour" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="hour in hourList" v-bind:key="hour" v-bind:value="hour">{{ hour }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              時
+            </div>
+            <div class="mt-2 w-full text-2xl justify-self-start col-span-5">
+              <select v-model="endMtForm.minute" class="block w-full p-3 rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
+                <option v-for="minute in minuteList" v-bind:key="minute" v-bind:value="minute">{{ minute }}</option>
+              </select>
+            </div>
+            <div class="mt-2 text-2xl justify-self-start col-span-1 pt-3 pl-3">
+              分
+            </div>
+          </div>
+          <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">メンテナンスを設定する</button>
+          <div v-if="setMaintenanceErrMessage" class="mt-6">
+            <AlertMessage v-bind:message="setMaintenanceErrMessage"/>
+          </div>
+        </form>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">予定されているメンテナンス</h3>
         <div v-if="!plannedMaintenancesErrMessage">
             <div v-if="plannedMaintenances.length !== 0">
@@ -35,7 +132,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, ref } from 'vue'
+import { defineComponent, onMounted, reactive, ref } from 'vue'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -91,11 +188,82 @@ export default defineComponent({
       await getPlannedMaintenances()
     })
 
+    const currentDate = new Date()
+    const yearList = ref([currentDate.getFullYear(), currentDate.getFullYear() + 1])
+    const monthList = ref(createMonthList())
+    const dayList = ref(createDayList())
+    const hourList = ref(createHourList())
+    const minuteList = ref(createMinuteList())
+
+    const startMtForm = reactive({
+      year: currentDate.getFullYear(),
+      month: currentDate.getMonth() + 1,
+      day: currentDate.getDate(),
+      hour: currentDate.getHours(),
+      minute: currentDate.getMinutes()
+    })
+
+    const endMtForm = reactive({
+      year: currentDate.getFullYear(),
+      month: currentDate.getMonth() + 1,
+      day: currentDate.getDate(),
+      hour: currentDate.getHours(),
+      minute: currentDate.getMinutes()
+    })
+
+    const setMaintenanceErrMessage = ref(null as string | null)
+
+    const setMaintenance = async () => {
+      console.log(`${startMtForm.year} ${startMtForm.month} ${startMtForm.day} ${startMtForm.hour} ${startMtForm.minute}`)
+      console.log(`${endMtForm.year} ${endMtForm.month} ${endMtForm.day} ${endMtForm.hour} ${endMtForm.minute}`)
+    }
+
     return {
       getPlannedMaintenancesDone,
       plannedMaintenances,
-      plannedMaintenancesErrMessage
+      plannedMaintenancesErrMessage,
+      yearList,
+      monthList,
+      dayList,
+      hourList,
+      minuteList,
+      setMaintenance,
+      setMaintenanceErrMessage,
+      startMtForm,
+      endMtForm
     }
   }
 })
+
+function createMonthList (): number[] {
+  const months = [] as number[]
+  for (let i = 0; i < 12; i++) {
+    months.push(i + 1)
+  }
+  return months
+}
+
+function createDayList (): number[] {
+  const days = [] as number[]
+  for (let i = 0; i < 31; i++) {
+    days.push(i + 1)
+  }
+  return days
+}
+
+function createHourList (): number[] {
+  const days = [] as number[]
+  for (let i = 0; i < 24; i++) {
+    days.push(i)
+  }
+  return days
+}
+
+function createMinuteList (): number[] {
+  const days = [] as number[]
+  for (let i = 0; i < 60; i++) {
+    days.push(i)
+  }
+  return days
+}
 </script>
