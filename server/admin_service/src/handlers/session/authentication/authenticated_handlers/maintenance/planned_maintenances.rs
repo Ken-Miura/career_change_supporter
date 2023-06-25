@@ -5,7 +5,7 @@ use axum::Json;
 use axum::{async_trait, http::StatusCode};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{util::Maintenance, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
+use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
@@ -55,6 +55,7 @@ impl PlannedMaintenancesOperation for PlannedMaintenancesOperationImpl {
     ) -> Result<Vec<Maintenance>, ErrResp> {
         let maintenances = entity::maintenance::Entity::find()
             .filter(entity::maintenance::Column::MaintenanceEndAt.gte(current_date_time))
+            .order_by_desc(entity::maintenance::Column::MaintenanceId)
             .all(&self.pool)
             .await
             .map_err(|e| {
