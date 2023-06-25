@@ -456,6 +456,228 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn handle_set_maintenance_req_success_1_settlement() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: vec![(
+                1,
+                JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2023, 6, 23, 13, 0, 0)
+                    .unwrap(),
+                true,
+            )],
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            SetMaintenanceReqResult {
+                num_of_target_settlements: 1,
+                failed_to_stop_settlement_ids: Vec::<i64>::with_capacity(0),
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_success_2_settlements() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: vec![
+                (
+                    1,
+                    JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2023, 6, 23, 13, 0, 0)
+                        .unwrap(),
+                    true,
+                ),
+                (
+                    2,
+                    JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2023, 6, 23, 14, 0, 0)
+                        .unwrap(),
+                    true,
+                ),
+            ],
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            SetMaintenanceReqResult {
+                num_of_target_settlements: 2,
+                failed_to_stop_settlement_ids: Vec::<i64>::with_capacity(0),
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_success_2_settlements_1_fail() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: vec![
+                (
+                    1,
+                    JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2023, 6, 23, 13, 0, 0)
+                        .unwrap(),
+                    true,
+                ),
+                (
+                    2,
+                    JAPANESE_TIME_ZONE
+                        .with_ymd_and_hms(2023, 6, 23, 14, 0, 0)
+                        .unwrap(),
+                    false,
+                ),
+            ],
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            SetMaintenanceReqResult {
+                num_of_target_settlements: 2,
+                failed_to_stop_settlement_ids: vec![2],
+            }
+        );
+    }
+
+    #[tokio::test]
     async fn handle_set_maintenance_req_success_no_overwrap_maintenances() {
         let start_time_in_jst = MaintenanceTime {
             year: 2023,
