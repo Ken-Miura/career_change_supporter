@@ -345,6 +345,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         Ok(maintenances
             .into_iter()
             .map(|m| Maintenance {
+                maintenance_id: m.maintenance_id,
                 maintenance_start_at_in_jst: m
                     .maintenance_start_at
                     .with_timezone(&*JAPANESE_TIME_ZONE),
@@ -1290,6 +1291,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                             }],
@@ -1342,6 +1344,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                             }],
@@ -1394,6 +1397,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
                             }],
@@ -1446,6 +1450,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 0, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 4, 0, 0).unwrap(),
                             }],
@@ -2267,6 +2272,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 30, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 30, 0).unwrap(),
                             }],
@@ -2324,6 +2330,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 18, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 21, 0, 0).unwrap(),
                             }],
@@ -2381,6 +2388,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 30, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 20, 30, 0).unwrap(),
                             }],
@@ -2438,6 +2446,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 15, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 45, 0).unwrap(),
                             }],
@@ -2495,6 +2504,7 @@ mod tests {
                             cnt_user_side_consultation_by_consultant_id: 0,
                             current_date_time,
                             maintenance_info: vec![Maintenance {
+                                maintenance_id: 1,
                                 maintenance_start_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 0, 0).unwrap(),
                                 maintenance_end_at_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 20, 0, 0).unwrap(),
                             }],

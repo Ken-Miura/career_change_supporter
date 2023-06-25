@@ -83,6 +83,7 @@ pub struct Career {
 /// メンテナンス情報
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Maintenance {
+    pub maintenance_id: i64,
     pub maintenance_start_at_in_jst: DateTime<FixedOffset>,
     pub maintenance_end_at_in_jst: DateTime<FixedOffset>,
 }

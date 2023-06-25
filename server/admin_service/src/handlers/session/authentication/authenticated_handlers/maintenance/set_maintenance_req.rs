@@ -105,6 +105,7 @@ impl SetMaintenanceReqOperation for SetMaintenanceReqOperationImpl {
         Ok(maintenances
             .into_iter()
             .map(|m| Maintenance {
+                maintenance_id: m.maintenance_id,
                 maintenance_start_at_in_jst: m
                     .maintenance_start_at
                     .with_timezone(&*JAPANESE_TIME_ZONE),
@@ -699,6 +700,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
             .unwrap();
         let m1 = Maintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 8, 0, 0)
                 .unwrap(),
@@ -707,6 +709,7 @@ mod tests {
                 .unwrap(),
         };
         let m2 = Maintenance {
+            maintenance_id: 2,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 16, 0, 0)
                 .unwrap(),
@@ -1123,6 +1126,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
             .unwrap();
         let m1 = Maintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 11, 0, 0)
                 .unwrap(),
@@ -1187,6 +1191,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
             .unwrap();
         let m1 = Maintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 15, 0, 0)
                 .unwrap(),
@@ -1251,6 +1256,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
             .unwrap();
         let m1 = Maintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 11, 0, 0)
                 .unwrap(),
@@ -1315,6 +1321,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
             .unwrap();
         let m1 = Maintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2023, 6, 23, 13, 0, 0)
                 .unwrap(),

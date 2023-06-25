@@ -30,6 +30,7 @@ pub(crate) struct PlannedMaintenancesResult {
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct PlannedMaintenance {
+    maintenance_id: i64,
     maintenance_start_at_in_jst: String, // RFC 3339形式の文字列
     maintenance_end_at_in_jst: String,   // RFC 3339形式の文字列
 }
@@ -66,6 +67,7 @@ impl PlannedMaintenancesOperation for PlannedMaintenancesOperationImpl {
         Ok(maintenances
             .into_iter()
             .map(|m| Maintenance {
+                maintenance_id: m.maintenance_id,
                 maintenance_start_at_in_jst: m
                     .maintenance_start_at
                     .with_timezone(&*JAPANESE_TIME_ZONE),
@@ -85,6 +87,7 @@ async fn handle_planned_maintenances(
     let planned_maintenances = results
         .into_iter()
         .map(|m| PlannedMaintenance {
+            maintenance_id: m.maintenance_id,
             maintenance_start_at_in_jst: m
                 .maintenance_start_at_in_jst
                 .with_timezone(&(*JAPANESE_TIME_ZONE))
@@ -148,6 +151,7 @@ mod tests {
 
     fn convert(pm: &PlannedMaintenance) -> Maintenance {
         Maintenance {
+            maintenance_id: pm.maintenance_id,
             maintenance_start_at_in_jst: DateTime::parse_from_rfc3339(
                 pm.maintenance_start_at_in_jst.as_str(),
             )
@@ -166,6 +170,7 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let m1 = PlannedMaintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
         };
@@ -188,10 +193,12 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let m1 = PlannedMaintenance {
+            maintenance_id: 1,
             maintenance_start_at_in_jst: "2023-06-13T14:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-06-13T15:00:00+09:00".to_string(),
         };
         let m2 = PlannedMaintenance {
+            maintenance_id: 2,
             maintenance_start_at_in_jst: "2023-07-01T20:00:00+09:00".to_string(),
             maintenance_end_at_in_jst: "2023-07-01T23:00:00+09:00".to_string(),
         };
