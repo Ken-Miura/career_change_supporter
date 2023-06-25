@@ -8,7 +8,7 @@
           <button data-test="move-to-update-identity-request-list-page-button" v-on:click="moveToUpdateIdentityRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">本人確認依頼（更新）</button>
           <button data-test="move-to-create-career-request-list-page-button" v-on:click="moveToCreateCareerRequestListPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴確認依頼</button>
           <button data-test="move-to-user-account-search-page-button" v-on:click="moveToUserAccountSearchPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント情報確認</button>
-          <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
+          <button v-on:click="moveToMaintenancesPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
           <button class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">お知らせ作成</button>
         </div>
       </div>
@@ -48,11 +48,16 @@ export default defineComponent({
       await router.push('/user-account-search')
     }
 
+    const moveToMaintenancesPage = async () => {
+      await router.push('/maintenances')
+    }
+
     return {
       moveToCreateIdentityRequestListPage,
       moveToUpdateIdentityRequestListPage,
       moveToCreateCareerRequestListPage,
-      moveToUserAccountSearchPage
+      moveToUserAccountSearchPage,
+      moveToMaintenancesPage
     }
   }
 })

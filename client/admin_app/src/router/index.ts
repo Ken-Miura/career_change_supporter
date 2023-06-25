@@ -21,6 +21,7 @@ import CreateCareerRequestRejectionPage from '../views/personalized/CreateCareer
 import UserAccountSearchPage from '../views/personalized/UserAccountSearchPage.vue'
 import UserAccountInfoPage from '../views/personalized/UserAccountInfoPage.vue'
 import ConsultationRelatedInfoPage from '../views/personalized/ConsultationRelatedInfoPage.vue'
+import MaintenancesPage from '../views/personalized/MaintenancesPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -137,6 +138,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/consultation-related-info/:consultation_id',
     name: 'ConsultationRelatedInfoPage',
     component: ConsultationRelatedInfoPage
+  },
+  {
+    path: '/maintenances',
+    name: 'MaintenancesPage',
+    component: MaintenancesPage
   }
 ]
 
