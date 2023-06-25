@@ -1134,4 +1134,116 @@ mod tests {
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
         assert_eq!(resp.1 .0.code, Code::MaintenanceAlreadyHasBeenSet as u32);
     }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_fail_illegal_date_time1() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 25,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 24,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    12, // start_time_in_jstをそのまま使うとエラーになるので固定値を使う
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: Vec::with_capacity(0),
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::IllegalDateTime as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_fail_illegal_date_time2() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 23,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 32,
+            hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    27, // end_time_in_jstをそのまま使うとエラーになるので固定値を使う
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: Vec::with_capacity(0),
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::IllegalDateTime as u32);
+    }
 }
