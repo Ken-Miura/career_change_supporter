@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { getRefundByConsultationId } from './GetRefundByConsultationId'
 
-export function useRefundByConsultationId () {
+export function useGetRefundByConsultationId () {
   const getRefundByConsultationIdDone = ref(true)
   const getRefundByConsultationIdFunc = async (consultationId: string) => {
     try {

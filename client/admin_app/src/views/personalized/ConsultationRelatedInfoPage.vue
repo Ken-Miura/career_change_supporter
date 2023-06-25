@@ -241,7 +241,7 @@ import { Receipt } from '@/util/personalized/consultation/receipt/Receipt'
 import { useReceiptByConsultationId } from '@/util/personalized/consultation/receipt/useGetReceiptByConsultationId'
 import { GetReceiptByConsultationIdResp } from '@/util/personalized/consultation/receipt/GetReceiptByConsultationIdResp'
 import { Refund } from '@/util/personalized/consultation/refund/Refund'
-import { useRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
+import { useGetRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
 import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
 import { usePostStopSettlementReq } from '@/util/personalized/consultation/stop_settlement_req/usePostStopSettlementReq'
 import { PostStopSettlementReqResp } from '@/util/personalized/consultation/stop_settlement_req/PostStopSettlementReqResp'
@@ -450,7 +450,7 @@ export default defineComponent({
     const {
       getRefundByConsultationIdDone,
       getRefundByConsultationIdFunc
-    } = useRefundByConsultationId()
+    } = useGetRefundByConsultationId()
 
     const findRefund = async () => {
       try {
