@@ -96,7 +96,13 @@
               分
             </div>
           </div>
-          <button class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" type="submit">メンテナンスを設定する</button>
+          <div class="mt-6 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
+            <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+              <div class="col-span-5">メンテナンス日時が適正であることを確認しました</div>
+              <input v-model="setMaintenanceConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
+            </div>
+          </div>
+          <button v-bind:disabled="!setMaintenanceConfirmation" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">メンテナンスを設定する</button>
           <div v-if="reqResult" class="mt-6">
             <div class="m-4 text-2xl grid grid-cols-3">
               <div class="mt-2 w-full text-2xl justify-self-start col-span-3">停止対象となった決済件数: {{ reqResult.num_of_target_settlements }}</div>
@@ -233,6 +239,8 @@ export default defineComponent({
       postSetMaintenanceReqFunc
     } = usePostSetMaintenanceReq()
 
+    const setMaintenanceConfirmation = ref(false)
+
     const setMaintenance = async () => {
       const req = {
         start_time_in_jst: {
@@ -287,7 +295,8 @@ export default defineComponent({
       setMaintenanceErrMessage,
       postSetMaintenanceReqDone,
       startMtForm,
-      endMtForm
+      endMtForm,
+      setMaintenanceConfirmation
     }
   }
 })
