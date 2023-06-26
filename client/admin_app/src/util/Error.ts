@@ -31,6 +31,9 @@ export namespace Code {
   export const PAYMENT_RELATED_ERR = 30019
   export const RECEIPT_ID_IS_NOT_POSITIVE = 30020
   export const EXCEEDS_REFUND_TIME_LIMIT = 30021
+  export const ILLEGAL_DATE_TIME = 30022
+  export const ILLEGAL_MAINTENANCE_DATE_TIME = 30023
+  export const MAINTENANCE_ALREADY_HAS_BEEN_SET = 30024
 }
 
 export function createErrorMessage (code: number): string {
@@ -77,3 +80,6 @@ codeToMessage.set(Code.CREDIT_FACILITIES_ALREADY_EXPIRED.toString(), `${Message.
 codeToMessage.set(Code.PAYMENT_RELATED_ERR.toString(), `${Message.PAYMENT_RELATED_ERR_MESSAGE} (${Code.PAYMENT_RELATED_ERR})`)
 codeToMessage.set(Code.RECEIPT_ID_IS_NOT_POSITIVE.toString(), `${Message.RECEIPT_ID_IS_NOT_POSITIVE_MESSAGE} (${Code.RECEIPT_ID_IS_NOT_POSITIVE})`)
 codeToMessage.set(Code.EXCEEDS_REFUND_TIME_LIMIT.toString(), `${Message.EXCEEDS_REFUND_TIME_LIMIT_MESSAGE} (${Code.EXCEEDS_REFUND_TIME_LIMIT})`)
+codeToMessage.set(Code.ILLEGAL_DATE_TIME.toString(), `${Message.ILLEGAL_DATE_TIME_MESSAGE} (${Code.ILLEGAL_DATE_TIME})`)
+codeToMessage.set(Code.ILLEGAL_MAINTENANCE_DATE_TIME.toString(), `${Message.ILLEGAL_MAINTENANCE_DATE_TIME_MESSAGE} (${Code.ILLEGAL_MAINTENANCE_DATE_TIME})`)
+codeToMessage.set(Code.MAINTENANCE_ALREADY_HAS_BEEN_SET.toString(), `${Message.MAINTENANCE_ALREADY_HAS_BEEN_SET_MESSAGE} (${Code.MAINTENANCE_ALREADY_HAS_BEEN_SET})`)
