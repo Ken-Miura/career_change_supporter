@@ -37,4 +37,5 @@ export namespace Message {
     export const ILLEGAL_DATE_TIME_MESSAGE = '不正な日時です'
     export const ILLEGAL_MAINTENANCE_DATE_TIME_MESSAGE = '不正なメンテナンス日時です'
     export const MAINTENANCE_ALREADY_HAS_BEEN_SET_MESSAGE = '既にメンテナンスが設定されています'
+    export const EXCEEDS_MAX_MAINTENANCE_DURATION_LIMIT_MESSAGE = 'メンテナンスに設定可能な最大期間（72時間）を超えています'
 }
