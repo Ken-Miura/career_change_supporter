@@ -1,7 +1,8 @@
 // Copyright 2023 Ken Miura
 
+use axum::async_trait;
 use axum::{extract::State, Json};
-use chrono::Utc;
+use chrono::{DateTime, FixedOffset, Utc};
 use common::{RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -13,8 +14,9 @@ pub(crate) async fn post_set_news_req(
     State(pool): State<DatabaseConnection>,
     Json(req): Json<SetNewsReq>,
 ) -> RespResult<SetNewsReqResult> {
+    let op = SetNewsReqOperationImpl { pool };
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    todo!()
+    handle_set_news_req(req.title, req.body, current_date_time, &op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -25,3 +27,22 @@ pub(crate) struct SetNewsReq {
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct SetNewsReqResult {}
+
+#[async_trait]
+trait SetNewsReqOperation {}
+
+struct SetNewsReqOperationImpl {
+    pool: DatabaseConnection,
+}
+
+#[async_trait]
+impl SetNewsReqOperation for SetNewsReqOperationImpl {}
+
+async fn handle_set_news_req(
+    title: String,
+    body: String,
+    current_date_time: DateTime<FixedOffset>,
+    op: &impl SetNewsReqOperation,
+) -> RespResult<SetNewsReqResult> {
+    todo!()
+}
