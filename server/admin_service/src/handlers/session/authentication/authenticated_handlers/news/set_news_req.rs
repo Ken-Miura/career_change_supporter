@@ -6,11 +6,12 @@ use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::util::validator::{has_control_char, has_non_new_line_control_char};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::ActiveValue::NotSet;
+use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::Code;
+use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
 const MIN_TITLE_SIZE: usize = 1;
@@ -39,14 +40,43 @@ pub(crate) struct SetNewsReq {
 pub(crate) struct SetNewsReqResult {}
 
 #[async_trait]
-trait SetNewsReqOperation {}
+trait SetNewsReqOperation {
+    async fn set_news(
+        &self,
+        title: String,
+        body: String,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp>;
+}
 
 struct SetNewsReqOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl SetNewsReqOperation for SetNewsReqOperationImpl {}
+impl SetNewsReqOperation for SetNewsReqOperationImpl {
+    async fn set_news(
+        &self,
+        title: String,
+        body: String,
+        current_date_time: DateTime<FixedOffset>,
+    ) -> Result<(), ErrResp> {
+        let am = entity::news::ActiveModel {
+            news_id: NotSet,
+            title: Set(title.clone()),
+            body: Set(body.clone()),
+            published_at: Set(current_date_time),
+        };
+        am.insert(&self.pool).await.map_err(|e| {
+            error!(
+                "failed to insert news (title: {}, body: {}, current_date_time: {}): {}",
+                title, body, current_date_time, e
+            );
+            unexpected_err_resp()
+        })?;
+        Ok(())
+    }
+}
 
 async fn handle_set_news_req(
     title: String,
@@ -56,7 +86,10 @@ async fn handle_set_news_req(
 ) -> RespResult<SetNewsReqResult> {
     validate_title(&title)?;
     validate_body(&body)?;
-    todo!()
+
+    op.set_news(title, body, current_date_time).await?;
+
+    Ok((StatusCode::OK, Json(SetNewsReqResult {})))
 }
 
 fn validate_title(title: &str) -> Result<(), ErrResp> {
