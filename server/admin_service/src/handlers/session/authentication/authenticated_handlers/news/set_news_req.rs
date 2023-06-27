@@ -93,7 +93,7 @@ async fn handle_set_news_req(
 }
 
 fn validate_title(title: &str) -> Result<(), ErrResp> {
-    let length = title.len();
+    let length = title.chars().count();
     if !(MIN_TITLE_SIZE..=MAX_TITLE_SIZE).contains(&length) {
         error!("invalid title length ({})", length);
         return Err((
@@ -116,7 +116,7 @@ fn validate_title(title: &str) -> Result<(), ErrResp> {
 }
 
 fn validate_body(body: &str) -> Result<(), ErrResp> {
-    let length = body.len();
+    let length = body.chars().count();
     if !(MIN_BODY_SIZE..=MAX_BODY_SIZE).contains(&length) {
         error!("invalid body length ({})", length);
         return Err((
@@ -169,6 +169,54 @@ mod tests {
     #[tokio::test]
     async fn handle_set_news_req_success() {
         let title = "タイトル".to_string();
+        let body = r"ライン１
+      ライン２
+      ライン３"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, SetNewsReqResult {});
+    }
+
+    #[tokio::test]
+    async fn handle_set_news_req_success_title_min() {
+        let title = "あ".to_string();
+        let body = r"ライン１
+      ライン２
+      ライン３"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, SetNewsReqResult {});
+    }
+
+    #[tokio::test]
+    async fn handle_set_news_req_success_title_max() {
+        let title = "ああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string();
         let body = r"ライン１
       ライン２
       ライン３"
