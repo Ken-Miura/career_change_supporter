@@ -69,3 +69,21 @@ async fn handle_delete_news_req(
 
     Ok((StatusCode::OK, Json(SetDeleteReqResult {})))
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    struct SetDeleteReqOperationMock {
+        news_id: i64,
+    }
+
+    #[async_trait]
+    impl SetDeleteReqOperation for SetDeleteReqOperationMock {
+        async fn delete_news(&self, news_id: i64) -> Result<(), ErrResp> {
+            assert_eq!(self.news_id, news_id);
+            Ok(())
+        }
+    }
+}
