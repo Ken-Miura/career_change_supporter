@@ -22,6 +22,7 @@ import UserAccountSearchPage from '../views/personalized/UserAccountSearchPage.v
 import UserAccountInfoPage from '../views/personalized/UserAccountInfoPage.vue'
 import ConsultationRelatedInfoPage from '../views/personalized/ConsultationRelatedInfoPage.vue'
 import MaintenancesPage from '../views/personalized/MaintenancesPage.vue'
+import NewsPage from '../views/personalized/NewsPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -143,6 +144,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/maintenances',
     name: 'MaintenancesPage',
     component: MaintenancesPage
+  },
+  {
+    path: '/news',
+    name: 'NewsPage',
+    component: NewsPage
   }
 ]
 
