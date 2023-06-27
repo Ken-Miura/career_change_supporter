@@ -275,8 +275,8 @@ export default defineComponent({
           return
         }
         reqResult.value = response.getSetMaintenanceReqResult()
-        await getPlannedMaintenances()
         setMaintenanceErrMessage.value = null
+        await getPlannedMaintenances()
       } catch (e) {
         setMaintenanceErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
