@@ -98,4 +98,28 @@ mod tests {
         assert_eq!(resp.0, StatusCode::OK);
         assert_eq!(resp.1 .0, SetDeleteReqResult {});
     }
+
+    #[tokio::test]
+    async fn handle_delete_news_req_fail_news_id_zero() {
+        let news_id = 0;
+        let op = SetDeleteReqOperationMock { news_id };
+
+        let result = handle_delete_news_req(news_id, &op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::InvalidNewsId as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_delete_news_req_fail_news_id_negative() {
+        let news_id = -1;
+        let op = SetDeleteReqOperationMock { news_id };
+
+        let result = handle_delete_news_req(news_id, &op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(resp.1 .0.code, Code::InvalidNewsId as u32);
+    }
 }
