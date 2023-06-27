@@ -710,6 +710,7 @@ export default defineComponent({
           accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        accountEnableDisableErrorMessage.value = null
         const result = response.getUserAccountRetrievalResult()
         userAccount.value = result.user_account
       } catch (e) {
@@ -744,6 +745,7 @@ export default defineComponent({
           accountEnableDisableErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        accountEnableDisableErrorMessage.value = null
         const result = response.getUserAccountRetrievalResult()
         userAccount.value = result.user_account
       } catch (e) {
@@ -781,6 +783,7 @@ export default defineComponent({
           disableMfaErrorMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        disableMfaErrorMessage.value = null
         const result = response.getUserAccountRetrievalResult()
         userAccount.value = result.user_account
       } catch (e) {

@@ -502,6 +502,7 @@ export default defineComponent({
           stopSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        stopSettlementErrMessage.value = null
       } catch (e) {
         stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
@@ -539,6 +540,7 @@ export default defineComponent({
           resumeSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        resumeSettlementErrMessage.value = null
       } catch (e) {
         resumeSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
@@ -576,6 +578,7 @@ export default defineComponent({
           makePaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        makePaymentErrMessage.value = null
       } catch (e) {
         makePaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
@@ -613,6 +616,7 @@ export default defineComponent({
           refundReqErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
+        refundReqErrMessage.value = null
       } catch (e) {
         refundReqErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
