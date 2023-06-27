@@ -34,6 +34,7 @@ pub(crate) enum Code {
     IllegalDateTime = 30022,
     IllegalMaintenanceDateTime = 30023,
     MaintenanceAlreadyHasBeenSet = 30024,
+    ExceedsMaxMaintenanceDurationLimit = 30025,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

@@ -17,6 +17,8 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::admin::Admin;
 
+const MAX_MAINTENANCE_DURATION_IN_HOURS: i64 = 72;
+
 pub(crate) async fn post_set_maintenance_req(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
@@ -210,6 +212,20 @@ async fn handle_set_maintenance_req(
             StatusCode::BAD_REQUEST,
             Json(ApiError {
                 code: Code::IllegalMaintenanceDateTime as u32,
+            }),
+        ));
+    }
+    let maintenance_time = et - st;
+    let limit = chrono::Duration::hours(MAX_MAINTENANCE_DURATION_IN_HOURS);
+    if maintenance_time > limit {
+        error!(
+            "maintenance time ({}) exceeds max maintenance duration ({})",
+            maintenance_time, limit
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ExceedsMaxMaintenanceDurationLimit as u32,
             }),
         ));
     }
@@ -409,6 +425,68 @@ mod tests {
             month: 6,
             day: 23,
             hour: 16,
+            minute: 0,
+            second: 0,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: Vec::with_capacity(0),
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(
+            resp.1 .0,
+            SetMaintenanceReqResult {
+                num_of_target_settlements: 0,
+                failed_to_stop_settlement_ids: Vec::<i64>::with_capacity(0),
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_success_max_maintenance_duration() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 26,
+            hour: 12,
             minute: 0,
             second: 0,
         };
@@ -1698,5 +1776,64 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(resp.0, StatusCode::BAD_REQUEST);
         assert_eq!(resp.1 .0.code, Code::IllegalMaintenanceDateTime as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_set_maintenance_req_fail_over_max_maintenance_duration() {
+        let start_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 23,
+            hour: 12,
+            minute: 0,
+            second: 0,
+        };
+        let end_time_in_jst = MaintenanceTime {
+            year: 2023,
+            month: 6,
+            day: 26,
+            hour: 12,
+            minute: 0,
+            second: 1,
+        };
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 6, 21, 13, 52, 24)
+            .unwrap();
+        let op = SetMaintenanceReqOperationMock {
+            current_date_time,
+            maintenances: vec![],
+            start_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    start_time_in_jst.year as i32,
+                    start_time_in_jst.month as u32,
+                    start_time_in_jst.day as u32,
+                    start_time_in_jst.hour as u32,
+                    start_time_in_jst.minute as u32,
+                    start_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            end_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(
+                    end_time_in_jst.year as i32,
+                    end_time_in_jst.month as u32,
+                    end_time_in_jst.day as u32,
+                    end_time_in_jst.hour as u32,
+                    end_time_in_jst.minute as u32,
+                    end_time_in_jst.second as u32,
+                )
+                .unwrap(),
+            settlements: Vec::with_capacity(0),
+        };
+
+        let result =
+            handle_set_maintenance_req(start_time_in_jst, end_time_in_jst, current_date_time, &op)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(resp.0, StatusCode::BAD_REQUEST);
+        assert_eq!(
+            resp.1 .0.code,
+            Code::ExceedsMaxMaintenanceDurationLimit as u32
+        );
     }
 }
