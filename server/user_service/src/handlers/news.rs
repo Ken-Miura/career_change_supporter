@@ -5,14 +5,12 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, FixedOffset, Utc};
 use common::util::Ymd;
-use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
+use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE, NEWS_RETRIEVAL_CRITERIA_IN_DAYS};
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
-
-const NEWS_RETRIEVAL_CRITERIA_IN_DAYS: i64 = 180;
 
 pub(crate) async fn get_news(State(pool): State<DatabaseConnection>) -> RespResult<NewsResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));

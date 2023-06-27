@@ -172,6 +172,11 @@ pub const MAX_NUM_OF_CAREER_PER_USER_ACCOUNT: u64 = 8;
 /// 相談時間の長さ (分単位)
 pub const LENGTH_OF_MEETING_IN_MINUTE: u32 = 60;
 
+/// お知らせを取ってくる基準 (日単位)
+///
+/// 現在時刻から[NEWS_RETRIEVAL_CRITERIA_IN_DAYS] 日前までのお知らせを取得する
+pub const NEWS_RETRIEVAL_CRITERIA_IN_DAYS: i64 = 180;
+
 // TODO: リリース前に値を調整する
 /// パスワード、パスコードをハッシュ化する際のストレッチング回数（ストレッチングが2^[BCRYPT_COST]回実行される) <br>
 /// <br>
