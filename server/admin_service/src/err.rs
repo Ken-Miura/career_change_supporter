@@ -35,6 +35,10 @@ pub(crate) enum Code {
     IllegalMaintenanceDateTime = 30023,
     MaintenanceAlreadyHasBeenSet = 30024,
     ExceedsMaxMaintenanceDurationLimit = 30025,
+    InvalidTitleLength = 30026,
+    IllegalTitle = 30027,
+    InvalidBodyLength = 30028,
+    IllegalBody = 30029,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
