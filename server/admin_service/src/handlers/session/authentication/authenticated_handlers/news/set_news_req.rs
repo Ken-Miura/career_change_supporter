@@ -356,7 +356,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_set_news_req_success_body_empty() {
+    async fn handle_set_news_req_fail_body_empty() {
         let title = "タイトル".to_string();
         let body = r"".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
@@ -377,7 +377,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_set_news_req_success_body_over_max() {
+    async fn handle_set_news_req_fail_body_over_max() {
         let title = "タイトル".to_string();
         let mut body = String::with_capacity(MAX_BODY_SIZE);
         for _ in 0..(MAX_BODY_SIZE + 1) {
@@ -398,5 +398,26 @@ mod tests {
 
         assert_eq!(result.0, StatusCode::BAD_REQUEST);
         assert_eq!(result.1.code, Code::InvalidBodyLength as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_set_news_req_fail_body_non_new_line_control_char() {
+        let title = "タイトル".to_string();
+        let body = "\u{0009}".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::IllegalBody as u32);
     }
 }
