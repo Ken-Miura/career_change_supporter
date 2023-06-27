@@ -86,4 +86,16 @@ mod tests {
             Ok(())
         }
     }
+
+    #[tokio::test]
+    async fn handle_delete_news_req_success() {
+        let news_id = 1;
+        let op = SetDeleteReqOperationMock { news_id };
+
+        let result = handle_delete_news_req(news_id, &op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(resp.0, StatusCode::OK);
+        assert_eq!(resp.1 .0, SetDeleteReqResult {});
+    }
 }
