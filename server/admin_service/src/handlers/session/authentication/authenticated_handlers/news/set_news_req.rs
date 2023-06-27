@@ -137,3 +137,32 @@ fn validate_body(body: &str) -> Result<(), ErrResp> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+
+    use chrono::TimeZone;
+
+    use super::*;
+
+    struct SetNewsReqOperationMock {
+        title: String,
+        body: String,
+        current_date_time: DateTime<FixedOffset>,
+    }
+
+    #[async_trait]
+    impl SetNewsReqOperation for SetNewsReqOperationMock {
+        async fn set_news(
+            &self,
+            title: String,
+            body: String,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(title, self.title);
+            assert_eq!(body, self.body);
+            assert_eq!(current_date_time, self.current_date_time);
+            Ok(())
+        }
+    }
+}
