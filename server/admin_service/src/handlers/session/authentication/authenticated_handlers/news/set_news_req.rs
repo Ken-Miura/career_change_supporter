@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_set_news_req_success_title_empty() {
+    async fn handle_set_news_req_fail_title_empty() {
         let title = "".to_string();
         let body = r"ライン１
       ライン２
@@ -263,7 +263,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_set_news_req_success_title_over_max() {
+    async fn handle_set_news_req_fail_title_over_max() {
         let title = "あああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああああ".to_string();
         let body = r"ライン１
       ライン２
@@ -284,5 +284,29 @@ mod tests {
 
         assert_eq!(result.0, StatusCode::BAD_REQUEST);
         assert_eq!(result.1.code, Code::InvalidTitleLength as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_set_news_req_fail_title_control_char() {
+        let title = "\u{000A}\u{000D}".to_string();
+        let body = r"ライン１
+      ライン２
+      ライン３"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::IllegalTitle as u32);
     }
 }
