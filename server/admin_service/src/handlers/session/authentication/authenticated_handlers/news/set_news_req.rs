@@ -165,4 +165,28 @@ mod tests {
             Ok(())
         }
     }
+
+    #[tokio::test]
+    async fn handle_set_news_req_success() {
+        let title = "タイトル".to_string();
+        let body = r"ライン１
+      ライン２
+      ライン３"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect("failed to get Ok");
+
+        assert_eq!(result.0, StatusCode::OK);
+        assert_eq!(result.1 .0, SetNewsReqResult {});
+    }
 }
