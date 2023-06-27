@@ -39,6 +39,7 @@ pub(crate) enum Code {
     IllegalTitle = 30027,
     InvalidBodyLength = 30028,
     IllegalBody = 30029,
+    InvalidNewsId = 30030,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {

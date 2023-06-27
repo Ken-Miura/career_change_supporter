@@ -3,11 +3,8 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, FixedOffset, Utc};
-use common::util::validator::{has_control_char, has_non_new_line_control_char};
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::ActiveValue::NotSet;
-use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, EntityTrait, Set};
+use common::{ApiError, ErrResp, RespResult};
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -20,7 +17,7 @@ pub(crate) async fn post_delete_news_req(
     Json(req): Json<SetDeleteReq>,
 ) -> RespResult<SetDeleteReqResult> {
     let op = SetDeleteReqOperationImpl { pool };
-    todo!()
+    handle_delete_news_req(req.news_id, &op).await
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -52,4 +49,23 @@ impl SetDeleteReqOperation for SetDeleteReqOperationImpl {
             })?;
         Ok(())
     }
+}
+
+async fn handle_delete_news_req(
+    news_id: i64,
+    op: &impl SetDeleteReqOperation,
+) -> RespResult<SetDeleteReqResult> {
+    if !news_id.is_positive() {
+        error!("news_id ({}) is not positive", news_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::InvalidNewsId as u32,
+            }),
+        ));
+    }
+
+    op.delete_news(news_id).await?;
+
+    Ok((StatusCode::OK, Json(SetDeleteReqResult {})))
 }
