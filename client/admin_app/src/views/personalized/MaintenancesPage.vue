@@ -199,6 +199,7 @@ export default defineComponent({
         }
         const result = response.getPlannedMaintenancesResult()
         plannedMaintenances.value = result.planned_maintenances
+        plannedMaintenancesErrMessage.value = null
       } catch (e) {
         plannedMaintenancesErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
