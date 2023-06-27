@@ -33,6 +33,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::maintenance::planned_maintenances::get_planned_maintenances;
 use crate::handlers::session::authentication::authenticated_handlers::maintenance::set_maintenance_req::post_set_maintenance_req;
+use crate::handlers::session::authentication::authenticated_handlers::news::delete_news_req::post_delete_news_req;
 use crate::handlers::session::authentication::authenticated_handlers::news::latest_news::get_latest_news;
 use crate::handlers::session::authentication::authenticated_handlers::news::set_news_req::post_set_news_req;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
@@ -433,6 +434,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/set-news-req",
                     post(post_set_news_req),
+                )
+                .route(
+                    "/delete-news-req",
+                    post(post_delete_news_req),
                 )
                 .with_state(state),
         )
