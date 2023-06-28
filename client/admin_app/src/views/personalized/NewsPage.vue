@@ -21,6 +21,21 @@
             <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <textarea v-model="body" minlength="1" maxlength="16384" placeholder="お知らせ本文" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
             </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              プレビュー
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              タイトル
+            </div>
+            <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-3">
+              {{ title }}
+            </div>
+            <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
+              本文
+            </div>
+            <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-3 whitespace-pre-wrap">
+              {{ body }}
+            </div>
           </div>
           <div class="mt-6 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
             <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
