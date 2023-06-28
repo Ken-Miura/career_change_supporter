@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!(getPlannedMaintenancesDone && postSetMaintenanceReqDone)" class="m-6">
+    <div v-if="!(getLatestNewsDone && postSetMaintenanceReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -118,24 +118,25 @@
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">お知らせ一覧</h3>
-        <div v-if="!plannedMaintenancesErrMessage">
-            <div v-if="plannedMaintenances.length !== 0">
+        <div v-if="!latestNewsErrMessage">
+            <div v-if="latestNews.length !== 0">
               <ul>
-                <li v-for="p in plannedMaintenances" v-bind:key="p.maintenance_id" class="mt-4">
-                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">メンテナンス番号{{ p.maintenance_id }}</div>
+                <li v-for="n in latestNews" v-bind:key="n.news_id" class="mt-4">
+                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">お知らせ番号{{ n.news_id }}</div>
                   <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div class="mt-2 justify-self-start col-span-1">開始日時</div><div class="mt-2 justify-self-start col-span-2">{{ p.maintenance_start_at_in_jst }}</div>
-                    <div class="mt-2 justify-self-start col-span-1">終了日時</div><div class="mt-2 justify-self-start col-span-2">{{ p.maintenance_end_at_in_jst }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">掲載日時</div><div class="mt-2 justify-self-start col-span-2">{{ n.published_at }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">タイトル</div><div class="mt-2 justify-self-start col-span-2">{{ n.title }}</div>
+                    <div class="mt-2 justify-self-start col-span-1">本文</div><div class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ n.body }}</div>
                   </div>
                 </li>
               </ul>
             </div>
             <div v-else class="m-4 text-2xl">
-              予定されているメンテナンスはありません。
+              お知らせはありません。
             </div>
           </div>
         <div v-else>
-          <AlertMessage class="mt-4" v-bind:message="plannedMaintenancesErrMessage"/>
+          <AlertMessage class="mt-4" v-bind:message="latestNewsErrMessage"/>
         </div>
       </div>
     </main>
@@ -152,17 +153,17 @@ import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
 import { useRouter } from 'vue-router'
-import { useGetPlannedMaintenances } from '@/util/personalized/planned-maintenance/useGetPlannedMaintenances'
-import { PlannedMaintenance } from '@/util/personalized/planned-maintenance/PlannedMaintenance'
 import { Code, createErrorMessage } from '@/util/Error'
 import { ApiErrorResp } from '@/util/ApiError'
-import { GetPlannedMaintenancesResp } from '@/util/personalized/planned-maintenance/GetPlannedMaintenancesResp'
 import { Message } from '@/util/Message'
 import { usePostSetMaintenanceReq } from '@/util/personalized/set-maintenance-req/usePostSetMaintenanceReq'
 import { PostSetMaintenanceReqResp } from '@/util/personalized/set-maintenance-req/PostSetMaintenanceReqResp'
 import { SetMaintenanceReqResult } from '@/util/personalized/set-maintenance-req/SetMaintenanceReqResult'
 import { SetMaintenanceReq } from '@/util/personalized/set-maintenance-req/SetMaintenanceReq'
 import { MaintenanceTime } from '@/util/personalized/set-maintenance-req/MaintenanceTime'
+import { News } from '@/util/personalized/latest-news/News'
+import { useGetLatestNews } from '@/util/personalized/latest-news/useGetLatestNews'
+import { GetLatestNewsResp } from '@/util/personalized/latest-news/GetLatestNewsResp'
 
 export default defineComponent({
   name: 'NewsPage',
@@ -174,18 +175,18 @@ export default defineComponent({
   setup () {
     const router = useRouter()
 
-    const plannedMaintenances = ref([] as PlannedMaintenance[])
-    const plannedMaintenancesErrMessage = ref(null as string | null)
+    const latestNews = ref([] as News[])
+    const latestNewsErrMessage = ref(null as string | null)
 
     const {
-      getPlannedMaintenancesDone,
-      getPlannedMaintenancesFunc
-    } = useGetPlannedMaintenances()
+      getLatestNewsDone,
+      getLatestNewsFunc
+    } = useGetLatestNews()
 
-    const getPlannedMaintenances = async () => {
+    const getLatestNews = async () => {
       try {
-        const response = await getPlannedMaintenancesFunc()
-        if (!(response instanceof GetPlannedMaintenancesResp)) {
+        const response = await getLatestNewsFunc()
+        if (!(response instanceof GetLatestNewsResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
           }
@@ -194,18 +195,19 @@ export default defineComponent({
             await router.push('/login')
             return
           }
-          plannedMaintenancesErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          latestNewsErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        const result = response.getPlannedMaintenancesResult()
-        plannedMaintenances.value = result.planned_maintenances
+        const result = response.getLatestNewsResult()
+        latestNews.value = result.news_array
+        latestNewsErrMessage.value = null
       } catch (e) {
-        plannedMaintenancesErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        latestNewsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
     onMounted(async () => {
-      await getPlannedMaintenances()
+      await getLatestNews()
     })
 
     const currentDate = new Date()
@@ -276,7 +278,7 @@ export default defineComponent({
         }
         reqResult.value = response.getSetMaintenanceReqResult()
         setMaintenanceErrMessage.value = null
-        await getPlannedMaintenances()
+        await getLatestNews()
       } catch (e) {
         setMaintenanceErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       } finally {
@@ -285,9 +287,9 @@ export default defineComponent({
     }
 
     return {
-      getPlannedMaintenancesDone,
-      plannedMaintenances,
-      plannedMaintenancesErrMessage,
+      getLatestNewsDone,
+      latestNews,
+      latestNewsErrMessage,
       yearList,
       monthList,
       dayList,
