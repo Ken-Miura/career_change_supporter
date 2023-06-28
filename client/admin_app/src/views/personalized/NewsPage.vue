@@ -19,7 +19,7 @@
               本文
             </div>
             <div class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
-              <textarea v-model="body" minlength="1" maxlength="16384" placeholder="お知らせ本文" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
+              <textarea v-model="body" minlength="1" maxlength="16384" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3"></textarea>
             </div>
             <div class="mt-4 text-2xl justify-self-start col-span-6 pt-3">
               プレビュー

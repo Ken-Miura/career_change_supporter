@@ -35,6 +35,11 @@ export namespace Code {
   export const ILLEGAL_MAINTENANCE_DATE_TIME = 30023
   export const MAINTENANCE_ALREADY_HAS_BEEN_SET = 30024
   export const EXCEEDS_MAX_MAINTENANCE_DURATION_LIMIT = 30025
+  export const INVALID_TITLE_LENGTH = 30026
+  export const ILLEGAL_TITLE = 30027
+  export const INVALID_BODY_LENGTH = 30028
+  export const ILLEGAL_BODY = 30029
+  export const INVALID_NEWS_ID = 30030
 }
 
 export function createErrorMessage (code: number): string {
@@ -85,3 +90,8 @@ codeToMessage.set(Code.ILLEGAL_DATE_TIME.toString(), `${Message.ILLEGAL_DATE_TIM
 codeToMessage.set(Code.ILLEGAL_MAINTENANCE_DATE_TIME.toString(), `${Message.ILLEGAL_MAINTENANCE_DATE_TIME_MESSAGE} (${Code.ILLEGAL_MAINTENANCE_DATE_TIME})`)
 codeToMessage.set(Code.MAINTENANCE_ALREADY_HAS_BEEN_SET.toString(), `${Message.MAINTENANCE_ALREADY_HAS_BEEN_SET_MESSAGE} (${Code.MAINTENANCE_ALREADY_HAS_BEEN_SET})`)
 codeToMessage.set(Code.EXCEEDS_MAX_MAINTENANCE_DURATION_LIMIT.toString(), `${Message.EXCEEDS_MAX_MAINTENANCE_DURATION_LIMIT_MESSAGE} (${Code.EXCEEDS_MAX_MAINTENANCE_DURATION_LIMIT})`)
+codeToMessage.set(Code.INVALID_TITLE_LENGTH.toString(), `${Message.INVALID_TITLE_LENGTH_MESSAGE} (${Code.INVALID_TITLE_LENGTH})`)
+codeToMessage.set(Code.ILLEGAL_TITLE.toString(), `${Message.ILLEGAL_TITLE_MESSAGE} (${Code.ILLEGAL_TITLE})`)
+codeToMessage.set(Code.INVALID_BODY_LENGTH.toString(), `${Message.INVALID_BODY_LENGTH_MESSAGE} (${Code.INVALID_BODY_LENGTH})`)
+codeToMessage.set(Code.ILLEGAL_BODY.toString(), `${Message.ILLEGAL_BODY_MESSAGE} (${Code.ILLEGAL_BODY})`)
+codeToMessage.set(Code.INVALID_NEWS_ID.toString(), `${Message.INVALID_NEWS_ID_MESSAGE} (${Code.INVALID_NEWS_ID})`)
