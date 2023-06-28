@@ -4,7 +4,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::util::validator::{has_control_char, has_non_new_line_control_char};
+use common::util::validator::{has_control_char, has_non_new_line_control_char, SYMBOL_CHAR_RE};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{ActiveModelTrait, DatabaseConnection, Set};
@@ -112,6 +112,15 @@ fn validate_title(title: &str) -> Result<(), ErrResp> {
             }),
         ));
     }
+    if SYMBOL_CHAR_RE.is_match(title) {
+        error!("title has control char ({:?})", title.as_bytes());
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::IllegalTitle as u32,
+            }),
+        ));
+    }
     Ok(())
 }
 
@@ -128,6 +137,15 @@ fn validate_body(body: &str) -> Result<(), ErrResp> {
     }
     if has_non_new_line_control_char(body) {
         error!("body has non new line control char ({:?})", body.as_bytes());
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::IllegalBody as u32,
+            }),
+        ));
+    }
+    if SYMBOL_CHAR_RE.is_match(body) {
+        error!("body has control char ({:?})", body.as_bytes());
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -311,6 +329,30 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn handle_set_news_req_fail_title_symbol() {
+        let title = "<script><alert('test')/script>".to_string();
+        let body = r"ライン１
+      ライン２
+      ライン３"
+            .to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::IllegalTitle as u32);
+    }
+
+    #[tokio::test]
     async fn handle_set_news_req_success_body_min() {
         let title = "タイトル".to_string();
         let body = r"あ".to_string();
@@ -404,6 +446,27 @@ mod tests {
     async fn handle_set_news_req_fail_body_non_new_line_control_char() {
         let title = "タイトル".to_string();
         let body = "\u{0009}".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
+            .unwrap();
+        let op = SetNewsReqOperationMock {
+            title: title.clone(),
+            body: body.clone(),
+            current_date_time,
+        };
+
+        let result = handle_set_news_req(title, body, current_date_time, &op)
+            .await
+            .expect_err("failed to get Err");
+
+        assert_eq!(result.0, StatusCode::BAD_REQUEST);
+        assert_eq!(result.1.code, Code::IllegalBody as u32);
+    }
+
+    #[tokio::test]
+    async fn handle_set_news_req_fail_body_symbol() {
+        let title = "タイトル".to_string();
+        let body = "<script><alert('test')/script>".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 11, 21, 32, 21)
             .unwrap();
