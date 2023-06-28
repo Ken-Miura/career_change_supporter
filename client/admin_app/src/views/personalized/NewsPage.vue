@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!(getLatestNewsDone && postSetNewsReqDone)" class="m-6">
+    <div v-if="!(getLatestNewsDone && postSetNewsReqDone && postDeleteNewsReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -60,9 +60,13 @@
                     <div class="mt-2 justify-self-start col-span-1">掲載日時</div><div class="mt-2 justify-self-start col-span-2">{{ n.published_at }}</div>
                     <div class="mt-2 justify-self-start col-span-1">タイトル</div><div class="mt-2 justify-self-start col-span-2">{{ n.title }}</div>
                     <div class="mt-2 justify-self-start col-span-1">本文</div><div class="mt-2 justify-self-start col-span-2 whitespace-pre-wrap">{{ n.body }}</div>
+                    <button v-on:click="deleteNews(n.news_id)" class="mt-4 col-span-3 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">お知らせを削除する</button>
                   </div>
                 </li>
               </ul>
+              <div v-if="deleteNewsErrMessage" class="mt-6">
+                <AlertMessage v-bind:message="deleteNewsErrMessage"/>
+              </div>
             </div>
             <div v-else class="m-4 text-2xl">
               お知らせはありません。
@@ -95,6 +99,8 @@ import { GetLatestNewsResp } from '@/util/personalized/latest-news/GetLatestNews
 import { usePostSetNewsReq } from '@/util/personalized/set-news-req/usePostSetNewsReq'
 import { SetNewsReq } from '@/util/personalized/set-news-req/SetNewsReq'
 import { PostSetNewsReqResp } from '@/util/personalized/set-news-req/PostSetNewsReqResp'
+import { usePostDeleteNewsReq } from '@/util/personalized/delete-news-req/usePostDeleteNewsReq'
+import { PostDeleteNewsReqResp } from '@/util/personalized/delete-news-req/PostDeleteNewsReqResp'
 
 export default defineComponent({
   name: 'NewsPage',
@@ -180,6 +186,35 @@ export default defineComponent({
       }
     }
 
+    const deleteNewsErrMessage = ref(null as string | null)
+
+    const {
+      postDeleteNewsReqDone,
+      postDeleteNewsReqFunc
+    } = usePostDeleteNewsReq()
+
+    const deleteNews = async (newsId: number) => {
+      try {
+        const response = await postDeleteNewsReqFunc(newsId)
+        if (!(response instanceof PostDeleteNewsReqResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          deleteNewsErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        deleteNewsErrMessage.value = null
+        await getLatestNews()
+      } catch (e) {
+        deleteNewsErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     return {
       getLatestNewsDone,
       latestNews,
@@ -189,7 +224,10 @@ export default defineComponent({
       setNews,
       setNewsErrMessage,
       postSetNewsReqDone,
-      setNewsConfirmation
+      setNewsConfirmation,
+      deleteNews,
+      deleteNewsErrMessage,
+      postDeleteNewsReqDone
     }
   }
 })
