@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:22.04 as development
 
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \

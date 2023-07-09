@@ -17,6 +17,7 @@ services:
     #
     build:
       context: ../ # serverディレクトリがワーキングディレクトリになるため、serverディレクトリからの相対パスでプロジェクトルートを指定
+      target: development
       dockerfile: .devcontainer/Dockerfile
 
     volumes:
