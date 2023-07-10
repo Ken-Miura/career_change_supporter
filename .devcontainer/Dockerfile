@@ -67,3 +67,12 @@ WORKDIR /home/admin-service-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_service ./
 EXPOSE 3001
 CMD [ "./admin_service" ]
+
+FROM ubuntu:22.04 as admin-account
+
+RUN useradd -m -s /bin/bash -U admin-account-operator
+USER admin-account-operator
+RUN mkdir -p /home/admin-account-operator/workspace
+WORKDIR /home/admin-account-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
+CMD [ "./admin_account" ]
