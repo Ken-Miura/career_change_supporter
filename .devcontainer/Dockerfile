@@ -57,3 +57,13 @@ WORKDIR /home/user-service-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/user_service ./
 EXPOSE 3000
 CMD [ "./user_service" ]
+
+FROM ubuntu:22.04 as admin-service
+
+RUN useradd -m -s /bin/bash -U admin-service-operator
+USER admin-service-operator
+RUN mkdir -p /home/admin-service-operator/workspace
+WORKDIR /home/admin-service-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_service ./
+EXPOSE 3001
+CMD [ "./admin_service" ]
