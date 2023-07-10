@@ -25,16 +25,16 @@ ENV HOME=/home/${USERNAME}
 RUN mkdir ${HOME}/workspace
 WORKDIR ${HOME}/workspace
 
-ARG RUST_VERSION=1.70.0
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
+RUN export RUST_VERSION=1.70.0 && \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.70.0
 ENV PATH=${PATH}:${HOME}/.cargo/bin
-ARG SEA_ORM_CLI_VERSION=0.11.3
-RUN cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
+RUN export SEA_ORM_CLI_VERSION=0.11.3 && \
+    cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
 
-ARG NVM_VERSION=0.39.3
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash
+RUN export NVM_VERSION=0.39.3 && \
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v${NVM_VERSION}/install.sh | bash
 ENV NVM_DIR=${HOME}/.nvm
-ARG NODE_JS_VERSION=18.16.0
-RUN . ${NVM_DIR}/nvm.sh && \
+RUN export NODE_JS_VERSION=18.16.0 && \
+    . ${NVM_DIR}/nvm.sh && \
     nvm install ${NODE_JS_VERSION} && \
     nvm use ${NODE_JS_VERSION}
