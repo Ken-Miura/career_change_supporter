@@ -47,3 +47,13 @@ RUN cargo fmt --check && \
     cargo clippy --all-targets --all-features -- -D warnings && \
     cargo test && \
     cargo build --release
+
+FROM ubuntu:22.04 as user-service
+
+RUN useradd -m -s /bin/bash -U user-service-operator
+USER user-service-operator
+RUN mkdir -p /home/user-service-operator/workspace
+WORKDIR /home/user-service-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/user_service ./
+EXPOSE 3000
+CMD [ "./user_service" ]
