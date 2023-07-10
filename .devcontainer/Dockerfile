@@ -38,3 +38,12 @@ RUN export NODE_JS_VERSION=18.16.0 && \
     . ${NVM_DIR}/nvm.sh && \
     nvm install ${NODE_JS_VERSION} && \
     nvm use ${NODE_JS_VERSION}
+
+FROM development as server-test-and-build
+
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY . .
+RUN cargo fmt --check && \
+    cargo clippy --all-targets --all-features -- -D warnings && \
+    cargo test && \
+    cargo build --release
