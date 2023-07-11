@@ -88,3 +88,9 @@ FROM development as migration-tool
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 CMD [ "sea-orm-cli" ]
+
+FROM development as index-initilizer
+
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY . .
+CMD [ "bash", "-c", "curl -XPUT -H Content-Type: application/json --data @files_for_compose/opensearch/index_definition/index.json ${SCHEME}://${HOST}:${PORT}/users" ]
