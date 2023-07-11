@@ -82,3 +82,9 @@ RUN mkdir -p /home/admin-account-operator/workspace
 WORKDIR /home/admin-account-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
 CMD [ "./admin_account" ]
+
+FROM development as migration-tool
+
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY . .
+CMD [ "sea-orm-cli" ]
