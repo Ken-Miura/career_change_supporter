@@ -1,4 +1,10 @@
-FROM ubuntu:22.04 as development
+# CI/CDにはGitHub Actionsを想定している。
+# GitHub Actionsで利用可能なマシンのCPUアーキテクチャはx86_64 (amd64) のみ
+#   参考: https://docs.github.com/ja/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+# 異なるCPUアーキテクチャ向けのイメージをビルドしようとするとかなりの時間を要することになるため、CI/CDでのビルド環境のCPUアーキテクチャに合わせる
+# ビルド後のイメージを実際に走らせる環境（AWS ECS）のマシンのCPUアーキテクチャは、デフォルトでLinux、x86_64のためCI/CD環境でビルドしたものがそのまま動作する
+#   参考: https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/task_definition_parameters.html#runtime-platform
+FROM --platform=linux/amd64 ubuntu:22.04 as development
 
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
@@ -48,7 +54,7 @@ RUN cargo fmt --check && \
     cargo test && \
     cargo build --release
 
-FROM ubuntu:22.04 as user-service
+FROM --platform=linux/amd64 ubuntu:22.04 as user-service
 
 RUN useradd -m -s /bin/bash -U user-service-operator
 USER user-service-operator
@@ -58,7 +64,7 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/user_
 EXPOSE 3000
 CMD [ "./user_service" ]
 
-FROM ubuntu:22.04 as admin-service
+FROM --platform=linux/amd64 ubuntu:22.04 as admin-service
 
 RUN useradd -m -s /bin/bash -U admin-service-operator
 USER admin-service-operator
@@ -68,7 +74,7 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/admin
 EXPOSE 3001
 CMD [ "./admin_service" ]
 
-FROM ubuntu:22.04 as admin-account
+FROM --platform=linux/amd64 ubuntu:22.04 as admin-account
 
 RUN useradd -m -s /bin/bash -U admin-account-operator
 USER admin-account-operator
