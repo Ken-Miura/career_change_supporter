@@ -103,7 +103,7 @@ services:
       - development_network
 
   opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.6.0
+    image: opensearchproject/opensearch-dashboards:2.8.0
     restart: always
     environment:
       - 'OPENSEARCH_HOSTS=["http://opensearch:9200"]'
