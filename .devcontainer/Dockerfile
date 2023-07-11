@@ -32,7 +32,7 @@ RUN mkdir ${HOME}/workspace
 WORKDIR ${HOME}/workspace
 
 RUN export RUST_VERSION=1.70.0 && \
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.70.0
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ENV PATH=${PATH}:${HOME}/.cargo/bin
 RUN export SEA_ORM_CLI_VERSION=0.11.3 && \
     cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
@@ -83,14 +83,26 @@ WORKDIR /home/admin-account-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
 CMD [ "./admin_account" ]
 
-FROM development as migration-tool
+FROM --platform=linux/amd64 ubuntu:22.04 as migration-tool
 
+RUN useradd -m -s /bin/bash -U migration-tool-operator
+USER migration-tool-operator
+RUN mkdir -p /home/migration-tool-operator/workspace
+WORKDIR /home/migration-tool-operator/workspace
+COPY --from=server-test-and-build /home/developer/.cargo/bin/sea-orm-cli ./
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-CMD [ "sea-orm-cli" ]
+CMD [ "./sea-orm-cli" ]
 
-FROM development as index-initilizer
+FROM --platform=linux/amd64 ubuntu:22.04 as index-initilizer
 
+RUN apt-get update && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y curl
+RUN useradd -m -s /bin/bash -U index-initilizer-operator
+USER index-initilizer-operator
+RUN mkdir -p /home/index-initilizer-operator/workspace
+WORKDIR /home/index-initilizer-operator/workspace
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 CMD [ "bash", "-c", "curl -XPUT -H Content-Type: application/json --data @files_for_compose/opensearch/index_definition/index.json ${SCHEME}://${HOST}:${PORT}/users" ]
