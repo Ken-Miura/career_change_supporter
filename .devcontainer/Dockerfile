@@ -94,15 +94,8 @@ COPY --from=server-test-and-build /home/developer/.cargo/bin/sea-orm-cli ./
 COPY . .
 CMD [ "./sea-orm-cli" ]
 
-FROM --platform=linux/amd64 ubuntu:22.04 as index-initilizer
+FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initilizer
 
-RUN apt-get update && \
-    export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y curl
-RUN useradd -m -s /bin/bash -U index-initilizer-operator
-USER index-initilizer-operator
-RUN mkdir -p /home/index-initilizer-operator/workspace
-WORKDIR /home/index-initilizer-operator/workspace
 # ビルドコンテキストはserverディレクトリ直下であると仮定
-COPY . .
-CMD [ "bash", "-c", "curl -XPUT -H Content-Type: application/json --data @files_for_compose/opensearch/index_definition/index.json ${SCHEME}://${HOST}:${PORT}/users" ]
+COPY files_for_compose/opensearch/index_definition/index.json .
+CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json ${SCHEME}://${HOST}:${PORT}/users" ]
