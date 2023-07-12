@@ -46,7 +46,6 @@ RUN export NODE_JS_VERSION=18.16.0 && \
     nvm use ${NODE_JS_VERSION}
 
 FROM development as server-test-and-build
-
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 RUN cargo fmt --check && \
@@ -55,7 +54,6 @@ RUN cargo fmt --check && \
     cargo build --release
 
 FROM --platform=linux/amd64 ubuntu:22.04 as user-service
-
 RUN useradd -m -s /bin/bash -U user-service-operator
 USER user-service-operator
 RUN mkdir -p /home/user-service-operator/workspace
@@ -65,7 +63,6 @@ EXPOSE 3000
 CMD [ "./user_service" ]
 
 FROM --platform=linux/amd64 ubuntu:22.04 as admin-service
-
 RUN useradd -m -s /bin/bash -U admin-service-operator
 USER admin-service-operator
 RUN mkdir -p /home/admin-service-operator/workspace
@@ -75,7 +72,6 @@ EXPOSE 3001
 CMD [ "./admin_service" ]
 
 FROM --platform=linux/amd64 ubuntu:22.04 as admin-account
-
 RUN useradd -m -s /bin/bash -U admin-account-operator
 USER admin-account-operator
 RUN mkdir -p /home/admin-account-operator/workspace
@@ -83,8 +79,19 @@ WORKDIR /home/admin-account-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
 CMD [ "./admin_account" ]
 
-FROM --platform=linux/amd64 ubuntu:22.04 as migration-tool
+# DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
+# 利用頻度により随時必要なイメージとして切り出すか検討する
+FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
+RUN apk add --update bash postgresql14-client && \
+        rm -rf /var/cache/apk/*
+CMD [ "psql", "--help" ]
 
+FROM psql-client as db-initializer
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY files_for_compose/initdb/init.sh .
+CMD [ "./init.sh" ]
+
+FROM --platform=linux/amd64 ubuntu:22.04 as migration-tool
 RUN useradd -m -s /bin/bash -U migration-tool-operator
 USER migration-tool-operator
 RUN mkdir -p /home/migration-tool-operator/workspace
@@ -94,8 +101,9 @@ COPY --from=server-test-and-build /home/developer/.cargo/bin/sea-orm-cli ./
 COPY . .
 CMD [ "./sea-orm-cli" ]
 
-FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initilizer
-
+# インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
+# 利用頻度により随時必要なイメージとして切り出すか検討する
+FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY files_for_compose/opensearch/index_definition/index.json .
 CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json ${SCHEME}://${HOST}:${PORT}/users" ]
