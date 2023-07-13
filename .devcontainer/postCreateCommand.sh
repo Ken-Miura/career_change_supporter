@@ -24,7 +24,7 @@ export DB_ADMIN_USER=postgres
 export DB_ADMIN_PASSWORD=example
 export USER_APP_PASSWORD=test1234
 export ADMIN_APP_PASSWORD=test13579
-./files_for_compose/initdb/init.sh > /dev/null;
+./data_store_setup_files/initdb/init.sh > /dev/null;
 
 # DBインスタンスにスキーマとテーブルを作成
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
@@ -41,7 +41,7 @@ echo "opensearch launched"
 
 echo "opensearch initialization start"
 # インデックスの生成
-curl -s -XPUT -H "Content-Type: application/json" --data "@files_for_compose/opensearch/index_definition/index.json" "http://opensearch:9200/users" > /dev/null
+curl -s -XPUT -H "Content-Type: application/json" --data "@data_store_setup_files/opensearch/index_definition/index.json" "http://opensearch:9200/users" > /dev/null
 # replicaシャードの数を0に設定（開発環境の設定であり、本番環境では実施しない設定）
 # 開発環境では、OpenSearchは単一ノードで構成する。単一ノードの場合、replicaシャードを配置するための別ノードが存在しない。
 # そのため、それに起因してインデックスのステータスがyellowとなる。開発環境においては、replicaシャードが存在しないことは問題とならない。

@@ -2,7 +2,7 @@ services:
 
   # Use postgres/example user/password credentials
   db:
-    image: postgres:14.7
+    image: postgres:14.8
     restart: always
     ports:
       - "5432:5432"
@@ -17,7 +17,7 @@ services:
       - development_network
   
   cache:
-    image: redis:7.0.9
+    image: redis:7.0.12
     restart: always
     ports:
       - "6379:6379"
@@ -26,7 +26,7 @@ services:
 
   db-management-client:
     # データベース操作が可能なWeb UIを提供するimage
-    image: dpage/pgadmin4:6.21
+    image: dpage/pgadmin4:7.4
     restart: always
     ports:
       - "8082:80"
@@ -48,7 +48,7 @@ services:
 
   storage:
     # AWS s3互換のモックサーバとしての機能と管理用のWeb UIを提供するimage
-    image: minio/minio:RELEASE.2023-03-09T23-16-13Z
+    image: minio/minio:RELEASE.2023-07-11T21-29-34Z
     container_name: "storage"
     entrypoint: sh -c "
         mkdir -p /data/ccs-identity-images;
@@ -75,7 +75,7 @@ services:
   # https://opensearch.org/docs/latest/opensearch/install/docker/#sample-docker-compose-file-for-development
   opensearch:
     build:
-      context: ./files_for_compose/opensearch/image_with_plugins
+      context: ./data_store_setup_files/opensearch/image_with_plugins
       dockerfile: Dockerfile
     restart: always
     environment:

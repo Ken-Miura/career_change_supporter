@@ -93,7 +93,7 @@ CMD [ "psql", "--help" ]
 
 FROM psql-client as db-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
-COPY files_for_compose/initdb/init.sh .
+COPY data_store_setup_files/initdb/init.sh .
 CMD [ "./init.sh" ]
 
 FROM --platform=linux/amd64 ubuntu:22.04 as migration-tool
@@ -110,5 +110,5 @@ CMD [ "./sea-orm-cli" ]
 # 利用頻度により随時必要なイメージとして切り出すか検討する
 FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
-COPY files_for_compose/opensearch/index_definition/index.json .
+COPY data_store_setup_files/opensearch/index_definition/index.json .
 CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json ${SCHEME}://${HOST}:${PORT}/users" ]
