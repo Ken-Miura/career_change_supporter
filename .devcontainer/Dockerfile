@@ -6,6 +6,10 @@
 #   参考: https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/task_definition_parameters.html#runtime-platform
 FROM --platform=linux/amd64 ubuntu:22.04 as development
 
+ENV LANG="en_US.UTF-8"
+ENV LANGUAGE="en_US.UTF-8"
+ENV LC_ALL="en_US.UTF-8"
+
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y \
@@ -15,6 +19,7 @@ RUN apt-get update && \
         libssl-dev \
         lldb \
         pkg-config \
+        postgresql-client-14 \
         vim
 
 ARG USERNAME=developer

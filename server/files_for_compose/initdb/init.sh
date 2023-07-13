@@ -1,11 +1,17 @@
 #!/bin/bash
-set -e
+set -eu
 
-# TODO: ROLEのパスワード変更＋管理方法の検討
-# TODO: 本番環境（AWS上のRDS）でCREATE DATABASEを行う際、template0とtemplate1のどちらを選択すべきか要確認
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+NEW_PASSWORD=${NEW_DB_ADMIN_PASSWORD:-${DB_ADMIN_PASSWORD}}
+
+echo "${DB_HOST}:${DB_PORT}:*:${DB_ADMIN_USER}:${DB_ADMIN_PASSWORD}" > ~/.pgpass
+chmod 600 ~/.pgpass
+
+psql -h "${DB_HOST}" -p "${DB_PORT}" -v ON_ERROR_STOP=1 --username "${DB_ADMIN_USER}" <<-EOSQL
+    ALTER ROLE "${DB_ADMIN_USER}" with PASSWORD '${NEW_PASSWORD}';
     CREATE ROLE ccs;
-    CREATE ROLE user_app WITH LOGIN PASSWORD 'test1234';
-    CREATE ROLE admin_app WITH LOGIN PASSWORD 'test13579';
+    CREATE ROLE user_app WITH LOGIN PASSWORD '${USER_APP_PASSWORD}';
+    CREATE ROLE admin_app WITH LOGIN PASSWORD '${ADMIN_APP_PASSWORD}';
     CREATE DATABASE ccs_db WITH OWNER = ccs TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'C';
 EOSQL
+
+rm ~/.pgpass

@@ -16,9 +16,20 @@ done
 echo "db launched"
 
 echo "db initialization start"
+
+# ロールの追加、DBインスタンスの作成を実施
+export DB_HOST=db
+export DB_PORT=5432
+export DB_ADMIN_USER=postgres
+export DB_ADMIN_PASSWORD=example
+export USER_APP_PASSWORD=test1234
+export ADMIN_APP_PASSWORD=test13579
+./files_for_compose/initdb/init.sh > /dev/null;
+
+# DBインスタンスにスキーマとテーブルを作成
 export DATABASE_URL=postgres://postgres:example@db/ccs_db
-# DBにスキーマとテーブルを作成（空のDBを初期化する処理）
-sea-orm-cli migrate up
+sea-orm-cli migrate up > /dev/null;
+
 echo "db initialization finish"
 
 while ! curl -I -s http://opensearch:9200 > /dev/null;
