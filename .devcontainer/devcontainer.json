@@ -37,7 +37,8 @@
 		"tamasfe.even-better-toml@0.19.0",
 		"serayuzgur.crates@0.5.10",
 		"vue.volar@1.2.0",
-		"bradlc.vscode-tailwindcss@0.9.7"
+		"bradlc.vscode-tailwindcss@0.9.7",
+		"redhat.vscode-yaml@1.13.0"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
