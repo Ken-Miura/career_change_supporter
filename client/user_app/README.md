@@ -10,7 +10,7 @@ npm install
 npm run serve
 ```
 
-### Compiles and minifies for production
+### Compiles and minifies for production (実行前にsample.envファイルを.envへリネームし、環境にあった変数を設定する)
 ```
 npm run build
 ```
