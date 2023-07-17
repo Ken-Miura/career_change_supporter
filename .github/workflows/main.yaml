@@ -2,6 +2,7 @@ name: Test, build and upload artifacts
 run-name: ${{ github.actor }} is starting workflow
 on: [push]
 jobs:
+  # Github Actionsの無料枠を使い切った場合を考慮し、ローカルでも実行できるようにコマンドをメインにジョブを作成する
   Test-Build-And-Upload-Artifacts:
     runs-on: ubuntu-22.04
     steps:
@@ -11,3 +12,24 @@ jobs:
         run: |
           docker build --build-arg UID="`id -u`" --build-arg GID="`id -g`" --target development -t development -f .devcontainer/Dockerfile server/
           docker build --target server-test-and-build -t server-test-and-build -f .devcontainer/Dockerfile server/
+      - name: Create images
+        run: |
+          docker build --target user-service -t ccs-user-service:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target admin-service -t ccs-admin-service:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target admin-account -t ccs-admin-account:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target db-initializer -t ccs-db-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target migration-tool -t ccs-migration-tool:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target index-initializer -t ccs-index-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+      - name: Test and build client side code
+        run: >
+          docker run -e VUE_APP_PAYJP_PUBLIC_KEY=${PAYJP_PUBLIC_KEY} -v "$(pwd)/client":/home/developer/workspace development bash -c 'source ${NVM_DIR}/nvm.sh
+          && pushd user_app && npm i && npm run lint && npm run test:unit && npm run build && popd
+          && pushd admin_app && npm i && npm run lint && npm run test:unit && npm run build'
+        env:
+          PAYJP_PUBLIC_KEY: ${{ vars.PAYJP_PUBLIC_KEY }}
+      - name: Check if public key is included
+        run: |
+          grep -r ${PAYJP_PUBLIC_KEY} client/user_app/dist/ > /dev/null
+          echo $?
+        env:
+          PAYJP_PUBLIC_KEY: ${{ vars.PAYJP_PUBLIC_KEY }}
