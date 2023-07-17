@@ -1,8 +1,9 @@
 name: Test, build and upload artifacts
 run-name: ${{ github.actor }} is starting workflow
-# on: [push] // Github Actionsの動作確認中のため、一時コメントアウト
-on:
-  workflow_dispatch
+on: [push]
+# Github Actionsの動作確認の際にコメントアウトを外して手動実行する
+# on:
+#   workflow_dispatch
 jobs:
   # Github Actionsの無料枠を使い切った場合を考慮し、ローカルでも実行できるようにコマンドをメインにジョブを作成する
   Test-Build-And-Upload-Artifacts:
@@ -29,3 +30,36 @@ jobs:
           && pushd admin_app && npm i && npm run lint && npm run test:unit && npm run build'
         env:
           PAYJP_PUBLIC_KEY: ${{ vars.PAYJP_PUBLIC_KEY }}
+      - name: Upload images
+        run: |
+          aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_ACCOUNT}
+          docker tag ccs-user-service:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-user-service:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-user-service:"$(git rev-parse HEAD)"
+          docker tag ccs-admin-service:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-admin-service:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-admin-service:"$(git rev-parse HEAD)"
+          docker tag ccs-admin-account:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-admin-account:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-admin-account:"$(git rev-parse HEAD)"
+          docker tag ccs-db-initializer:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-db-initializer:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-db-initializer:"$(git rev-parse HEAD)"
+          docker tag ccs-migration-tool:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-migration-tool:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-migration-tool:"$(git rev-parse HEAD)"
+          docker tag ccs-index-initializer:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-index-initializer:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-index-initializer:"$(git rev-parse HEAD)"
+        env:
+          AWS_ECR_ACCOUNT: ${{ vars.AWS_ECR_ACCOUNT }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          AWS_DEFAULT_OUTPUT: json
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARTIFACTS_UPLOADER_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARTIFACTS_UPLOADER_AWS_SECRET_ACCESS_KEY }}
+      # (意図しないリリースを避けるため、) ユーザーからアクセスされるS3バケットへ直接アップロードするのではなく、まず別のバケットへアップロードする
+      - name: Upload static files
+        run: |
+          aws s3 sync client/user_app/dist s3://${CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
+          aws s3 sync client/admin_app/dist s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
+        env:
+          CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET }}
+          CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          AWS_DEFAULT_OUTPUT: json
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARTIFACTS_UPLOADER_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARTIFACTS_UPLOADER_AWS_SECRET_ACCESS_KEY }}
