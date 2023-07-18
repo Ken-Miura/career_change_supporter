@@ -6,7 +6,6 @@ jobs:
   # Github Actionsの無料枠を使い切った場合を考慮し、ローカルでも実行できるようにコマンドをメインにジョブを作成する
   Test-Build-And-Upload-Artifacts:
     runs-on: ubuntu-22.04
-    if: github.event.pull_request.merged == true
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
