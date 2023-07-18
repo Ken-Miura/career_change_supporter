@@ -1,13 +1,15 @@
 name: Test, build and upload artifacts
 run-name: ${{ github.actor }} is starting workflow
-on: [push]
-# Github Actionsの動作確認の際にコメントアウトを外して手動実行する
-# on:
-#   workflow_dispatch
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
 jobs:
   # Github Actionsの無料枠を使い切った場合を考慮し、ローカルでも実行できるようにコマンドをメインにジョブを作成する
   Test-Build-And-Upload-Artifacts:
     runs-on: ubuntu-22.04
+    if: github.event.pull_request.merged == true
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
