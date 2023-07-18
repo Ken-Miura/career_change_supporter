@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-fred-session = "0.1.4"
+async-fred-session = "0.1.5"
 aws-config = "0.55.3"
 aws-sdk-s3 = "0.28.0"
 axum = { version = "0.6.19", features = ["macros"] }

@@ -177,9 +177,9 @@ dependencies = [
 
 [[package]]
 name = "async-fred-session"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "123b7accbfe20871bdb569e0042aa93ee1c098a4716ba1d4b1492a6adbae054e"
+checksum = "0041afbf24aedf0cbae7c71f0cf7f0536e90ba68fa3fd88998ea9649fb3c4afa"
 dependencies = [
  "async-session",
  "fred",
@@ -1588,9 +1588,9 @@ dependencies = [
 
 [[package]]
 name = "fred"
-version = "6.0.0"
+version = "6.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c52d60e6d9b2a715da13ec520d7da6e095121e25da5027cdac56b8f96684654b"
+checksum = "7e02c21b098d77b0e99fe0054ebd3e7c9f81bffb42aa843021415ffa793124a6"
 dependencies = [
  "arc-swap",
  "arcstr",
