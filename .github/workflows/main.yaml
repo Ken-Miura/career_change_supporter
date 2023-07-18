@@ -1,10 +1,7 @@
 name: Test, build and upload artifacts
 run-name: ${{ github.actor }} is starting workflow
 on:
-  pull_request:
-    branches:
-      - main
-    types: [closed]
+  workflow_dispatch
 jobs:
   # Github Actionsの無料枠を使い切った場合を考慮し、ローカルでも実行できるようにコマンドをメインにジョブを作成する
   Test-Build-And-Upload-Artifacts:
