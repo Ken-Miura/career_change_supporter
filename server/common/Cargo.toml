@@ -11,7 +11,7 @@ aws-config = "0.55.3"
 aws-sdk-s3 = "0.28.0"
 axum = { version = "0.6.19", features = ["macros"] }
 axum-extra = { version = "0.7.5", features = ["cookie", "cookie-signed"] }
-bcrypt = "0.14.0"
+bcrypt = "0.15.0"
 chrono = "0.4.26"
 entity = { path = "../entity" }
 lettre = { version = "0.10.4", default-features = false, features = ["smtp-transport", "pool", "rustls-tls", "hostname", "builder", "tokio1", "tokio1-rustls-tls"] }
