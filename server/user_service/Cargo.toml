@@ -23,7 +23,7 @@ opensearch = "2.1.0"
 regex = "1.9.1"
 rust_decimal = "1.29.1"
 serde = { version = "1.0.171", features = ["derive"] }
-tokio = { version = "1.28.2", features = ["full"] }
+tokio = { version = "1.29.1", features = ["full"] }
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["trace"] }
 tracing = "0.1.37"
