@@ -412,7 +412,12 @@ async fn handle_delete_accounts(
 
     let text = create_text();
     send_mail
-        .send_mail(&email_address, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
+        .send_mail(
+            &email_address,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
+            &SUBJECT,
+            &text,
+        )
         .await?;
 
     info!(

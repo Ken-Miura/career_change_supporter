@@ -177,7 +177,7 @@ async fn handle_password_update_req(
     send_mail
         .send_mail(
             &pwd_change_req.email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             &SUBJECT,
             &text,
         )

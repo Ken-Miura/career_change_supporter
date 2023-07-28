@@ -22,8 +22,18 @@ pub static ADMIN_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
     })
 });
 
-// TODO: 実際にメールアドレスを取得した後、修正する
-pub const SYSTEM_EMAIL_ADDRESS: &str = "admin-no-reply@test.com";
+pub const KEY_TO_SYSTEM_EMAIL_ADDRESS: &str = "SYSTEM_EMAIL_ADDRESS";
+/// ユーザーに通知を送る際の送信元に使われるメールアドレス
+/// ユーザーの目に触れる箇所で使われるので、必ず自ドメインのメールアドレスを指定する。
+/// また、送信専用とするため、メールボックスが存在しないアカウントを指定する。
+pub static SYSTEM_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_SYSTEM_EMAIL_ADDRESS).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "admin-no-reply@test.com".to_string()
+    })
+});
+
 // TODO: 実際にメールアドレスを取得した後、修正する
 pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";
 

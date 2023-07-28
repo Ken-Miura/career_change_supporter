@@ -109,7 +109,7 @@ async fn handle_temp_accounts_req(
     );
     let text = create_text(url, &uuid_for_url);
     send_mail
-        .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS, &SUBJECT, &text)
+        .send_mail(email_addr, SYSTEM_EMAIL_ADDRESS.as_str(), &SUBJECT, &text)
         .await?;
     Ok((StatusCode::OK, Json(TempAccountsResult {})))
 }

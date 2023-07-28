@@ -300,7 +300,7 @@ async fn send_mail_to_consultant(
     send_mail
         .send_mail(
             consultant_email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             CONSULTANT_MAIL_SUBJECT.as_str(),
             text.as_str(),
         )
@@ -358,7 +358,7 @@ async fn send_mail_to_user(
     send_mail
         .send_mail(
             user_account_email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             USER_ACCOUNT_MAIL_SUBJECT.as_str(),
             text.as_str(),
         )

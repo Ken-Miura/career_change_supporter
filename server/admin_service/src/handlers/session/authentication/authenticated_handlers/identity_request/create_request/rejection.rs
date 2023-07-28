@@ -114,7 +114,7 @@ async fn handle_create_identity_request_rejection(
     send_mail
         .send_mail(
             &user_email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             &SUBJECT,
             create_text(rejection_reason).as_str(),
         )

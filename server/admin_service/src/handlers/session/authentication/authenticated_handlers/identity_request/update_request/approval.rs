@@ -96,7 +96,7 @@ async fn handle_update_identity_request_approval(
     send_mail
         .send_mail(
             &user_email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             &SUBJECT,
             create_text().as_str(),
         )

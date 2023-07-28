@@ -797,7 +797,7 @@ async fn send_mail_to_user(
     send_mail
         .send_mail(
             email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT.as_str(),
             text.as_str(),
         )
@@ -859,7 +859,7 @@ async fn send_mail_to_consultant(
     send_mail
         .send_mail(
             email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT.as_str(),
             text.as_str(),
         )
@@ -1034,7 +1034,7 @@ mod tests {
             subject: &str,
             _text: &str,
         ) -> Result<(), ErrResp> {
-            assert_eq!(from, SYSTEM_EMAIL_ADDRESS);
+            assert_eq!(from, SYSTEM_EMAIL_ADDRESS.as_str());
             assert_eq!(subject, *CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT);
             if self.fail {
                 return Err(unexpected_err_resp());

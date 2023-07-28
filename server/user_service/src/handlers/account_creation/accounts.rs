@@ -127,7 +127,7 @@ async fn handle_accounts_req(
     send_mail
         .send_mail(
             &temp_account.email_address,
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             &SUBJECT,
             &text,
         )

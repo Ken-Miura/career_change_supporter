@@ -406,7 +406,7 @@ async fn handle_identity_req(
     send_mail
         .send_mail(
             ADMIN_EMAIL_ADDRESS.as_str(),
-            SYSTEM_EMAIL_ADDRESS,
+            SYSTEM_EMAIL_ADDRESS.as_str(),
             &subject,
             &text,
         )

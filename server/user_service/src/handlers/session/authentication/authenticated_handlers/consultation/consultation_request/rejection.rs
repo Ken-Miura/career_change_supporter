@@ -210,7 +210,7 @@ async fn send_consultation_req_rejection_mail_if_user_exists(
         send_mail
             .send_mail(
                 user_email_address.as_str(),
-                SYSTEM_EMAIL_ADDRESS,
+                SYSTEM_EMAIL_ADDRESS.as_str(),
                 CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.as_str(),
                 create_text(consultation_req_id).as_str(),
             )
