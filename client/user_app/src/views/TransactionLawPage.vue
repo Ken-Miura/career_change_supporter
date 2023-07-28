@@ -6,22 +6,21 @@
       </router-link>
     </header>
     <main class="bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <!-- TODO: 内容の更新 -->
       <h1 class="font-bold text-2xl">特定商取引法に基づく表記</h1>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">事業者</h2>
-        <p class="ml-2 text-lg">XXX株式会社</p>
+        <h2 class="font-bold text-xl">事業者名</h2>
+        <p class="ml-2 text-lg">{{ businessOperatorName }}</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">事業者の所在</h2>
-        <p class="ml-2 text-lg">〒111-1111</p>
-        <p class="ml-2 text-lg">東京都XXX市XXX</p>
+        <p class="ml-2 text-lg">〒{{ zipCode }}</p>
+        <p class="ml-2 text-lg">{{ address }}</p>
         <p class="ml-2 text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
         <p class="ml-2 text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">お問い合わせ先</h2>
-        <p class="ml-2 text-lg">xxx.test@example.com</p>
+        <p class="ml-2 text-lg">{{ inquiryEmailAddress }}</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">相談料と手数料</h2>
@@ -62,7 +61,16 @@ import { PLATFORM_FEE_IN_PERCENTAGE } from '@/util/personalized/profile/Platform
 export default defineComponent({
   name: 'TransactionLawPage',
   setup () {
+    const businessOperatorName = process.env.VUE_APP_BUSINESS_OPERATOR_NAME
+    const zipCode = process.env.VUE_APP_ZIP_CODE
+    const address = process.env.VUE_APP_ADDRESS
+    const inquiryEmailAddress = process.env.VUE_APP_INQUIRY_EMAIL_ADDRESS
+
     return {
+      businessOperatorName,
+      zipCode,
+      address,
+      inquiryEmailAddress,
       PLATFORM_FEE_IN_PERCENTAGE,
       TRANSFER_FEE_IN_YEN
     }
