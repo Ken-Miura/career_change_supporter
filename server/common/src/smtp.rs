@@ -11,8 +11,17 @@ use tracing::{error, info};
 
 use crate::{err, ApiError, ErrResp};
 
-// TODO: 実際にメールアドレスを取得した後、修正する
-pub const ADMIN_EMAIL_ADDRESS: &str = "admin@test.com";
+pub const KEY_TO_ADMIN_EMAIL_ADDRESS: &str = "ADMIN_EMAIL_ADDRESS";
+/// ユーザーが身分確認や職歴確認等を申請した際、管理者に通知を送るためのメールアドレス
+/// ユーザーの目に触れる箇所で使わないように注意する
+pub static ADMIN_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_ADMIN_EMAIL_ADDRESS).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "admin@test.com".to_string()
+    })
+});
+
 // TODO: 実際にメールアドレスを取得した後、修正する
 pub const SYSTEM_EMAIL_ADDRESS: &str = "admin-no-reply@test.com";
 // TODO: 実際にメールアドレスを取得した後、修正する

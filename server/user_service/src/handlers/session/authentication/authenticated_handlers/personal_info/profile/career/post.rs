@@ -399,7 +399,12 @@ async fn handle_career_req(
     let subject = create_subject(account_id);
     let text = create_text(account_id);
     send_mail
-        .send_mail(ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS, &subject, &text)
+        .send_mail(
+            ADMIN_EMAIL_ADDRESS.as_str(),
+            SYSTEM_EMAIL_ADDRESS,
+            &subject,
+            &text,
+        )
         .await?;
     Ok((StatusCode::OK, Json(CareerResult {})))
 }
