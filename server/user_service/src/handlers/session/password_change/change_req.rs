@@ -151,7 +151,10 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        url, uuid_str, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE, INQUIRY_EMAIL_ADDRESS
+        url,
+        uuid_str,
+        VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE,
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 

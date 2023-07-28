@@ -838,7 +838,7 @@ Email: {}",
         consultant_id,
         fee_per_hour_in_yen,
         consultation_date_time,
-        INQUIRY_EMAIL_ADDRESS
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 
@@ -892,7 +892,7 @@ Email: {}",
         user_account_id,
         fee_per_hour_in_yen,
         consultation_date_time,
-        INQUIRY_EMAIL_ADDRESS
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 
@@ -2597,7 +2597,7 @@ Email: {}",
             consultant_id,
             fee_per_hour_in_yen,
             consultation_date_time,
-            INQUIRY_EMAIL_ADDRESS
+            INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
         assert_eq!(result, expected);
@@ -2635,7 +2635,7 @@ Email: {}",
             user_account_id,
             fee_per_hour_in_yen,
             consultation_date_time,
-            INQUIRY_EMAIL_ADDRESS
+            INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
         assert_eq!(result, expected);

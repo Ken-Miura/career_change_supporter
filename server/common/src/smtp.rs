@@ -34,8 +34,17 @@ pub static SYSTEM_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
     })
 });
 
-// TODO: 実際にメールアドレスを取得した後、修正する
-pub const INQUIRY_EMAIL_ADDRESS: &str = "inquiry@test.com";
+pub const KEY_TO_INQUIRY_EMAIL_ADDRESS: &str = "INQUIRY_EMAIL_ADDRESS";
+/// ユーザーの問い合わせ窓口として使われるメールアドレス
+/// ユーザーの目に触れる箇所で使われるので、必ず自ドメインのメールアドレスを指定する。
+/// また、ユーザーからのメールを受け取るため、必ずメールボックスが存在するアカウントを指定する。
+pub static INQUIRY_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_INQUIRY_EMAIL_ADDRESS).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "inquiry@test.com".to_string()
+    })
+});
 
 pub const KEY_TO_SMTP_HOST: &str = "SMTP_HOST";
 pub static SMTP_HOST: Lazy<String> = Lazy::new(|| {

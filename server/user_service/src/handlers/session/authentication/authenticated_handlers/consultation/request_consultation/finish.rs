@@ -337,7 +337,7 @@ Email: {}",
         candidates.1,
         candidates.2,
         *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
-        INQUIRY_EMAIL_ADDRESS
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 
@@ -404,7 +404,7 @@ Email: {}",
         *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
         *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
         WEB_SITE_NAME,
-        INQUIRY_EMAIL_ADDRESS
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 
@@ -1127,7 +1127,7 @@ Email: {}",
             second_candidate,
             third_candidate,
             *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
-            INQUIRY_EMAIL_ADDRESS
+            INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
         assert_eq!(result, expected);
@@ -1184,7 +1184,7 @@ Email: {}",
             *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
             *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
             WEB_SITE_NAME,
-            INQUIRY_EMAIL_ADDRESS
+            INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
         assert_eq!(result, expected);

@@ -80,7 +80,7 @@ use common::payment_platform::{
 };
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::{
-    KEY_TO_SMTP_HOST, KEY_TO_SMTP_PASSWORD, KEY_TO_SMTP_PORT, KEY_TO_SMTP_USERNAME, KEY_TO_SYSTEM_EMAIL_ADDRESS,
+    KEY_TO_SMTP_HOST, KEY_TO_SMTP_PASSWORD, KEY_TO_SMTP_PORT, KEY_TO_SMTP_USERNAME, KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS,
 };
 use common::storage::{
     KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
@@ -128,6 +128,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_OPENSEARCH_PASSWORD.to_string(),
         KEY_TO_ADMIN_TOTP_ISSUER.to_string(),
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
+        KEY_TO_INQUIRY_EMAIL_ADDRESS.to_string(),
     ]
 });
 

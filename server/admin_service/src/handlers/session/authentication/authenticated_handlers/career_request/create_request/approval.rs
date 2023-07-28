@@ -484,7 +484,7 @@ fn create_text() -> String {
 
 【お問い合わせ先】
 Email: {}",
-        INQUIRY_EMAIL_ADDRESS
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 

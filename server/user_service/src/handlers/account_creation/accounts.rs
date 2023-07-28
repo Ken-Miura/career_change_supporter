@@ -168,7 +168,8 @@ fn create_text() -> String {
 
 【お問い合わせ先】
 Email: {}",
-        WEB_SITE_NAME, INQUIRY_EMAIL_ADDRESS
+        WEB_SITE_NAME,
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 

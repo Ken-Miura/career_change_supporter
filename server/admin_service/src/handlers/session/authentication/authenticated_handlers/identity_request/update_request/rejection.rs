@@ -241,7 +241,8 @@ fn create_text(rejection_reason: String) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        rejection_reason, INQUIRY_EMAIL_ADDRESS
+        rejection_reason,
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 

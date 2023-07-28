@@ -226,7 +226,8 @@ fn create_text(consultation_req_id: i64) -> String {
         
 【お問い合わせ先】
 Email: {}",
-        consultation_req_id, INQUIRY_EMAIL_ADDRESS
+        consultation_req_id,
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 

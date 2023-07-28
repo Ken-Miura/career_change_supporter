@@ -133,7 +133,11 @@ fn create_text(url: &str, uuid_str: &str) -> String {
 
 【お問い合わせ先】
 Email: {}",
-        WEB_SITE_NAME, url, uuid_str, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR, INQUIRY_EMAIL_ADDRESS
+        WEB_SITE_NAME,
+        url,
+        uuid_str,
+        VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR,
+        INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
 
