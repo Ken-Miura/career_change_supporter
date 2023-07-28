@@ -23,11 +23,21 @@ jobs:
           docker build --target index-initializer -t ccs-index-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
       - name: Test and build client side code
         run: >
-          docker run -e VUE_APP_PAYJP_PUBLIC_KEY=${PAYJP_PUBLIC_KEY} -v "$(pwd)/client":/home/developer/workspace development bash -c 'source ${NVM_DIR}/nvm.sh
+          docker run -v "$(pwd)/client":/home/developer/workspace
+          -e VUE_APP_PAYJP_PUBLIC_KEY=${PAYJP_PUBLIC_KEY}
+          -e VUE_APP_BUSINESS_OPERATOR_NAME=${BUSINESS_OPERATOR_NAME}
+          -e VUE_APP_BUSINESS_OPERATOR_ZIP_CODE=${BUSINESS_OPERATOR_ZIP_CODE}
+          -e VUE_APP_BUSINESS_OPERATOR_ADDRESS=${BUSINESS_OPERATOR_ADDRESS}
+          -e VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS=${BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS}
+          development bash -c 'source ${NVM_DIR}/nvm.sh
           && pushd user_app && npm i && npm run lint && npm run test:unit && npm run build && popd
           && pushd admin_app && npm i && npm run lint && npm run test:unit && npm run build'
         env:
           PAYJP_PUBLIC_KEY: ${{ vars.PAYJP_PUBLIC_KEY }}
+          BUSINESS_OPERATOR_NAME: ${{ vars.BUSINESS_OPERATOR_NAME }}
+          BUSINESS_OPERATOR_ZIP_CODE: ${{ vars.BUSINESS_OPERATOR_ZIP_CODE }}
+          BUSINESS_OPERATOR_ADDRESS: ${{ vars.BUSINESS_OPERATOR_ADDRESS }}
+          BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS: ${{ vars.BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS }}
       - name: Upload images
         run: |
           aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_ACCOUNT}
