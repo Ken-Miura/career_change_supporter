@@ -13,14 +13,14 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">事業者の所在</h2>
-        <p class="ml-2 text-lg">〒{{ zipCode }}</p>
-        <p class="ml-2 text-lg">{{ address }}</p>
+        <p class="ml-2 text-lg">〒{{ businessOperatorZipCode }}</p>
+        <p class="ml-2 text-lg">{{ businessOperatorAddress }}</p>
         <p class="ml-2 text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
         <p class="ml-2 text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">お問い合わせ先</h2>
-        <p class="ml-2 text-lg">{{ inquiryEmailAddress }}</p>
+        <p class="ml-2 text-lg">{{ businessOperatorInquiryEmailAddress }}</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">相談料と手数料</h2>
@@ -62,15 +62,15 @@ export default defineComponent({
   name: 'TransactionLawPage',
   setup () {
     const businessOperatorName = process.env.VUE_APP_BUSINESS_OPERATOR_NAME
-    const zipCode = process.env.VUE_APP_ZIP_CODE
-    const address = process.env.VUE_APP_ADDRESS
-    const inquiryEmailAddress = process.env.VUE_APP_INQUIRY_EMAIL_ADDRESS
+    const businessOperatorZipCode = process.env.VUE_APP_BUSINESS_OPERATOR_ZIP_CODE
+    const businessOperatorAddress = process.env.VUE_APP_BUSINESS_OPERATOR_ADDRESS
+    const businessOperatorInquiryEmailAddress = process.env.VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS
 
     return {
       businessOperatorName,
-      zipCode,
-      address,
-      inquiryEmailAddress,
+      businessOperatorZipCode,
+      businessOperatorAddress,
+      businessOperatorInquiryEmailAddress,
       PLATFORM_FEE_IN_PERCENTAGE,
       TRANSFER_FEE_IN_YEN
     }
