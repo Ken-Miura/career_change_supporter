@@ -37,12 +37,12 @@ services:
       - development_network
 
   smtp:
-    # SMTPサーバとしての機能と受け取ったメールを確認するWeb UIを提供するimage
-    image: schickling/mailcatcher:latest
+    build:
+      context: ./aws_ses_mock
+      dockerfile: Dockerfile
     restart: always
     ports:
-      - "8083:1080" # Web UIのポート
-      - "1025:1025" # APIのポート
+      - 8005:8005
     networks:
       - development_network
 
