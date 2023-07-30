@@ -15,9 +15,9 @@ pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
     })
 });
 
-pub const KEY_TO_AWS_ACCESS_KEY_ID: &str = "AWS_ACCESS_KEY_ID";
-pub const KEY_TO_AWS_SECRET_ACCESS_KEY: &str = "AWS_SECRET_ACCESS_KEY";
-pub const KEY_TO_AWS_REGION: &str = "AWS_REGION";
+pub const KEY_TO_AWS_S3_ACCESS_KEY_ID: &str = "AWS_S3_ACCESS_KEY_ID";
+pub const KEY_TO_AWS_S3_SECRET_ACCESS_KEY: &str = "AWS_S3_SECRET_ACCESS_KEY";
+pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
 
 pub const IDENTITY_IMAGES_BUCKET_NAME: &str = "ccs-identity-images";
 pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";

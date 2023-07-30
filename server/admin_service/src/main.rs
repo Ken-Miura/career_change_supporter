@@ -83,8 +83,8 @@ use common::smtp::{
     KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
 };
 use common::storage::{
-    KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
-    KEY_TO_AWS_SECRET_ACCESS_KEY,
+    KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
+    KEY_TO_AWS_S3_SECRET_ACCESS_KEY,
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements};
@@ -115,9 +115,9 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
         KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
-        KEY_TO_AWS_ACCESS_KEY_ID.to_string(),
-        KEY_TO_AWS_SECRET_ACCESS_KEY.to_string(),
-        KEY_TO_AWS_REGION.to_string(),
+        KEY_TO_AWS_S3_ACCESS_KEY_ID.to_string(),
+        KEY_TO_AWS_S3_SECRET_ACCESS_KEY.to_string(),
+        KEY_TO_AWS_S3_REGION.to_string(),
         KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP.to_string(),
         KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
         KEY_TO_OPENSEARCH_USERNAME.to_string(),
