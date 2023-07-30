@@ -283,7 +283,7 @@ async fn delete_career_images(
     image2_file_name_without_ext: Option<String>,
 ) -> Result<(), ErrRespStruct> {
     let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
-    storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image1_key.as_str())
+    storage::delete_object(CAREER_IMAGES_BUCKET_NAME.as_str(), image1_key.as_str())
         .await
         .map_err(|e| {
             error!(
@@ -297,7 +297,7 @@ async fn delete_career_images(
 
     if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
         let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-        storage::delete_object(CAREER_IMAGES_BUCKET_NAME, image2_key.as_str())
+        storage::delete_object(CAREER_IMAGES_BUCKET_NAME.as_str(), image2_key.as_str())
             .await
             .map_err(|e| {
                 error!(

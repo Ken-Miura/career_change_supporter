@@ -84,7 +84,7 @@ use common::smtp::{
 };
 use common::storage::{
     KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
-    KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME,
+    KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME,
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements};
@@ -119,6 +119,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_S3_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_S3_REGION.to_string(),
         KEY_TO_IDENTITY_IMAGES_BUCKET_NAME.to_string(),
+        KEY_TO_CAREER_IMAGES_BUCKET_NAME.to_string(),
         KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP.to_string(),
         KEY_TO_OPENSEARCH_ENDPOINT_URI.to_string(),
         KEY_TO_OPENSEARCH_USERNAME.to_string(),

@@ -29,7 +29,15 @@ pub static IDENTITY_IMAGES_BUCKET_NAME: Lazy<String> = Lazy::new(|| {
     })
 });
 
-pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";
+pub const KEY_TO_CAREER_IMAGES_BUCKET_NAME: &str = "CAREER_IMAGES_BUCKET_NAME";
+pub static CAREER_IMAGES_BUCKET_NAME: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_CAREER_IMAGES_BUCKET_NAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"s3-bucket-name-to-career-images\") must be set",
+            KEY_TO_CAREER_IMAGES_BUCKET_NAME
+        );
+    })
+});
 
 // PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。

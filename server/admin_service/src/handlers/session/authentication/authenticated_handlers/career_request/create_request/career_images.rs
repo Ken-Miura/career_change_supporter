@@ -58,7 +58,7 @@ struct DownloadCareerImageOperationImpl {}
 #[async_trait]
 impl DownloadCareerImageOperation for DownloadCareerImageOperationImpl {
     async fn download_career_image(&self, key: &str) -> Result<Vec<u8>, ErrResp> {
-        let image_binary = download_object(CAREER_IMAGES_BUCKET_NAME, key)
+        let image_binary = download_object(CAREER_IMAGES_BUCKET_NAME.as_str(), key)
             .await
             .map_err(|e| {
                 error!("failed to download object (image key: {}): {}", key, e);

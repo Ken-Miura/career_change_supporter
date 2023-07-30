@@ -604,7 +604,7 @@ impl SubmitCareerOperationImpl {
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, career_image1.0);
         let image1_obj = career_image1.1.into_inner();
-        upload_object(CAREER_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+        upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image1_key, image1_obj)
             .await
             .map_err(|e| {
                 error!(
@@ -618,7 +618,7 @@ impl SubmitCareerOperationImpl {
         if let Some(career_image2) = career_image2_option {
             let image2_key = format!("{}/{}.png", account_id, career_image2.0);
             let image2_obj = career_image2.1.into_inner();
-            upload_object(CAREER_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
+            upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
                     error!(
