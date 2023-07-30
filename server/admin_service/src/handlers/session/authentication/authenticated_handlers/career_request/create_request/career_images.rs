@@ -1,14 +1,14 @@
 // Copyright 2022 Ken Miura
 
 use axum::async_trait;
+use axum::extract::State;
 use axum::headers::{HeaderMap, HeaderValue};
 use axum::http::StatusCode;
 use axum::{extract::Path, Json};
+use common::storage::StorageClient;
 use common::{
-    err::Code::InvalidUuidFormat,
-    storage::{download_object, CAREER_IMAGES_BUCKET_NAME},
-    util::validator::uuid_validator::validate_uuid,
-    ApiError, ErrResp,
+    err::Code::InvalidUuidFormat, storage::CAREER_IMAGES_BUCKET_NAME,
+    util::validator::uuid_validator::validate_uuid, ApiError, ErrResp,
 };
 use tracing::error;
 
@@ -17,9 +17,10 @@ use crate::handlers::session::authentication::authenticated_handlers::admin::Adm
 
 pub(crate) async fn get_career_images(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
+    State(storage_client): State<StorageClient>,
     Path((user_account_id, image_name)): Path<(String, String)>,
 ) -> Result<(HeaderMap, Vec<u8>), ErrResp> {
-    let op = DownloadCareerImageOperationImpl {};
+    let op = DownloadCareerImageOperationImpl { storage_client };
     get_career_images_internal(user_account_id, image_name, op).await
 }
 
@@ -53,12 +54,16 @@ trait DownloadCareerImageOperation {
     async fn download_career_image(&self, key: &str) -> Result<Vec<u8>, ErrResp>;
 }
 
-struct DownloadCareerImageOperationImpl {}
+struct DownloadCareerImageOperationImpl {
+    storage_client: StorageClient,
+}
 
 #[async_trait]
 impl DownloadCareerImageOperation for DownloadCareerImageOperationImpl {
     async fn download_career_image(&self, key: &str) -> Result<Vec<u8>, ErrResp> {
-        let image_binary = download_object(CAREER_IMAGES_BUCKET_NAME.as_str(), key)
+        let image_binary = self
+            .storage_client
+            .download_object(CAREER_IMAGES_BUCKET_NAME.as_str(), key)
             .await
             .map_err(|e| {
                 error!("failed to download object (image key: {}): {}", key, e);

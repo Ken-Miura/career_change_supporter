@@ -4,6 +4,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
     smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS},
+    storage::StorageClient,
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
@@ -40,11 +41,15 @@ static SUBJECT: Lazy<String> =
 pub(crate) async fn post_update_identity_request_rejection(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(smtp_client): State<SmtpClient>,
+    State(storage_client): State<StorageClient>,
     State(pool): State<DatabaseConnection>,
     Json(update_identity_req_rejection): Json<UpdateIdentityReqRejection>,
 ) -> RespResult<UpdateIdentityReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = UpdateIdentityReqRejectionOperationImpl { pool };
+    let op = UpdateIdentityReqRejectionOperationImpl {
+        pool,
+        storage_client,
+    };
     handle_update_identity_request_rejection(
         admin_info.email_address,
         update_identity_req_rejection.user_account_id,
@@ -129,6 +134,7 @@ trait UpdateIdentityReqRejectionOperation {
 
 struct UpdateIdentityReqRejectionOperationImpl {
     pool: DatabaseConnection,
+    storage_client: StorageClient,
 }
 
 #[async_trait]
@@ -140,6 +146,7 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
         rejection_reason: String,
         rejected_time: DateTime<FixedOffset>,
     ) -> Result<Option<String>, ErrResp> {
+        let storage_client = self.storage_client.clone();
         let notification_email_address_option = self
             .pool
             .transaction::<_, Option<String>, ErrRespStruct>(|txn| {
@@ -174,7 +181,7 @@ impl UpdateIdentityReqRejectionOperation for UpdateIdentityReqRejectionOperation
 
                     delete_update_identity_req(user_account_id, txn).await?;
 
-                    let _ = delete_identity_images(user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
+                    let _ = delete_identity_images(storage_client, user_account_id, req.image1_file_name_without_ext, req.image2_file_name_without_ext).await?;
 
                     Ok(Some(user.email_address))
                 })

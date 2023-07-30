@@ -19,7 +19,7 @@ use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{
     ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
 };
-use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
+use common::storage::{IDENTITY_IMAGES_BUCKET_NAME, StorageClient};
 use common::util::{Identity, Ymd};
 use common::{
     smtp::{SendMail, SmtpClient},
@@ -45,6 +45,7 @@ pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 pub(crate) async fn post_identity(
     User { user_info }: User,
     State(smtp_client): State<SmtpClient>,
+    State(storage_client): State<StorageClient>,
     State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<IdentityResult> {
@@ -58,7 +59,7 @@ pub(crate) async fn post_identity(
     )
     .await?;
 
-    let op = SubmitIdentityOperationImpl::new(pool);
+    let op = SubmitIdentityOperationImpl::new(pool, storage_client);
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_identity = SubmittedIdentity {
@@ -567,11 +568,15 @@ trait SubmitIdentityOperation {
 
 struct SubmitIdentityOperationImpl {
     pool: DatabaseConnection,
+    storage_client: StorageClient,
 }
 
 impl SubmitIdentityOperationImpl {
-    fn new(pool: DatabaseConnection) -> Self {
-        Self { pool }
+    fn new(pool: DatabaseConnection, storage_client: StorageClient) -> Self {
+        Self {
+            pool,
+            storage_client,
+        }
     }
 }
 
@@ -637,6 +642,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         let image1_file_name_without_ext = identity_image1.0.clone();
         let (identity_image2_option, image2_file_name_without_ext) =
             clone_file_name_if_exists(submitted_identity.identity_image2);
+        let storage_client = self.storage_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -659,6 +665,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         }
                     })?;
                     let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                        storage_client,
                         account_id,
                         identity_image1,
                         identity_image2_option,
@@ -709,6 +716,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
         let image1_file_name_without_ext = identity_image1.0.clone();
         let (identity_image2_option, image2_file_name_without_ext) =
             clone_file_name_if_exists(submitted_identity.identity_image2);
+        let storage_client = self.storage_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -731,6 +739,7 @@ impl SubmitIdentityOperation for SubmitIdentityOperationImpl {
                         }
                     })?;
                     let _ = SubmitIdentityOperationImpl::upload_png_images_to_identity_storage(
+                        storage_client,
                         account_id,
                         identity_image1,
                         identity_image2_option,
@@ -834,45 +843,48 @@ impl SubmitIdentityOperationImpl {
     }
 
     async fn upload_png_images_to_identity_storage(
+        storage_client: StorageClient,
         account_id: i64,
         identity_image1: FileNameAndBinary,
         identity_image2_option: Option<FileNameAndBinary>,
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
         let image1_obj = identity_image1.1.into_inner();
-        upload_object(
-            IDENTITY_IMAGES_BUCKET_NAME.as_str(),
-            &image1_key,
-            image1_obj,
-        )
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to upload object (image1 key: {}): {}",
-                image1_key, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-        if let Some(identity_image2) = identity_image2_option {
-            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
-            let image2_obj = identity_image2.1.into_inner();
-            upload_object(
+        storage_client
+            .upload_object(
                 IDENTITY_IMAGES_BUCKET_NAME.as_str(),
-                &image2_key,
-                image2_obj,
+                &image1_key,
+                image1_obj,
             )
             .await
             .map_err(|e| {
                 error!(
-                    "failed to upload object (image2 key: {}): {}",
-                    image2_key, e
+                    "failed to upload object (image1 key: {}): {}",
+                    image1_key, e
                 );
                 ErrRespStruct {
                     err_resp: unexpected_err_resp(),
                 }
             })?;
+        if let Some(identity_image2) = identity_image2_option {
+            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
+            let image2_obj = identity_image2.1.into_inner();
+            storage_client
+                .upload_object(
+                    IDENTITY_IMAGES_BUCKET_NAME.as_str(),
+                    &image2_key,
+                    image2_obj,
+                )
+                .await
+                .map_err(|e| {
+                    error!(
+                        "failed to upload object (image2 key: {}): {}",
+                        image2_key, e
+                    );
+                    ErrRespStruct {
+                        err_resp: unexpected_err_resp(),
+                    }
+                })?;
         }
         Ok(())
     }

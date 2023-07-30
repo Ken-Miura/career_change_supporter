@@ -34,6 +34,7 @@ use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
 use smtp::SmtpClient;
+use storage::StorageClient;
 use tracing::error;
 
 /// ユーザーに公開するサイト名
@@ -198,6 +199,7 @@ pub struct AppState {
     pub pool: DatabaseConnection,
     pub key_for_signed_cookie: Key,
     pub smtp_client: SmtpClient,
+    pub storage_client: StorageClient,
 }
 
 impl From<AppState> for Key {

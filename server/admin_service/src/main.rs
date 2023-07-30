@@ -84,7 +84,7 @@ use common::smtp::{
 };
 use common::storage::{
     KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
-    KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME,
+    KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI, StorageClient,
 };
 use common::util::check_env_vars;
 use common::{AppState, RequestLogElements};
@@ -224,12 +224,21 @@ async fn main_internal(num_of_cpus: u32) {
     )
     .await;
 
+    let storage_client = StorageClient::new(
+        AWS_S3_REGION.as_str(),
+        AWS_S3_ACCESS_KEY_ID.as_str(),
+        AWS_S3_SECRET_ACCESS_KEY.as_str(),
+        AWS_S3_ENDPOINT_URI.as_str(),
+    )
+    .await;
+
     let state = AppState {
         store,
         index_client,
         pool,
         key_for_signed_cookie,
         smtp_client,
+        storage_client,
     };
 
     let app = Router::new()

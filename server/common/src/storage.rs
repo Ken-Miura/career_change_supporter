@@ -109,87 +109,64 @@ impl StorageClient {
             client: Client::from_conf(s3_conf),
         }
     }
-}
 
-// PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
-// そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
-pub async fn upload_object(
-    bucket_name: &str,
-    key: &str,
-    object: Vec<u8>,
-) -> Result<(), Box<dyn Error>> {
-    let endpoint = AWS_S3_ENDPOINT_URI.to_string();
-    let client = create_client(&endpoint).await?;
-    let stream = ByteStream::from(object);
-    let resp = client
-        .put_object()
-        .bucket(bucket_name)
-        .key(key)
-        .body(stream)
-        .send()
-        .await
-        .map_err(Box::new)?;
-    tracing::debug!("PutObjectOutput: {:?}", resp);
-    Ok(())
-}
+    // PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
+    // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
+    // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
+    pub async fn upload_object(
+        &self,
+        bucket_name: &str,
+        key: &str,
+        object: Vec<u8>,
+    ) -> Result<(), Box<dyn Error>> {
+        let stream = ByteStream::from(object);
+        let resp = self
+            .client
+            .put_object()
+            .bucket(bucket_name)
+            .key(key)
+            .body(stream)
+            .send()
+            .await
+            .map_err(Box::new)?;
+        tracing::debug!("PutObjectOutput: {:?}", resp);
+        Ok(())
+    }
 
-// GetObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
-// そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
-pub async fn download_object(bucket_name: &str, key: &str) -> Result<Vec<u8>, Box<dyn Error>> {
-    let endpoint = AWS_S3_ENDPOINT_URI.to_string();
-    let client = create_client(&endpoint).await?;
+    // GetObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
+    // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
+    // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
+    pub async fn download_object(
+        &self,
+        bucket_name: &str,
+        key: &str,
+    ) -> Result<Vec<u8>, Box<dyn Error>> {
+        let resp = self
+            .client
+            .get_object()
+            .bucket(bucket_name)
+            .key(key)
+            .send()
+            .await
+            .map_err(Box::new)?;
+        let aggregated_bytes = resp.body.collect().await.map_err(Box::new)?;
+        let object = aggregated_bytes.into_bytes().to_vec();
+        Ok(object)
+    }
 
-    let resp = client
-        .get_object()
-        .bucket(bucket_name)
-        .key(key)
-        .send()
-        .await
-        .map_err(Box::new)?;
-    let aggregated_bytes = resp.body.collect().await.map_err(Box::new)?;
-    let object = aggregated_bytes.into_bytes().to_vec();
-    Ok(object)
-}
-
-// DeleteObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
-// そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
-// https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
-pub async fn delete_object(bucket_name: &str, key: &str) -> Result<(), Box<dyn Error>> {
-    let endpoint = AWS_S3_ENDPOINT_URI.to_string();
-    let client = create_client(&endpoint).await?;
-
-    let resp = client
-        .delete_object()
-        .bucket(bucket_name)
-        .key(key)
-        .send()
-        .await
-        .map_err(Box::new)?;
-    tracing::debug!("DeleteObjectOutput: {:?}", resp);
-    Ok(())
-}
-
-async fn create_client(endpoint_uri: &str) -> Result<Client, Box<dyn Error>> {
-    let region_provider = RegionProviderChain::first_try(Region::new(AWS_S3_REGION.as_str()));
-    let credentials = Credentials::new(
-        AWS_S3_ACCESS_KEY_ID.as_str(),
-        AWS_S3_SECRET_ACCESS_KEY.as_str(),
-        None,
-        None,
-        "aws_ses_credential_provider",
-    );
-
-    let config = aws_config::from_env()
-        .region(region_provider)
-        .credentials_provider(credentials)
-        .load()
-        .await;
-
-    let s3_conf = aws_sdk_s3::config::Builder::from(&config)
-        .endpoint_url(endpoint_uri)
-        .build();
-
-    Ok(Client::from_conf(s3_conf))
+    // DeleteObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
+    // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
+    // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html
+    pub async fn delete_object(&self, bucket_name: &str, key: &str) -> Result<(), Box<dyn Error>> {
+        let resp = self
+            .client
+            .delete_object()
+            .bucket(bucket_name)
+            .key(key)
+            .send()
+            .await
+            .map_err(Box::new)?;
+        tracing::debug!("DeleteObjectOutput: {:?}", resp);
+        Ok(())
+    }
 }

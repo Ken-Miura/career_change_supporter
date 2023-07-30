@@ -21,7 +21,7 @@ use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::smtp::{
     ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
 };
-use common::storage::{upload_object, CAREER_IMAGES_BUCKET_NAME};
+use common::storage::{CAREER_IMAGES_BUCKET_NAME, StorageClient};
 use common::util::Career;
 use common::{
     smtp::{SendMail, SmtpClient},
@@ -48,6 +48,7 @@ pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 pub(crate) async fn career(
     VerifiedUser { user_info }: VerifiedUser,
     State(smtp_client): State<SmtpClient>,
+    State(storage_client): State<StorageClient>,
     State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<CareerResult> {
@@ -55,7 +56,7 @@ pub(crate) async fn career(
     let (career, career_image1, career_image2_option) =
         handle_multipart(multipart_wrapper, MAX_CAREER_IMAGE_SIZE_IN_BYTES).await?;
 
-    let op = SubmitCareerOperationImpl::new(pool);
+    let op = SubmitCareerOperationImpl::new(pool, storage_client);
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_career = SubmittedCareer {
@@ -439,11 +440,15 @@ trait SubmitCareerOperation {
 
 struct SubmitCareerOperationImpl {
     pool: DatabaseConnection,
+    storage_client: StorageClient,
 }
 
 impl SubmitCareerOperationImpl {
-    fn new(pool: DatabaseConnection) -> Self {
-        Self { pool }
+    fn new(pool: DatabaseConnection, storage_client: StorageClient) -> Self {
+        Self {
+            pool,
+            storage_client,
+        }
     }
 }
 
@@ -490,6 +495,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
         let image1_file_name_without_ext = career_image1.0.clone();
         let (career_image2_option, image2_file_name_without_ext) =
             clone_file_name_if_exists(submitted_career.career_image2);
+        let storage_client = self.storage_client.clone();
         let _ = self
             .pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -512,6 +518,7 @@ impl SubmitCareerOperation for SubmitCareerOperationImpl {
                         }
                     })?;
                     let _ = SubmitCareerOperationImpl::upload_png_images_to_career_storage(
+                        storage_client,
                         account_id,
                         career_image1,
                         career_image2_option,
@@ -598,13 +605,15 @@ impl SubmitCareerOperationImpl {
     }
 
     async fn upload_png_images_to_career_storage(
+        storage_client: StorageClient,
         account_id: i64,
         career_image1: FileNameAndBinary,
         career_image2_option: Option<FileNameAndBinary>,
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, career_image1.0);
         let image1_obj = career_image1.1.into_inner();
-        upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image1_key, image1_obj)
+        storage_client
+            .upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image1_key, image1_obj)
             .await
             .map_err(|e| {
                 error!(
@@ -618,7 +627,8 @@ impl SubmitCareerOperationImpl {
         if let Some(career_image2) = career_image2_option {
             let image2_key = format!("{}/{}.png", account_id, career_image2.0);
             let image2_obj = career_image2.1.into_inner();
-            upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image2_key, image2_obj)
+            storage_client
+                .upload_object(CAREER_IMAGES_BUCKET_NAME.as_str(), &image2_key, image2_obj)
                 .await
                 .map_err(|e| {
                     error!(

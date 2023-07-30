@@ -5,7 +5,7 @@ pub(crate) mod identity_images;
 pub(crate) mod update_request;
 
 use common::{
-    storage::{self, IDENTITY_IMAGES_BUCKET_NAME},
+    storage::{StorageClient, IDENTITY_IMAGES_BUCKET_NAME},
     ErrRespStruct,
 };
 use tracing::error;
@@ -13,12 +13,14 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 async fn delete_identity_images(
+    storage_client: StorageClient,
     user_account_id: i64,
     image1_file_name_without_ext: String,
     image2_file_name_without_ext: Option<String>,
 ) -> Result<(), ErrRespStruct> {
     let image1_key = format!("{}/{}.png", user_account_id, image1_file_name_without_ext);
-    storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME.as_str(), image1_key.as_str())
+    storage_client
+        .delete_object(IDENTITY_IMAGES_BUCKET_NAME.as_str(), image1_key.as_str())
         .await
         .map_err(|e| {
             error!(
@@ -32,7 +34,8 @@ async fn delete_identity_images(
 
     if let Some(image2_file_name_without_ext) = image2_file_name_without_ext {
         let image2_key = format!("{}/{}.png", user_account_id, image2_file_name_without_ext);
-        storage::delete_object(IDENTITY_IMAGES_BUCKET_NAME.as_str(), image2_key.as_str())
+        storage_client
+            .delete_object(IDENTITY_IMAGES_BUCKET_NAME.as_str(), image2_key.as_str())
             .await
             .map_err(|e| {
                 error!(
