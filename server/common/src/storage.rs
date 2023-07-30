@@ -70,6 +70,47 @@ pub static CAREER_IMAGES_BUCKET_NAME: Lazy<String> = Lazy::new(|| {
     })
 });
 
+#[derive(Clone)]
+pub struct StorageClient {
+    client: Client,
+}
+
+impl StorageClient {
+    /// 引数を用いてAWS S3クライアントを生成する。
+    ///
+    /// 引数以外の値は環境変数が使われる。環境変数と引数では引数のキーが優先される。
+    pub async fn new(
+        region: &str,
+        access_key_id: &str,
+        secret_access_key: &str,
+        endpoint_uri: &str,
+    ) -> Self {
+        let cloned_region = region.to_string();
+        let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
+        let credentials = Credentials::new(
+            access_key_id,
+            secret_access_key,
+            None,
+            None,
+            "aws_s3_credential_provider",
+        );
+
+        let config = aws_config::from_env()
+            .region(region_provider)
+            .credentials_provider(credentials)
+            .load()
+            .await;
+
+        let s3_conf = aws_sdk_s3::config::Builder::from(&config)
+            .endpoint_url(endpoint_uri)
+            .build();
+
+        Self {
+            client: Client::from_conf(s3_conf),
+        }
+    }
+}
+
 // PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。
 // そのため、Box<dyn Error>にエラーを丸めてログ出力して、問題が発生したときに解析できるだけにしておく。
 // https://docs.rs/aws-sdk-s3/latest/aws_sdk_s3/types/enum.SdkError.html

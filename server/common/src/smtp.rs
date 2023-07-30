@@ -112,7 +112,7 @@ impl SmtpClient {
         region: &str,
         access_key_id: &str,
         secret_access_key: &str,
-        endpoint_url: &str,
+        endpoint_uri: &str,
     ) -> Self {
         let cloned_region = region.to_string();
         let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
@@ -130,7 +130,7 @@ impl SmtpClient {
             .load()
             .await;
 
-        let ses_config = Builder::from(&config).endpoint_url(endpoint_url).build();
+        let ses_config = Builder::from(&config).endpoint_url(endpoint_uri).build();
 
         Self {
             client: Client::from_conf(ses_config),
