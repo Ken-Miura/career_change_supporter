@@ -2,7 +2,12 @@
 
 use std::{env::var, error::Error};
 
-use aws_sdk_s3::{primitives::ByteStream, Client};
+use aws_config::meta::region::RegionProviderChain;
+use aws_sdk_s3::{
+    config::{Credentials, Region},
+    primitives::ByteStream,
+    Client,
+};
 use once_cell::sync::Lazy;
 
 pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
@@ -16,8 +21,34 @@ pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
 });
 
 pub const KEY_TO_AWS_S3_ACCESS_KEY_ID: &str = "AWS_S3_ACCESS_KEY_ID";
+pub static AWS_S3_ACCESS_KEY_ID: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_ACCESS_KEY_ID).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_AWS_S3_ACCESS_KEY_ID
+        );
+    })
+});
+
 pub const KEY_TO_AWS_S3_SECRET_ACCESS_KEY: &str = "AWS_S3_SECRET_ACCESS_KEY";
+pub static AWS_S3_SECRET_ACCESS_KEY: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_SECRET_ACCESS_KEY).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_AWS_S3_SECRET_ACCESS_KEY
+        );
+    })
+});
+
 pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
+pub static AWS_S3_REGION: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_REGION).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"ap-northeast-1\") must be set",
+            KEY_TO_AWS_S3_REGION
+        );
+    })
+});
 
 pub const KEY_TO_IDENTITY_IMAGES_BUCKET_NAME: &str = "IDENTITY_IMAGES_BUCKET_NAME";
 pub static IDENTITY_IMAGES_BUCKET_NAME: Lazy<String> = Lazy::new(|| {
@@ -100,9 +131,24 @@ pub async fn delete_object(bucket_name: &str, key: &str) -> Result<(), Box<dyn E
 }
 
 async fn create_client(endpoint_uri: &str) -> Result<Client, Box<dyn Error>> {
-    let conf = aws_config::load_from_env().await;
-    let s3_conf = aws_sdk_s3::config::Builder::from(&conf)
+    let region_provider = RegionProviderChain::first_try(Region::new(AWS_S3_REGION.as_str()));
+    let credentials = Credentials::new(
+        AWS_S3_ACCESS_KEY_ID.as_str(),
+        AWS_S3_SECRET_ACCESS_KEY.as_str(),
+        None,
+        None,
+        "aws_ses_credential_provider",
+    );
+
+    let config = aws_config::from_env()
+        .region(region_provider)
+        .credentials_provider(credentials)
+        .load()
+        .await;
+
+    let s3_conf = aws_sdk_s3::config::Builder::from(&config)
         .endpoint_url(endpoint_uri)
         .build();
+
     Ok(Client::from_conf(s3_conf))
 }
