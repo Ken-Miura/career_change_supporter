@@ -9,10 +9,7 @@ use axum_extra::extract::SignedCookieJar;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
 use common::password::hash_password;
-use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::validator::{
     password_validator::validate_password, uuid_validator::validate_uuid,
 };
@@ -49,6 +46,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] パスワード変更�
 /// パスワード変更要求が期限切れの場合、ステータスコード400、エラーコード[PwdChnageReqExpired]を返す<br>
 pub(crate) async fn post_password_update(
     jar: SignedCookieJar,
+    State(smtp_client): State<SmtpClient>,
     State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
     Json(pwd_update_req): Json<PasswordUpdateReq>,
@@ -60,12 +58,6 @@ pub(crate) async fn post_password_update(
 
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = PasswordUpdateOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_password_update_req(
         &pwd_update_req.pwd_change_req_id,
         &pwd_update_req.password,

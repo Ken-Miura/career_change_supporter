@@ -6,10 +6,7 @@ use axum::http::StatusCode;
 use axum::Json;
 use chrono::DateTime;
 use chrono::{Duration, FixedOffset};
-use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::validator::uuid_validator::validate_uuid;
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use common::{JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR};
@@ -38,16 +35,11 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録完了通�
 /// 一時アカウントが期限切れの場合、ステータスコード400、エラーコード[TempAccountExpired]を返す<br>
 pub(crate) async fn post_accounts(
     State(pool): State<DatabaseConnection>,
+    State(smtp_client): State<SmtpClient>,
     Json(temp_account): Json<TempAccountId>,
 ) -> RespResult<AccountsResult> {
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = AccountsOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_accounts_req(
         &temp_account.temp_account_id,
         &current_date_time,

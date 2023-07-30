@@ -3,10 +3,7 @@
 use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{
-    smtp::{
-        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-        SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-    },
+    smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS},
     storage::{self, CAREER_IMAGES_BUCKET_NAME},
     ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
@@ -41,17 +38,12 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴登録拒�
 
 pub(crate) async fn post_create_career_request_rejection(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     Json(create_career_req_rejection): Json<CreateCareerReqRejection>,
 ) -> RespResult<CreateCareerReqRejectionResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqRejectionOperationImpl { pool };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_create_career_request_rejection(
         admin_info.email_address,
         create_career_req_rejection.create_career_req_id,

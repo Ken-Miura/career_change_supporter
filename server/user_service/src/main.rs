@@ -63,7 +63,7 @@ use common::payment_platform::{
 };
 use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
 use common::smtp::{
-    KEY_TO_SMTP_HOST, KEY_TO_SMTP_PASSWORD, KEY_TO_SMTP_PORT, KEY_TO_SMTP_USERNAME, KEY_TO_ADMIN_EMAIL_ADDRESS, KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS,
+    KEY_TO_ADMIN_EMAIL_ADDRESS, KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
 };
 use common::storage::{
     KEY_TO_AWS_ACCESS_KEY_ID, KEY_TO_AWS_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
@@ -96,10 +96,6 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
         KEY_TO_DATABASE_URL.to_string(),
         KEY_TO_SOCKET.to_string(),
-        KEY_TO_SMTP_HOST.to_string(),
-        KEY_TO_SMTP_PORT.to_string(),
-        KEY_TO_SMTP_USERNAME.to_string(),
-        KEY_TO_SMTP_PASSWORD.to_string(),
         KEY_TO_URL_FOR_FRONT_END.to_string(),
         KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
         KEY_TO_TERMS_OF_USE_VERSION.to_string(),
@@ -120,6 +116,10 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_ADMIN_EMAIL_ADDRESS.to_string(),
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_INQUIRY_EMAIL_ADDRESS.to_string(),
+        KEY_TO_AWS_SES_REGION.to_string(),
+        KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
+        KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
+        KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
     ]
 });
 
@@ -205,11 +205,20 @@ async fn main_internal(num_of_cpus: u32) {
     let key_for_signed_cookie =
         create_key_for_singed_cookie(KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_USER_APP);
 
+    let smtp_client = SmtpClient::new(
+        AWS_SES_REGION.as_str(),
+        AWS_SES_ACCESS_KEY_ID.as_str(),
+        AWS_SES_SECRET_ACCESS_KEY.as_str(),
+        AWS_SES_ENDPOINT_URI.as_str(),
+    )
+    .await;
+
     let state = AppState {
         store,
         index_client,
         pool,
         key_for_signed_cookie,
+        smtp_client,
     };
 
     let app = Router::new()

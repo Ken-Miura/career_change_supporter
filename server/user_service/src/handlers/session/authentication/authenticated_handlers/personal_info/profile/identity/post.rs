@@ -17,7 +17,7 @@ use axum::extract::State;
 use axum::{extract::Multipart, http::StatusCode, Json};
 use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, Utc};
 use common::smtp::{
-    ADMIN_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
+    ADMIN_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
 };
 use common::storage::{upload_object, IDENTITY_IMAGES_BUCKET_NAME};
 use common::util::{Identity, Ymd};
@@ -44,6 +44,7 @@ pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
 
 pub(crate) async fn post_identity(
     User { user_info }: User,
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     multipart: Multipart,
 ) -> RespResult<IdentityResult> {
@@ -58,12 +59,6 @@ pub(crate) async fn post_identity(
     .await?;
 
     let op = SubmitIdentityOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     let image1_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let image2_file_name_without_ext = Uuid::new_v4().simple().to_string();
     let submitted_identity = SubmittedIdentity {

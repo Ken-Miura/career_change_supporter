@@ -7,7 +7,7 @@ use chrono::{DateTime, FixedOffset};
 use common::password::hash_password;
 use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{
-    smtp::{SendMail, SmtpClient, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME},
+    smtp::{SendMail, SmtpClient},
     ErrResp, RespResult, ValidCred,
 };
 use common::{
@@ -45,17 +45,12 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLの�
 /// MAX_NUM_OF_TEMP_ACCOUNTS以上一時アカウントがある場合、ステータスコード400、エラーコード[ReachTempAccountsLimit]を返す
 pub(crate) async fn post_temp_accounts(
     State(pool): State<DatabaseConnection>,
+    State(smtp_client): State<SmtpClient>,
     ValidCred(cred): ValidCred,
 ) -> RespResult<TempAccountsResult> {
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = TempAccountsOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_temp_accounts_req(
         &cred.email_address,
         &cred.password,

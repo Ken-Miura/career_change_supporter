@@ -6,10 +6,7 @@ use axum::{extract::State, Json};
 use chrono::{DateTime, Datelike, FixedOffset, TimeZone, Timelike};
 use common::payment_platform::charge::{Charge, ChargeOperation, ChargeOperationImpl};
 use common::payment_platform::Metadata;
-use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{ApiError, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 use common::{ErrResp, ErrRespStruct, RespResult};
 use entity::sea_orm::ActiveValue::NotSet;
@@ -43,17 +40,12 @@ static MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
 
 pub(crate) async fn post_finish_request_consultation(
     VerifiedUser { user_info }: VerifiedUser,
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<FinishRequestConsultationParam>,
 ) -> RespResult<FinishRequestConsultationResult> {
     let charge_id = param.charge_id;
     let op = FinishRequestConsultationOperationImpl { pool };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_finish_request_consultation(
         user_info.account_id,
         user_info.email_address,

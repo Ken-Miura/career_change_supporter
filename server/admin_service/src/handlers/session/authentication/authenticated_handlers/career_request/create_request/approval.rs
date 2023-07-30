@@ -5,10 +5,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, FixedOffset, NaiveDate, Utc};
 use common::{
     opensearch::{index_document, update_document, INDEX_NAME},
-    smtp::{
-        SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-        SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-    },
+    smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS},
     ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
 
@@ -45,18 +42,13 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 職務経歴確認完�
 
 pub(crate) async fn post_create_career_request_approval(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
     Json(create_career_req_approval): Json<CreateCareerReqApproval>,
 ) -> RespResult<CreateCareerReqApprovalResult> {
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = CreateCareerReqApprovalOperationImpl { pool, index_client };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_create_career_request_approval(
         admin_info.email_address,
         create_career_req_approval.create_career_req_id,

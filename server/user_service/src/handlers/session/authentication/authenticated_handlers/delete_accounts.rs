@@ -8,10 +8,7 @@ use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset};
 use common::opensearch::{delete_document, INDEX_NAME};
-use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
@@ -38,6 +35,7 @@ static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] アカウント削除�
 pub(crate) async fn delete_accounts(
     jar: SignedCookieJar,
     query: Query<DeleteAccountsQuery>,
+    State(smtp_client): State<SmtpClient>,
     State(store): State<RedisSessionStore>,
     State(pool): State<DatabaseConnection>,
     State(index_client): State<OpenSearch>,
@@ -48,12 +46,6 @@ pub(crate) async fn delete_accounts(
     let account_delete_confirmed = query.0.account_delete_confirmed;
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = DeleteAccountsOperationImpl { pool, index_client };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
 
     let _ = handle_delete_accounts(
         user_info.account_id,

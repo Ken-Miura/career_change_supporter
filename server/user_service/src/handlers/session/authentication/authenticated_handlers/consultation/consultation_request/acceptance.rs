@@ -4,10 +4,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
-use common::smtp::{
-    SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME,
-    SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::validator::uuid_validator::validate_uuid;
 use common::util::Maintenance;
 use common::{smtp::SendMail, RespResult, JAPANESE_TIME_ZONE};
@@ -41,18 +38,13 @@ static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_consultation_request_acceptance(
     VerifiedUser { user_info }: VerifiedUser,
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestAcceptanceParam>,
 ) -> RespResult<ConsultationRequestAcceptanceResult> {
     let room_name = Uuid::new_v4().simple().to_string();
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = ConsultationRequestAcceptanceOperationImpl { pool };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_consultation_request_acceptance(
         user_info.account_id,
         user_info.email_address,

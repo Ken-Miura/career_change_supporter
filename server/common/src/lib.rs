@@ -33,6 +33,7 @@ use entity::sea_orm::DatabaseConnection;
 use once_cell::sync::Lazy;
 use serde::Deserialize;
 use serde::Serialize;
+use smtp::SmtpClient;
 use tracing::error;
 
 /// ユーザーに公開するサイト名
@@ -196,6 +197,7 @@ pub struct AppState {
     pub index_client: OpenSearch,
     pub pool: DatabaseConnection,
     pub key_for_signed_cookie: Key,
+    pub smtp_client: SmtpClient,
 }
 
 impl From<AppState> for Key {

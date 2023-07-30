@@ -4,9 +4,7 @@ use axum::async_trait;
 use axum::extract::State;
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset};
-use common::smtp::{
-    INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::util::validator::email_address_validator::validate_email_address;
 use common::{
     smtp::{SendMail, SmtpClient},
@@ -46,18 +44,13 @@ static SUBJECT: Lazy<String> =
 /// メールアドレスが不正な形式の場合、ステータスコード400、エラーコード[common::err::Code::InvalidEmailAddressFormat]を返す
 /// MAX_NUM_OF_PWD_CHANGE_REQ以上新規パスワードがある場合、ステータスコード400、エラーコード[ReachPasswordChangeReqLimit]を返す
 pub(crate) async fn post_password_change_req(
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     Json(account): Json<Account>,
 ) -> RespResult<PasswordChangeReqResult> {
     let uuid = Uuid::new_v4().simple();
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     let op = PasswordChangeReqOperationImpl::new(pool);
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_password_change_req(
         &account.email_address,
         &URL_FOR_FRONT_END.to_string(),

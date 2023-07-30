@@ -5,10 +5,7 @@ use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
-use common::smtp::{
-    SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SMTP_HOST, SMTP_PASSWORD, SMTP_PORT,
-    SMTP_USERNAME, SYSTEM_EMAIL_ADDRESS,
-};
+use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
 use entity::{consultation_req, user_account};
@@ -29,17 +26,12 @@ static CONSULTATION_REQ_REJECTION_MAIL_SUBJECT: Lazy<String> =
 
 pub(crate) async fn post_consultation_request_rejection(
     VerifiedUser { user_info }: VerifiedUser,
+    State(smtp_client): State<SmtpClient>,
     State(pool): State<DatabaseConnection>,
     Json(param): Json<ConsultationRequestRejectionParam>,
 ) -> RespResult<ConsultationRequestRejectionResult> {
     let consultation_req_id = param.consultation_req_id;
     let op = ConsultationRequestRejectionImpl { pool };
-    let smtp_client = SmtpClient::new(
-        SMTP_HOST.to_string(),
-        *SMTP_PORT,
-        SMTP_USERNAME.to_string(),
-        SMTP_PASSWORD.to_string(),
-    );
     handle_consultation_request_rejection(
         user_info.account_id,
         consultation_req_id,

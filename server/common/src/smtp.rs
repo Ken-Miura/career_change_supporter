@@ -1,10 +1,12 @@
 // Copyright 2021 Ken Miura
 
-use axum::{async_trait, http::StatusCode, Json};
-use lettre::{
-    message::Mailbox, transport::smtp::authentication::Credentials, AsyncSmtpTransport,
-    AsyncTransport, Message, Tokio1Executor,
+use aws_config::meta::region::RegionProviderChain;
+use aws_sdk_sesv2::{
+    config::{Builder, Credentials, Region},
+    types::{Body, Content, Destination, EmailContent, Message},
+    Client,
 };
+use axum::{async_trait, http::StatusCode, Json};
 use once_cell::sync::Lazy;
 use std::env::var;
 use tracing::{error, info};
@@ -46,45 +48,42 @@ pub static INQUIRY_EMAIL_ADDRESS: Lazy<String> = Lazy::new(|| {
     })
 });
 
-pub const KEY_TO_SMTP_HOST: &str = "SMTP_HOST";
-pub static SMTP_HOST: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_SMTP_HOST).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_SES_REGION: &str = "AWS_SES_REGION";
+pub static AWS_SES_REGION: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_SES_REGION).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"127.0.0.1\") must be set",
-            KEY_TO_SMTP_HOST
+            "Not environment variable found: environment variable \"{}\" (example value: \"us-east-1\") must be set",
+            KEY_TO_AWS_SES_REGION
         );
     })
 });
 
-pub const KEY_TO_SMTP_PORT: &str = "SMTP_PORT";
-pub static SMTP_PORT: Lazy<u16> = Lazy::new(|| {
-    let port_str = var(KEY_TO_SMTP_PORT).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_SES_ACCESS_KEY_ID: &str = "AWS_SES_ACCESS_KEY_ID";
+pub static AWS_SES_ACCESS_KEY_ID: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_SES_ACCESS_KEY_ID).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"1025\") must be set",
-            KEY_TO_SMTP_PORT
-        );
-    });
-    port_str.parse::<u16>().unwrap_or_else(|op| {
-        panic!("failed to parse SMTP_PORT ({}): {}", port_str, op);
-    })
-});
-
-pub const KEY_TO_SMTP_USERNAME: &str = "SMTP_USERNAME";
-pub static SMTP_USERNAME: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_SMTP_USERNAME).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"username\") must be set",
-            KEY_TO_SMTP_USERNAME
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_AWS_SES_ACCESS_KEY_ID
         );
     })
 });
 
-pub const KEY_TO_SMTP_PASSWORD: &str = "SMTP_PASSWORD";
-pub static SMTP_PASSWORD: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_SMTP_PASSWORD).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_SES_SECRET_ACCESS_KEY: &str = "AWS_SES_SECRET_ACCESS_KEY";
+pub static AWS_SES_SECRET_ACCESS_KEY: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_SES_SECRET_ACCESS_KEY).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"password\") must be set",
-            KEY_TO_SMTP_PASSWORD
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_AWS_SES_SECRET_ACCESS_KEY
+        );
+    })
+});
+
+pub const KEY_TO_AWS_SES_ENDPOINT_URI: &str = "AWS_SES_ENDPOINT_URI";
+pub static AWS_SES_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_SES_ENDPOINT_URI).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"http://smtp:8005\")  must be set",
+            KEY_TO_AWS_SES_ENDPOINT_URI
         );
     })
 });
@@ -100,20 +99,41 @@ pub trait SendMail {
     ) -> Result<(), ErrResp>;
 }
 
+#[derive(Clone)]
 pub struct SmtpClient {
-    host: String,
-    port: u16,
-    username: String,
-    password: String,
+    client: Client,
 }
 
 impl SmtpClient {
-    pub fn new(host: String, port: u16, username: String, password: String) -> Self {
+    /// 引数を用いてAWS SES V2クライアントを生成する。
+    ///
+    /// 引数以外の値は環境変数が使われる。環境変数と引数では引数のキーが優先される。
+    pub async fn new(
+        region: &str,
+        access_key_id: &str,
+        secret_access_key: &str,
+        endpoint_url: &str,
+    ) -> Self {
+        let cloned_region = region.to_string();
+        let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
+        let credentials = Credentials::new(
+            access_key_id,
+            secret_access_key,
+            None,
+            None,
+            "aws_ses_credential_provider",
+        );
+
+        let config = aws_config::from_env()
+            .region(region_provider)
+            .credentials_provider(credentials)
+            .load()
+            .await;
+
+        let ses_config = Builder::from(&config).endpoint_url(endpoint_url).build();
+
         Self {
-            host,
-            port,
-            username,
-            password,
+            client: Client::from_conf(ses_config),
         }
     }
 }
@@ -127,35 +147,29 @@ impl SendMail for SmtpClient {
         subject: &str,
         text: &str,
     ) -> Result<(), ErrResp> {
-        let to_email_addr = SmtpClient::parse_email_address(to)?;
-        let from_email_addr = SmtpClient::parse_email_address(from)?;
-        let email = Message::builder()
-            .to(to_email_addr)
-            .from(from_email_addr)
-            .subject(subject)
-            .body(String::from(text))
-            .map_err(|e| {
-                error!("failed to build email: {}", e);
-                (
-                    StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiError {
-                        code: err::Code::UnexpectedErr as u32,
-                    }),
-                )
-            })?;
+        let dest = Destination::builder().to_addresses(to).build();
 
-        let _credentials = Credentials::new(self.username.clone(), self.password.clone());
-        // TODO: SMTP over TLSまたはSTARTLSを使うAPIに置き換える
-        // TODO: SMTP over TLSまたはSTARTLSに対応したローカルの開発環境の整備
-        //         mailcatcher、またはmailhogのイメージがそれらをサポートしてる場合、そのまま利用する
-        //         サポートされていない場合、下記URLを参考にSTUNNELを通して準備する
-        //           https://github.com/mailhog/MailHog/issues/84#issuecomment-947124617
-        let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous(self.host.clone())
-            .port(self.port)
+        let subject_content = Content::builder().data(subject).charset("UTF-8").build();
+        let body_content = Content::builder().data(text).charset("UTF-8").build();
+        let body = Body::builder().text(body_content).build();
+        let msg = Message::builder()
+            .subject(subject_content)
+            .body(body)
             .build();
+        let email_content = EmailContent::builder().simple(msg).build();
 
-        let resp = mailer.send(email.clone()).await.map_err(|e| {
-            error!("failed to send email ({:?}): {}", email, e);
+        let req = self
+            .client
+            .send_email()
+            .from_email_address(from)
+            .destination(dest)
+            .content(email_content);
+
+        let resp = req.send().await.map_err(|e| {
+            error!(
+                "failed to send email (to: {}, from: {}, subject: {}, body: {}): {}",
+                to, from, subject, text, e
+            );
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError {
@@ -163,21 +177,8 @@ impl SendMail for SmtpClient {
                 }),
             )
         })?;
+
         info!("send email successfull (response: {:?})", resp);
         Ok(())
-    }
-}
-
-impl SmtpClient {
-    fn parse_email_address(email_address: &str) -> Result<Mailbox, ErrResp> {
-        email_address.parse().map_err(|e| {
-            error!("failed to parse email_address ({}): {}", e, email_address);
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ApiError {
-                    code: err::Code::UnexpectedErr as u32,
-                }),
-            )
-        })
     }
 }
