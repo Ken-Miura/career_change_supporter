@@ -19,7 +19,16 @@ pub const KEY_TO_AWS_S3_ACCESS_KEY_ID: &str = "AWS_S3_ACCESS_KEY_ID";
 pub const KEY_TO_AWS_S3_SECRET_ACCESS_KEY: &str = "AWS_S3_SECRET_ACCESS_KEY";
 pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
 
-pub const IDENTITY_IMAGES_BUCKET_NAME: &str = "ccs-identity-images";
+pub const KEY_TO_IDENTITY_IMAGES_BUCKET_NAME: &str = "IDENTITY_IMAGES_BUCKET_NAME";
+pub static IDENTITY_IMAGES_BUCKET_NAME: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_IDENTITY_IMAGES_BUCKET_NAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"s3-bucket-name-to-identity-images\") must be set",
+            KEY_TO_IDENTITY_IMAGES_BUCKET_NAME
+        );
+    })
+});
+
 pub const CAREER_IMAGES_BUCKET_NAME: &str = "ccs-career-images";
 
 // PutObject操作で発生する可能性のあるエラーで、呼び出し側でハンドリングする必要のあるエラー（リカバリ可能なエラー）は現時点ではない。

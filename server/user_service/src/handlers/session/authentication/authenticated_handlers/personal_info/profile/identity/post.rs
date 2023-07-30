@@ -840,31 +840,39 @@ impl SubmitIdentityOperationImpl {
     ) -> Result<(), ErrRespStruct> {
         let image1_key = format!("{}/{}.png", account_id, identity_image1.0);
         let image1_obj = identity_image1.1.into_inner();
-        upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image1_key, image1_obj)
+        upload_object(
+            IDENTITY_IMAGES_BUCKET_NAME.as_str(),
+            &image1_key,
+            image1_obj,
+        )
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to upload object (image1 key: {}): {}",
+                image1_key, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+        if let Some(identity_image2) = identity_image2_option {
+            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
+            let image2_obj = identity_image2.1.into_inner();
+            upload_object(
+                IDENTITY_IMAGES_BUCKET_NAME.as_str(),
+                &image2_key,
+                image2_obj,
+            )
             .await
             .map_err(|e| {
                 error!(
-                    "failed to upload object (image1 key: {}): {}",
-                    image1_key, e
+                    "failed to upload object (image2 key: {}): {}",
+                    image2_key, e
                 );
                 ErrRespStruct {
                     err_resp: unexpected_err_resp(),
                 }
             })?;
-        if let Some(identity_image2) = identity_image2_option {
-            let image2_key = format!("{}/{}.png", account_id, identity_image2.0);
-            let image2_obj = identity_image2.1.into_inner();
-            upload_object(IDENTITY_IMAGES_BUCKET_NAME, &image2_key, image2_obj)
-                .await
-                .map_err(|e| {
-                    error!(
-                        "failed to upload object (image2 key: {}): {}",
-                        image2_key, e
-                    );
-                    ErrRespStruct {
-                        err_resp: unexpected_err_resp(),
-                    }
-                })?;
         }
         Ok(())
     }

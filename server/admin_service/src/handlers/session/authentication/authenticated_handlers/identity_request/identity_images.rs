@@ -58,7 +58,7 @@ struct DownloadIdentityImageOperationImpl {}
 #[async_trait]
 impl DownloadIdentityImageOperation for DownloadIdentityImageOperationImpl {
     async fn download_identity_image(&self, key: &str) -> Result<Vec<u8>, ErrResp> {
-        let image_binary = download_object(IDENTITY_IMAGES_BUCKET_NAME, key)
+        let image_binary = download_object(IDENTITY_IMAGES_BUCKET_NAME.as_str(), key)
             .await
             .map_err(|e| {
                 error!("failed to download object (image key: {}): {}", key, e);
