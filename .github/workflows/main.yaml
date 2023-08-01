@@ -63,7 +63,7 @@ jobs:
       - name: Upload static files
         run: |
           aws s3 sync client/user_app/dist s3://${CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
-          aws s3 sync client/admin_app/dist s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
+          aws s3 sync client/admin_app/dist s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET}/admin --delete --exclude '*.js.map'
         env:
           CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET }}
           CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET }}
