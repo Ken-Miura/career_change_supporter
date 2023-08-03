@@ -9,7 +9,7 @@ edition = "2021"
 async-fred-session = "0.1.5"
 async-session = "3.0.0"
 axum = { version = "0.6.19", features = ["headers", "json", "multipart"] }
-axum-extra = { version = "0.7.5", features = ["cookie", "cookie-signed"] }
+axum-extra = { version = "0.7.6", features = ["cookie", "cookie-signed"] }
 chrono = "0.4.26"
 common = { path = "../common" }
 dotenv = "0.15.0"
