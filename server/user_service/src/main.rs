@@ -6,6 +6,7 @@ mod optional_env_var;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::account_creation::accounts::post_accounts;
+use crate::handlers::health::get_health;
 use crate::handlers::session::authentication::authenticated_handlers::delete_accounts::delete_accounts;
 use crate::handlers::account_creation::temp_accounts::post_temp_accounts;
 use crate::handlers::session::authentication::authenticated_handlers::agreement::post_agreement;
@@ -270,6 +271,7 @@ async fn main_internal(num_of_cpus: u32) {
                 .route("/disable-mfa-req", post(post_disable_mfa_req))
                 .route("/pass-code", post(post_pass_code))
                 .route("/recovery-code", post(post_recovery_code))
+                .route("/health", get(get_health))
                 .with_state(state),
         )
         .layer(

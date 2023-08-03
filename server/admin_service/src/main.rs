@@ -4,6 +4,7 @@ mod err;
 mod handlers;
 
 use crate::handlers::ROOT_PATH;
+use crate::handlers::health::get_health;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::career_images::get_career_images;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::approval::post_create_career_request_approval;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::detail::get_create_career_request_detail;
@@ -460,6 +461,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/delete-news-req",
                     post(post_delete_news_req),
+                )
+                .route(
+                    "/health",
+                    get(get_health),
                 )
                 .with_state(state),
         )
