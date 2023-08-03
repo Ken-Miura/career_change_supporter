@@ -83,7 +83,8 @@ USER admin-account-operator
 RUN mkdir -p /home/admin-account-operator/workspace
 WORKDIR /home/admin-account-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
-CMD [ "./admin_account" ]
+ENV PATH=${PATH}:/home/admin-account-operator/workspace/admin_account
+CMD [ "admin_account" ]
 
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
@@ -105,7 +106,8 @@ WORKDIR /home/migration-tool-operator/workspace
 COPY --from=server-test-and-build /home/developer/.cargo/bin/sea-orm-cli ./
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-CMD [ "./sea-orm-cli" ]
+ENV PATH=${PATH}:/home/migration-tool-operator/workspace/sea-orm-cli
+CMD [ "sea-orm-cli" ]
 
 # インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
