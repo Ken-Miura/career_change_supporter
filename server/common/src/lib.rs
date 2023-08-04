@@ -1,5 +1,6 @@
 // Copyright 2021 Ken Miura
 
+pub mod db;
 pub mod err;
 pub mod mfa;
 pub mod opensearch;

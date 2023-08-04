@@ -71,6 +71,7 @@ use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
+use common::db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME};
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME,
@@ -101,7 +102,8 @@ use tower_http::LatencyUnit;
 use tracing::{Level, Span};
 use uuid::Uuid;
 
-const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
+const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
+const KEY_TO_DB_ADMIN_PASSWORD: &str = "DB_ADMIN_PASSWORD";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_ADMIN_APP";
 const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP: &str = "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP";
 
@@ -109,7 +111,11 @@ const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP: &str = "KEY_OF_SIGNED_COOKIE_FO
 /// 起動直後に存在をチェックする
 static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
-        KEY_TO_DATABASE_URL.to_string(),
+        KEY_TO_DB_HOST.to_string(),
+        KEY_TO_DB_PORT.to_string(),
+        KEY_TO_DB_NAME.to_string(),
+        KEY_TO_DB_ADMIN_NAME.to_string(),
+        KEY_TO_DB_ADMIN_PASSWORD.to_string(),
         KEY_TO_SOCKET.to_string(),
         KEY_TO_REDIS_HOST.to_string(),
         KEY_TO_REDIS_PORT.to_string(),
@@ -160,12 +166,13 @@ async fn main_internal(num_of_cpus: u32) {
     );
     tracing_subscriber::fmt::init();
 
-    let database_url = var(KEY_TO_DATABASE_URL).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_DATABASE_URL
-        )
-    });
+    let database_url = construct_db_url(
+        KEY_TO_DB_HOST,
+        KEY_TO_DB_PORT,
+        KEY_TO_DB_NAME,
+        KEY_TO_DB_ADMIN_NAME,
+        KEY_TO_DB_ADMIN_PASSWORD,
+    );
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(num_of_cpus)
         .min_connections(num_of_cpus)
@@ -174,19 +181,7 @@ async fn main_internal(num_of_cpus: u32) {
         .await
         .expect("failed to connect database");
 
-    let redis_host = var(KEY_TO_REDIS_HOST).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_REDIS_HOST
-        )
-    });
-    let redis_port = var(KEY_TO_REDIS_PORT).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_REDIS_PORT
-        )
-    });
-    let redis_url = create_redis_url(&redis_host, &redis_port);
+    let redis_url = construct_redis_url(KEY_TO_REDIS_HOST, KEY_TO_REDIS_PORT);
     let config = RedisConfig::from_url(redis_url.as_str()).expect("failed to create redis config");
     let redis_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
         .expect("failed to create redis pool");
@@ -523,6 +518,68 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
+}
+
+fn construct_db_url(
+    key_to_db_host: &str,
+    key_to_db_port: &str,
+    key_to_db_name: &str,
+    key_to_db_admin_name: &str,
+    key_to_db_admin_password: &str,
+) -> String {
+    let db_host = var(key_to_db_host).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_db_host
+        )
+    });
+    let db_port = var(key_to_db_port).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_db_port
+        )
+    });
+    let db_name = var(key_to_db_name).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_db_name
+        )
+    });
+    let db_admin_name = var(key_to_db_admin_name).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_db_admin_name
+        )
+    });
+    let db_admin_password = var(key_to_db_admin_password).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_db_admin_password
+        )
+    });
+    create_db_url(
+        &db_host,
+        &db_port,
+        &db_name,
+        &db_admin_name,
+        &db_admin_password,
+    )
+}
+
+fn construct_redis_url(key_to_redis_host: &str, key_to_redis_port: &str) -> String {
+    let redis_host = var(key_to_redis_host).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_redis_host
+        )
+    });
+    let redis_port = var(key_to_redis_port).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_redis_port
+        )
+    });
+    create_redis_url(&redis_host, &redis_port)
 }
 
 fn create_key_for_singed_cookie(env_var_key: &str) -> Key {

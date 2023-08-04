@@ -1,6 +1,7 @@
 // Copyright 2021 Ken Miura
 
 use chrono::{DateTime, FixedOffset};
+use common::db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT};
 use common::mfa::{generate_base32_encoded_secret, generate_base64_encoded_qr_code};
 use common::password::hash_password;
 use common::util::check_env_vars;
@@ -16,7 +17,8 @@ use entity::sea_orm::{
 };
 use std::{env::args, env::var, error::Error, fmt, process::exit};
 
-const KEY_TO_DATABASE_URL: &str = "DB_URL_FOR_ADMIN_APP";
+const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
+const KEY_TO_DB_ADMIN_PASSWORD: &str = "DB_ADMIN_PASSWORD";
 const KEY_ADMIN_TOTP_ISSUER: &str = "ADMIN_TOTP_ISSUER";
 
 const SUCCESS: i32 = 0;
@@ -29,7 +31,11 @@ const APPLICATION_ERR: i32 = 5;
 fn main() {
     let _ = dotenv().ok();
     let result = check_env_vars(vec![
-        KEY_TO_DATABASE_URL.to_string(),
+        KEY_TO_DB_HOST.to_string(),
+        KEY_TO_DB_PORT.to_string(),
+        KEY_TO_DB_NAME.to_string(),
+        KEY_TO_DB_ADMIN_NAME.to_string(),
+        KEY_TO_DB_ADMIN_PASSWORD.to_string(),
         KEY_ADMIN_TOTP_ISSUER.to_string(),
     ]);
     if result.is_err() {
@@ -47,13 +53,13 @@ fn main() {
 }
 
 async fn main_internal() {
-    let database_url = var(KEY_TO_DATABASE_URL).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            KEY_TO_DATABASE_URL, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
+    let database_url = construct_db_url(
+        KEY_TO_DB_HOST,
+        KEY_TO_DB_PORT,
+        KEY_TO_DB_NAME,
+        KEY_TO_DB_ADMIN_NAME,
+        KEY_TO_DB_ADMIN_PASSWORD,
+    );
     let conn = connect(&database_url).await.unwrap_or_else(|e| {
         println!(
             "failed to establish connection (database_url: {}): {}",
@@ -86,6 +92,57 @@ async fn main_internal() {
         println!("valid subcommand [ create | list | update | delete | mfa ]");
         exit(INVALID_SUB_COMMAND);
     }
+}
+
+fn construct_db_url(
+    key_to_db_host: &str,
+    key_to_db_port: &str,
+    key_to_db_name: &str,
+    key_to_db_admin_name: &str,
+    key_to_db_admin_password: &str,
+) -> String {
+    let db_host = var(key_to_db_host).unwrap_or_else(|e| {
+        println!(
+            "failed to ge environment variable ({}): {}",
+            key_to_db_host, e
+        );
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    });
+    let db_port = var(key_to_db_port).unwrap_or_else(|e| {
+        println!(
+            "failed to ge environment variable ({}): {}",
+            key_to_db_port, e
+        );
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    });
+    let db_name = var(key_to_db_name).unwrap_or_else(|e| {
+        println!(
+            "failed to ge environment variable ({}): {}",
+            key_to_db_name, e
+        );
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    });
+    let db_admin_name = var(key_to_db_admin_name).unwrap_or_else(|e| {
+        println!(
+            "failed to ge environment variable ({}): {}",
+            key_to_db_admin_name, e
+        );
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    });
+    let db_admin_password = var(key_to_db_admin_password).unwrap_or_else(|e| {
+        println!(
+            "failed to ge environment variable ({}): {}",
+            key_to_db_admin_password, e
+        );
+        exit(ENV_VAR_CAPTURE_FAILURE);
+    });
+    create_db_url(
+        &db_host,
+        &db_port,
+        &db_name,
+        &db_admin_name,
+        &db_admin_password,
+    )
 }
 
 async fn connect(database_url: &str) -> Result<DatabaseConnection, Box<dyn Error + Send + Sync>> {
