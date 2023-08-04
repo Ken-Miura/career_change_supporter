@@ -147,7 +147,10 @@ async fn check_if_user_has_already_agreed(
 ) -> Result<(), ErrResp> {
     let option = op.find(account_id, terms_of_use_version).await?;
     let _ = option.ok_or_else(|| {
-        error!(
+        // クライアントにはハンドリング可能なようにエラーとして返すが、
+        // 初回ログイン時、または利用規約更新後のログイン時の通常操作で発生しうる内容なので
+        // サーバではinfo!で記録する
+        info!(
             "account id ({}) has not agreed terms of use (version {}) yet",
             account_id, terms_of_use_version
         );
