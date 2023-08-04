@@ -62,7 +62,7 @@ use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
 };
-use common::redis::KEY_TO_URL_FOR_REDIS_SERVER;
+use common::redis::{KEY_TO_REDIS_PORT, KEY_TO_REDIS_HOST, create_redis_url};
 use common::smtp::{
     KEY_TO_ADMIN_EMAIL_ADDRESS, KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
 };
@@ -97,7 +97,8 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_DATABASE_URL.to_string(),
         KEY_TO_SOCKET.to_string(),
         KEY_TO_URL_FOR_FRONT_END.to_string(),
-        KEY_TO_URL_FOR_REDIS_SERVER.to_string(),
+        KEY_TO_REDIS_HOST.to_string(),
+        KEY_TO_REDIS_PORT.to_string(),
         KEY_TO_TERMS_OF_USE_VERSION.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
@@ -163,12 +164,19 @@ async fn main_internal(num_of_cpus: u32) {
         .await
         .expect("failed to connect database");
 
-    let redis_url = var(KEY_TO_URL_FOR_REDIS_SERVER).unwrap_or_else(|_| {
+    let redis_host = var(KEY_TO_REDIS_HOST).unwrap_or_else(|_| {
         panic!(
             "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_URL_FOR_REDIS_SERVER
+            KEY_TO_REDIS_HOST
         )
     });
+    let redis_port = var(KEY_TO_REDIS_PORT).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_REDIS_PORT
+        )
+    });
+    let redis_url = create_redis_url(&redis_host, &redis_port);
     let config = RedisConfig::from_url(redis_url.as_str()).expect("failed to create redis config");
     let redis_pool = RedisPool::new(config, None, None, num_of_cpus as usize)
         .expect("failed to create redis pool");
