@@ -83,8 +83,8 @@ USER admin-account-operator
 RUN mkdir -p /home/admin-account-operator/workspace
 WORKDIR /home/admin-account-operator/workspace
 COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
-ENV PATH=${PATH}:/home/admin-account-operator/workspace/admin_account
-CMD [ "admin_account" ]
+ENV PATH="${PATH}:/home/admin-account-operator/workspace"
+ENTRYPOINT [ "admin_account" ]
 
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
