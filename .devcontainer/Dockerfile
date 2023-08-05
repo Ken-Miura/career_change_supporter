@@ -98,16 +98,15 @@ FROM psql-client as db-initializer
 COPY data_store_setup_files/initdb/init.sh .
 CMD [ "./init.sh" ]
 
-FROM --platform=linux/amd64 ubuntu:22.04 as migration-tool
-RUN useradd -m -s /bin/bash -U migration-tool-operator
-USER migration-tool-operator
-RUN mkdir -p /home/migration-tool-operator/workspace
-WORKDIR /home/migration-tool-operator/workspace
-COPY --from=server-test-and-build /home/developer/.cargo/bin/sea-orm-cli ./
+FROM --platform=linux/amd64 rust:1.70.0-alpine as migration-tool
+RUN apk add --update build-base pkgconfig openssl-dev && \
+        rm -rf /var/cache/apk/*
+WORKDIR /workspace
+RUN export SEA_ORM_CLI_VERSION=0.12.1 && \
+    cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-ENV PATH=${PATH}:/home/migration-tool-operator/workspace/sea-orm-cli
-CMD [ "sea-orm-cli" ]
+ENTRYPOINT [ "sea-orm-cli" ]
 
 # インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
