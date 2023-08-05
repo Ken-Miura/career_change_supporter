@@ -57,7 +57,7 @@ use axum_extra::extract::cookie::Key;
 use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, create_db_url};
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
-    KEY_TO_OPENSEARCH_USERNAME,
+    KEY_TO_OPENSEARCH_USERNAME, KEY_TO_OPENSEARCH_AUTH,
 };
 use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
@@ -107,6 +107,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_REDIS_PORT.to_string(),
         KEY_TO_TERMS_OF_USE_VERSION.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
+        KEY_TO_OPENSEARCH_AUTH.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
         KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
@@ -188,6 +189,15 @@ async fn main_internal(num_of_cpus: u32) {
             KEY_TO_OPENSEARCH_ENDPOINT_URI
         )
     });
+    let opensearch_auth = var(KEY_TO_OPENSEARCH_AUTH)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Not environment variable found: environment variable \"{}\" must be set",
+                KEY_TO_OPENSEARCH_AUTH
+            )
+        })
+        .parse::<bool>()
+        .unwrap_or_else(|_| panic!("failed to parse {}", KEY_TO_OPENSEARCH_AUTH));
     let opensearch_username = var(KEY_TO_OPENSEARCH_USERNAME).unwrap_or_else(|_| {
         panic!(
             "Not environment variable found: environment variable \"{}\" must be set",
@@ -202,6 +212,7 @@ async fn main_internal(num_of_cpus: u32) {
     });
     let index_client = create_client(
         opensearch_url.as_str(),
+        opensearch_auth,
         opensearch_username.as_str(),
         opensearch_password.as_str(),
     )

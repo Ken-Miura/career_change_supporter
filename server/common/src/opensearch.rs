@@ -14,6 +14,7 @@ use tracing::error;
 use crate::{err::Code, ApiError, ErrResp};
 
 pub const KEY_TO_OPENSEARCH_ENDPOINT_URI: &str = "OPENSEARCH_ENDPOINT_URI";
+pub const KEY_TO_OPENSEARCH_AUTH: &str = "OPENSEARCH_AUTH";
 pub const KEY_TO_OPENSEARCH_USERNAME: &str = "OPENSEARCH_USERNAME";
 pub const KEY_TO_OPENSEARCH_PASSWORD: &str = "OPENSEARCH_PASSWORD";
 
@@ -202,17 +203,30 @@ pub async fn delete_document(
 }
 
 /// OpenSearchノードへアクセスするためのクライアントを作成する
+///
+/// # Panics
+/// endpoint_uriがスキームにhttpまたはhttpsを指定していない場合<br>
+/// endpoint_uriのスキームにhttpを指定して、かつauthがtrueの場合（認証を使う場合はhttps以外許可しないため）<br>
 pub fn create_client(
     endpoint_uri: &str,
+    auth: bool,
     username: &str,
     password: &str,
 ) -> Result<OpenSearch, Box<dyn Error>> {
-    // TODO: httpsのみ許可するか検討（schemeチェックするか検討）＋ユーザー名とパスワードを使う
+    if !(endpoint_uri.starts_with("http://") || endpoint_uri.starts_with("https://")) {
+        panic!("supported scheme is http or https: {}", endpoint_uri)
+    }
+    if endpoint_uri.starts_with("http://") && auth {
+        panic!("Use https to enable auth: {}", endpoint_uri)
+    }
     let url = opensearch::http::Url::parse(endpoint_uri)?;
     let conn_pool = SingleNodeConnectionPool::new(url);
-    let builder = TransportBuilder::new(conn_pool);
-    let _credentials = Credentials::Basic(username.to_string(), password.to_string());
-    // builder.auth(credentials);
+    let builder = if auth {
+        let credentials = Credentials::Basic(username.to_string(), password.to_string());
+        TransportBuilder::new(conn_pool).auth(credentials)
+    } else {
+        TransportBuilder::new(conn_pool)
+    };
     let transport = builder.build()?;
     Ok(OpenSearch::new(transport))
 }

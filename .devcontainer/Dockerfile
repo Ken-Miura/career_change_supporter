@@ -113,4 +113,4 @@ ENTRYPOINT [ "sea-orm-cli" ]
 FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY data_store_setup_files/opensearch/index_definition/index.json .
-CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json ${SCHEME}://${HOST}:${PORT}/users" ]
+CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json -u ${USER_NAME}:{PASSWORD} ${ENDPOINT_URI}/users" ]
