@@ -60,6 +60,11 @@ RUN cargo fmt --check && \
     cargo build --release
 
 FROM --platform=linux/amd64 ubuntu:22.04 as user-service
+RUN apt-get update && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 RUN useradd -m -s /bin/bash -U user-service-operator
 USER user-service-operator
 RUN mkdir -p /home/user-service-operator/workspace
@@ -69,6 +74,11 @@ EXPOSE 3000
 CMD [ "./user_service" ]
 
 FROM --platform=linux/amd64 ubuntu:22.04 as admin-service
+RUN apt-get update && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 RUN useradd -m -s /bin/bash -U admin-service-operator
 USER admin-service-operator
 RUN mkdir -p /home/admin-service-operator/workspace
@@ -78,6 +88,11 @@ EXPOSE 3001
 CMD [ "./admin_service" ]
 
 FROM --platform=linux/amd64 ubuntu:22.04 as admin-account
+RUN apt-get update && \
+    export DEBIAN_FRONTEND=noninteractive && \
+    apt-get install -y ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 RUN useradd -m -s /bin/bash -U admin-account-operator
 USER admin-account-operator
 RUN mkdir -p /home/admin-account-operator/workspace
