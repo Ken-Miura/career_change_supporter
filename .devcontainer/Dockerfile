@@ -62,9 +62,10 @@ RUN cargo fmt --check && \
 FROM --platform=linux/amd64 ubuntu:22.04 as application-base
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
-    apt-get install -y ca-certificates && \
+    apt-get install -y ca-certificates language-pack-en && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+ENV LANG="en_US.UTF-8"
 
 FROM application-base as user-service
 RUN useradd -m -s /bin/bash -U user-service-operator
