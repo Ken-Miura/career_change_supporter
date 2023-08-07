@@ -43,6 +43,7 @@ import DisableMfaSuccessPage from '../views/personalized/DisableMfaSuccessPage.v
 import MfaPage from '../views/MfaPage.vue'
 import RecoveryCodePage from '../views/RecoveryCodePage.vue'
 import DeleteAccountSuccessPage from '../views/DeleteAccountSuccessPage.vue'
+import NotFoundPage from '../views/NotFoundPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -333,6 +334,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/rate-success',
     name: 'RateSuccessPage',
     component: RateSuccessPage
+  },
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'NotFoundPage',
+    component: NotFoundPage
   }
 ]
 
