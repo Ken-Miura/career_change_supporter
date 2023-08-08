@@ -160,7 +160,11 @@ async fn main_internal(num_of_cpus: u32) {
         LOG_LEVEL.as_str()
     );
     set_var("RUST_LOG", log_conf);
-    tracing_subscriber::fmt::init();
+    // ログの出力、保管先にAWS CloudWatch Logsを仮定している。
+    // AWS CloudWatch Logsでは色を示す制御文字は正しく扱えないため文字化けとなる。
+    // 従って、色を示す制御文字を抑制するためにANSIを明示的に不使用にしている。
+    let format = tracing_subscriber::fmt::format().with_ansi(false);
+    tracing_subscriber::fmt().event_format(format).init();
 
     let database_url = construct_db_url(
         KEY_TO_DB_HOST,
