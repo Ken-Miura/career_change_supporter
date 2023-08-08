@@ -2,6 +2,7 @@
 
 pub mod db;
 pub mod err;
+pub mod log;
 pub mod mfa;
 pub mod opensearch;
 pub mod password;

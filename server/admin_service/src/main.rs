@@ -72,6 +72,7 @@ use axum::routing::{get, post};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
 use common::db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME};
+use common::log::LOG_LEVEL;
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME, KEY_TO_OPENSEARCH_AUTH,
@@ -161,10 +162,14 @@ fn main() {
 }
 
 async fn main_internal(num_of_cpus: u32) {
-    set_var(
-        "RUST_LOG",
-        "admin_service=debug,common=debug,tower_http=debug,sea_orm=debug",
+    let log_conf = format!(
+        "admin_service={},common={},tower_http={},sea_orm={}",
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str()
     );
+    set_var("RUST_LOG", log_conf);
     tracing_subscriber::fmt::init();
 
     let database_url = construct_db_url(
