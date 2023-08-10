@@ -7,6 +7,7 @@
 - 期限切れのtemp_mfa_secretレコードの削除
 - 相談開始日時の候補すべてが現在時刻を超えてしまっているconsultation_reqの削除
 - deleted_user_accountに紐づくidentity、career、tenant、consulting_feeの削除
+- ユーザーがコンサルタントを評価しないまま一定期間が過ぎた場合の決済
 
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
