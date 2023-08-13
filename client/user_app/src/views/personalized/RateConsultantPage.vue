@@ -6,8 +6,8 @@
     </div>
     <main v-else>
       <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 data-test="consultant-rating-label" class="font-bold text-2xl">相談を受け付けたコンサルタントの評価</h3>
-        <p data-test="consultant-rating-description" class="mt-4 ml-2 text-xl">相談を行ったコンサルタントを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。</p>
+        <h3 data-test="consultant-rating-label" class="font-bold text-2xl">相談を行ったコンサルタントの評価</h3>
+        <p data-test="consultant-rating-description" class="mt-4 ml-2 text-xl">相談を行ったコンサルタントを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。コンサルタントが相談を欠席した場合、返金となる場合があります。その場合、評価を行わずに<a href="/transaction-law" class="hover:underline">お問い合わせ先</a>のメールアドレス宛に「あなたのメールアドレスまたはユーザーID」「コンサルタントID」「相談開始日時」を含めてご連絡下さい。</p>
         <div class="mt-2 ml-4 grid grid-cols-3">
           <p data-test="consultant-id-label" class="mt-4 justify-self-start text-xl col-span-2">コンサルタントID</p>
           <p data-test="consultant-id-value" class="mt-4 justify-self-center text-xl col-span-1">{{ consultantId }}</p>

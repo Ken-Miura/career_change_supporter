@@ -95,9 +95,9 @@ describe('RateConsultantPage.vue', () => {
     await flushPromises()
 
     const consultantRatingLabel = wrapper.find('[data-test="consultant-rating-label"]')
-    expect(consultantRatingLabel.text()).toContain('相談を受け付けたコンサルタントの評価')
+    expect(consultantRatingLabel.text()).toContain('相談を行ったコンサルタントの評価')
     const consultantRatingDescription = wrapper.find('[data-test="consultant-rating-description"]')
-    expect(consultantRatingDescription.text()).toContain(`相談を行ったコンサルタントを評価して下さい。${MIN_RATING}が最も低い（悪い）評価で、${MAX_RATING}が最も高い（良い）評価となります。`)
+    expect(consultantRatingDescription.text()).toContain(`相談を行ったコンサルタントを評価して下さい。${MIN_RATING}が最も低い（悪い）評価で、${MAX_RATING}が最も高い（良い）評価となります。コンサルタントが相談を欠席した場合、返金となる場合があります。その場合、評価を行わずにお問い合わせ先のメールアドレス宛に「あなたのメールアドレスまたはユーザーID」「コンサルタントID」「相談開始日時」を含めてご連絡下さい。`)
 
     const consultantIdLabel = wrapper.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel.text()).toContain('コンサルタントID')
@@ -136,9 +136,9 @@ describe('RateConsultantPage.vue', () => {
     await flushPromises()
 
     const consultantRatingLabel = wrapper.find('[data-test="consultant-rating-label"]')
-    expect(consultantRatingLabel.text()).toContain('相談を受け付けたコンサルタントの評価')
+    expect(consultantRatingLabel.text()).toContain('相談を行ったコンサルタントの評価')
     const consultantRatingDescription = wrapper.find('[data-test="consultant-rating-description"]')
-    expect(consultantRatingDescription.text()).toContain(`相談を行ったコンサルタントを評価して下さい。${MIN_RATING}が最も低い（悪い）評価で、${MAX_RATING}が最も高い（良い）評価となります。`)
+    expect(consultantRatingDescription.text()).toContain(`相談を行ったコンサルタントを評価して下さい。${MIN_RATING}が最も低い（悪い）評価で、${MAX_RATING}が最も高い（良い）評価となります。コンサルタントが相談を欠席した場合、返金となる場合があります。その場合、評価を行わずにお問い合わせ先のメールアドレス宛に「あなたのメールアドレスまたはユーザーID」「コンサルタントID」「相談開始日時」を含めてご連絡下さい。`)
 
     const consultantIdLabel = wrapper.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel.text()).toContain('コンサルタントID')
