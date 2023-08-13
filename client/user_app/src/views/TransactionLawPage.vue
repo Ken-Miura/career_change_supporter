@@ -40,7 +40,7 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">返金、キャンセルについて</h2>
-        <p class="ml-2 text-lg">サービス特性上、決済後の返金・キャンセルはお受けできません。ただし、サービス提供者側の都合やなんらかの事情で当日のサービス実施が中止になった場合は、全額返金いたします。</p>
+        <p class="ml-2 text-lg">サービスの特性上、決済後の返金・キャンセルはお受けできません。</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-xl">サービスの提供時期</h2>
