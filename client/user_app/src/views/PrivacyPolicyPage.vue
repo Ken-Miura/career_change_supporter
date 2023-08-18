@@ -6,9 +6,6 @@
       </router-link>
     </header>
     <main class="bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <!-- TODO: プライバシーポリシーの更新 -->
-      <!-- TODO: クレジットのEV3Dセキュア利用時に個人情報を渡す旨の同意を取る文言をプライバシーポリシーに記載する -->
-      <!-- 参考: https://payjp-document.s3.ap-northeast-1.amazonaws.com/PAY.JP_3D%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2_EMV3D%E3%82%BB%E3%82%AD%E3%83%A5%E3%82%A2%E7%A7%BB%E8%A1%8C%E3%81%AB%E3%81%A4%E3%81%84%E3%81%A6.pdf -->
       <h1 class="font-bold text-2xl">プライバシーポリシー</h1>
       <p class="mt-2">{{ businessOperatorName }}（以下、「サイト運営者」といいます）は、本ウェブサイト上で提供するサービス（以下、「本サービス」といいます）における、サイト利用者の個人情報の取扱いについて、以下のとおりプライバシーポリシー（以下、「本ポリシー」といいます）を定めます。</p>
       <div class="mt-4">
