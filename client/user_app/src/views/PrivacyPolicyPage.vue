@@ -113,8 +113,22 @@
         </ol>
       </div>
       <div class="mt-4">
-        <h2 class="font-bold text-xl">第11条（お問い合わせ窓口）</h2>
-        <p class="ml-1">本ポリシーに関するお問い合わせは、下記の窓口までお願いいたします。</p>
+        <h2 class="font-bold text-xl">第11条（TLS（セキュリティ）について）</h2>
+        <p class="ml-1">本サービスでサイト利用者から個人情報を送信いただく場合のセキュリティ確保のため、個人情報をTLS（Transport Layer Security）により保護します。サイト利用者がTLSに準拠したブラウザを利用することで、個人情報を自動的に暗号化して送受信します。</p>
+      </div>
+      <div class="mt-4">
+        <h2 class="font-bold text-xl">第12条（「Cookie」の利用）</h2>
+        <p class="ml-1">本サービスはCookieを利用しています。ただし、Cookieに記録された情報には特定の個人を識別することができる情報は含まれません。サイト利用者はブラウザの設定を変えることにより、Cookieを使用しないようにすることが可能です。ただし、その際は本サービスの機能が一部ご利用いただけない場合があります。</p>
+      </div>
+      <div class="mt-4">
+        <h2 class="font-bold text-xl">第13条（事業者名、住所、お問い合わせ窓口）</h2>
+        <p class="ml-1">本ポリシーに関するお問い合わせは、下記のお問い合わせ窓口のメールアドレスまでお願いいたします。</p>
+        <div class="ml-3 mt-1 grid grid-cols-2 max-w-fit">
+          <p class="col-span-1 mx-1">事業者名</p><p class="col-span-1 mx-1">{{ businessOperatorName }}</p>
+          <p class="col-span-1 mx-1">郵便番号</p><p class="col-span-1 mx-1">{{ businessOperatorZipCode }}</p>
+          <p class="col-span-1 mx-1">住所</p><p class="col-span-1 mx-1">{{ businessOperatorAddress }}</p>
+          <p class="col-span-1 mx-1">お問い合わせ窓口</p><p class="col-span-1 mx-1">{{ businessOperatorInquiryEmailAddress }}</p>
+        </div>
       </div>
       <p class="mt-4">以上</p>
     </main>
