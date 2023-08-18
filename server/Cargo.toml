@@ -4,6 +4,7 @@ members = [
     "admin_account",
     "admin_service",
     "common",
+    "delete_expired_temp_accounts",
     "entity",
     "migration",
     "user_service",
