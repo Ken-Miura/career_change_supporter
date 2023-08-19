@@ -59,6 +59,16 @@ fn main() {
 async fn main_internal() {
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
+    let num_of_max_target_records = var(KEY_TO_NUM_OF_MAX_TARGET_RECORDS)
+        .unwrap_or_else(|_| {
+            panic!(
+                "Not environment variable found: environment variable \"{}\" must be set",
+                KEY_TO_NUM_OF_MAX_TARGET_RECORDS
+            )
+        })
+        .parse()
+        .expect("failed to get Ok");
+
     let database_url = construct_db_url(
         KEY_TO_DB_HOST,
         KEY_TO_DB_PORT,
@@ -72,10 +82,7 @@ async fn main_internal() {
         println!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
-    let op = DeleteExpiredTempAccountsOperationImpl {
-        pool,
-        num_of_max_target_records: 0,
-    };
+    let op = DeleteExpiredTempAccountsOperationImpl { pool };
 
     let smtp_client = SmtpClient::new(
         AWS_SES_REGION.as_str(),
@@ -85,7 +92,13 @@ async fn main_internal() {
     )
     .await;
 
-    let result = delete_expired_temp_accounts(current_date_time, &op, &smtp_client).await;
+    let result = delete_expired_temp_accounts(
+        current_date_time,
+        num_of_max_target_records,
+        &op,
+        &smtp_client,
+    )
+    .await;
 
     if result.is_err() {
         println!(
@@ -145,6 +158,7 @@ fn construct_db_url(
 
 async fn delete_expired_temp_accounts(
     current_date_time: DateTime<FixedOffset>,
+    num_of_max_target_records: u64,
     op: &impl DeleteExpiredTempAccountsOperation,
     send_mail: &impl SendMail,
 ) -> Result<(), Box<dyn Error>> {
@@ -155,7 +169,6 @@ trait DeleteExpiredTempAccountsOperation {}
 
 struct DeleteExpiredTempAccountsOperationImpl {
     pool: DatabaseConnection,
-    num_of_max_target_records: u64,
 }
 
 impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationImpl {}
