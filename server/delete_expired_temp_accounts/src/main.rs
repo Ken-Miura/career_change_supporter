@@ -3,7 +3,8 @@
 use chrono::{DateTime, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
-    prelude::async_trait::async_trait, ConnectOptions, Database, DatabaseConnection,
+    prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
+    EntityTrait, QueryFilter, QuerySelect,
 };
 use std::{env::var, error::Error, process::exit};
 
@@ -171,7 +172,7 @@ async fn delete_expired_temp_accounts(
 trait DeleteExpiredTempAccountsOperation {
     async fn get_expired_temp_accounts(
         &self,
-        expiry_date_time: DateTime<FixedOffset>,
+        criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
     ) -> Result<Vec<TempAccount>, Box<dyn Error>>;
 
@@ -192,13 +193,39 @@ struct DeleteExpiredTempAccountsOperationImpl {
 impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationImpl {
     async fn get_expired_temp_accounts(
         &self,
-        expiry_date_time: DateTime<FixedOffset>,
+        criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
     ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
-        todo!()
+        let models = entity::user_temp_account::Entity::find()
+            .filter(entity::user_account::Column::CreatedAt.lt(criteria))
+            .limit(limit)
+            .all(&self.pool)
+            .await
+            .map_err(|e| {
+                println!("failed to get user_temp_account: {}", e);
+                Box::new(e)
+            })?;
+        Ok(models
+            .into_iter()
+            .map(|m| TempAccount {
+                temp_account_id: m.user_temp_account_id,
+                email_address: m.email_address,
+                created_at: m.created_at,
+            })
+            .collect())
     }
 
     async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
+        let _ = entity::user_temp_account::Entity::delete_by_id(temp_account_id)
+            .exec(&self.pool)
+            .await
+            .map_err(|e| {
+                println!(
+                    "failed to delete user_temp_account (temp_account_id: {}): {}",
+                    temp_account_id, e
+                );
+                Box::new(e)
+            })?;
         Ok(())
     }
 }
