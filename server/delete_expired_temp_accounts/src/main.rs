@@ -1,6 +1,6 @@
 // Copyright 2023 Ken Miura
 
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
@@ -11,13 +11,13 @@ use std::{env::var, error::Error, process::exit};
 use common::{
     db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     smtp::{
-        SendMail, SmtpClient, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI, AWS_SES_REGION,
-        AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS, KEY_TO_AWS_SES_ACCESS_KEY_ID,
-        KEY_TO_AWS_SES_ENDPOINT_URI, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_SECRET_ACCESS_KEY,
-        KEY_TO_SYSTEM_EMAIL_ADDRESS,
+        SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
+        AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
+        KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_ENDPOINT_URI, KEY_TO_AWS_SES_REGION,
+        KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_SYSTEM_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
     },
     util::check_env_vars,
-    JAPANESE_TIME_ZONE,
+    JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR, WEB_SITE_NAME,
 };
 
 const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
@@ -104,10 +104,6 @@ async fn main_internal() {
     .await;
 
     if result.is_err() {
-        println!(
-            "failed to delete expired temp accounts: {}",
-            result.expect_err("failed to get Err")
-        );
         exit(APPLICATION_ERR)
     }
     exit(SUCCESS)
@@ -165,6 +161,64 @@ async fn delete_expired_temp_accounts(
     op: &impl DeleteExpiredTempAccountsOperation,
     send_mail: &impl SendMail,
 ) -> Result<(), Box<dyn Error>> {
+    let criteria = current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
+    let limit = if num_of_max_target_records != 0 {
+        Some(num_of_max_target_records)
+    } else {
+        None
+    };
+
+    let expired_temp_accounts = op.get_expired_temp_accounts(criteria, limit).await?;
+    let num_of_expired_temp_accounts = expired_temp_accounts.len();
+
+    let mut delete_failed: Vec<TempAccount> = Vec::with_capacity(expired_temp_accounts.len());
+    for expired_temp_account in expired_temp_accounts {
+        let result = op
+            .delete_temp_account(&expired_temp_account.temp_account_id)
+            .await;
+        if result.is_err() {
+            println!("failed to delete temp account: {:?}", result);
+            delete_failed.push(expired_temp_account);
+        }
+    }
+
+    if !delete_failed.is_empty() {
+        let subject = format!(
+            "[{}] 定期実行ツール (delete_expired_temp_accounts) 失敗通知",
+            WEB_SITE_NAME
+        );
+        let num_of_delete_failed = delete_failed.len();
+        let text = create_text(
+            num_of_expired_temp_accounts,
+            num_of_delete_failed,
+            &delete_failed,
+        );
+        send_mail
+            .send_mail(
+                ADMIN_EMAIL_ADDRESS.as_str(),
+                SYSTEM_EMAIL_ADDRESS.as_str(),
+                subject.as_str(),
+                text.as_str(),
+            )
+            .await
+            .map_err(|e| {
+                println!(
+                    "failed to send mail (status code: {}, response body: {:?})",
+                    e.0, e.1
+                );
+                "failed to send mail"
+            })?;
+        println!(
+            "{} were processed, {} were failed (detail: {:?})",
+            num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
+        );
+        return Err("failed to delete temp accounts".into());
+    }
+
+    println!(
+        "{} temp accounts were deleted successfully",
+        num_of_expired_temp_accounts
+    );
     Ok(())
 }
 
@@ -179,6 +233,7 @@ trait DeleteExpiredTempAccountsOperation {
     async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>>;
 }
 
+#[derive(Eq, PartialEq, Debug)]
 struct TempAccount {
     temp_account_id: String,
     email_address: String,
@@ -228,4 +283,18 @@ impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationIm
             })?;
         Ok(())
     }
+}
+
+fn create_text(
+    num_of_expired_temp_accounts: usize,
+    num_of_delete_failed: usize,
+    delete_failed: &[TempAccount],
+) -> String {
+    format!(
+        r"user_temp_accountの期限切れレコード{}個の内、{}個の削除に失敗しました。
+
+【詳細】
+{:?}",
+        num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
+    )
 }
