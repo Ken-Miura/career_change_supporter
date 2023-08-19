@@ -2,7 +2,9 @@
 
 use chrono::{DateTime, FixedOffset};
 use dotenv::dotenv;
-use entity::sea_orm::{ConnectOptions, Database, DatabaseConnection};
+use entity::sea_orm::{
+    prelude::async_trait::async_trait, ConnectOptions, Database, DatabaseConnection,
+};
 use std::{env::var, error::Error, process::exit};
 
 use common::{
@@ -165,10 +167,38 @@ async fn delete_expired_temp_accounts(
     Ok(())
 }
 
-trait DeleteExpiredTempAccountsOperation {}
+#[async_trait]
+trait DeleteExpiredTempAccountsOperation {
+    async fn get_expired_temp_accounts(
+        &self,
+        expiry_date_time: DateTime<FixedOffset>,
+        limit: Option<u64>,
+    ) -> Result<Vec<TempAccount>, Box<dyn Error>>;
+
+    async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>>;
+}
+
+struct TempAccount {
+    temp_account_id: String,
+    email_address: String,
+    created_at: DateTime<FixedOffset>,
+}
 
 struct DeleteExpiredTempAccountsOperationImpl {
     pool: DatabaseConnection,
 }
 
-impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationImpl {}
+#[async_trait]
+impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationImpl {
+    async fn get_expired_temp_accounts(
+        &self,
+        expiry_date_time: DateTime<FixedOffset>,
+        limit: Option<u64>,
+    ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
+        todo!()
+    }
+
+    async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
+        Ok(())
+    }
+}
