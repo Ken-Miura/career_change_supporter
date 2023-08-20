@@ -17,7 +17,7 @@ use common::{
         KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_SYSTEM_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
     },
     util::check_env_vars,
-    JAPANESE_TIME_ZONE, VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR, WEB_SITE_NAME,
+    JAPANESE_TIME_ZONE, VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE, WEB_SITE_NAME,
 };
 
 const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
@@ -95,7 +95,7 @@ async fn main_internal() {
     )
     .await;
 
-    let result = delete_expired_pwd_change_req(
+    let result = delete_expired_pwd_change_reqs(
         current_date_time,
         num_of_max_target_records,
         &op,
@@ -158,46 +158,47 @@ fn construct_db_url(
     )
 }
 
-async fn delete_expired_pwd_change_req(
+async fn delete_expired_pwd_change_reqs(
     current_date_time: DateTime<FixedOffset>,
     num_of_max_target_records: u64,
     op: &impl DeleteExpiredPwdChangeReqOperation,
     send_mail: &impl SendMail,
 ) -> Result<usize, Box<dyn Error>> {
-    let criteria = current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
+    let criteria =
+        current_date_time - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE);
     let limit = if num_of_max_target_records != 0 {
         Some(num_of_max_target_records)
     } else {
         None
     };
 
-    let expired_temp_accounts = op.get_expired_temp_accounts(criteria, limit).await?;
-    let num_of_expired_temp_accounts = expired_temp_accounts.len();
+    let expired_pwd_change_reqs = op.get_expired_pwd_change_reqs(criteria, limit).await?;
+    let num_of_expired_pwd_change_reqs = expired_pwd_change_reqs.len();
 
-    let mut delete_failed: Vec<TempAccount> = Vec::with_capacity(expired_temp_accounts.len());
-    for expired_temp_account in expired_temp_accounts {
+    let mut delete_failed: Vec<PwdChangeReq> = Vec::with_capacity(expired_pwd_change_reqs.len());
+    for expired_pwd_change_req in expired_pwd_change_reqs {
         let result = op
-            .delete_temp_account(&expired_temp_account.temp_account_id)
+            .delete_pwd_change_req(&expired_pwd_change_req.pwd_change_req_id)
             .await;
         if result.is_err() {
-            delete_failed.push(expired_temp_account);
+            delete_failed.push(expired_pwd_change_req);
         }
     }
 
     if !delete_failed.is_empty() {
         let subject = format!(
-            "[{}] 定期実行ツール (delete_expired_pwd_change_req) 失敗通知",
+            "[{}] 定期実行ツール (delete_expired_pwd_change_reqs) 失敗通知",
             WEB_SITE_NAME
         );
         let num_of_delete_failed = delete_failed.len();
         let text = create_text(
-            num_of_expired_temp_accounts,
+            num_of_expired_pwd_change_reqs,
             num_of_delete_failed,
             &delete_failed,
         );
         let err_message = format!(
             "{} were processed, {} were failed (detail: {:?})",
-            num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
+            num_of_expired_pwd_change_reqs, num_of_delete_failed, delete_failed
         );
         send_mail
             .send_mail(
@@ -216,25 +217,25 @@ async fn delete_expired_pwd_change_req(
         return Err(err_message.into());
     }
 
-    Ok(num_of_expired_temp_accounts)
+    Ok(num_of_expired_pwd_change_reqs)
 }
 
 #[async_trait]
 trait DeleteExpiredPwdChangeReqOperation {
-    async fn get_expired_temp_accounts(
+    async fn get_expired_pwd_change_reqs(
         &self,
         criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
-    ) -> Result<Vec<TempAccount>, Box<dyn Error>>;
+    ) -> Result<Vec<PwdChangeReq>, Box<dyn Error>>;
 
-    async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>>;
+    async fn delete_pwd_change_req(&self, pwd_change_req_id: &str) -> Result<(), Box<dyn Error>>;
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct TempAccount {
-    temp_account_id: String,
+struct PwdChangeReq {
+    pwd_change_req_id: String,
     email_address: String,
-    created_at: DateTime<FixedOffset>,
+    requested_at: DateTime<FixedOffset>,
 }
 
 struct DeleteExpiredPwdChangeReqOperationImpl {
@@ -243,35 +244,35 @@ struct DeleteExpiredPwdChangeReqOperationImpl {
 
 #[async_trait]
 impl DeleteExpiredPwdChangeReqOperation for DeleteExpiredPwdChangeReqOperationImpl {
-    async fn get_expired_temp_accounts(
+    async fn get_expired_pwd_change_reqs(
         &self,
         criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
-    ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
-        let models = entity::user_temp_account::Entity::find()
-            .filter(entity::user_temp_account::Column::CreatedAt.lt(criteria))
+    ) -> Result<Vec<PwdChangeReq>, Box<dyn Error>> {
+        let models = entity::pwd_change_req::Entity::find()
+            .filter(entity::pwd_change_req::Column::RequestedAt.lt(criteria))
             .limit(limit)
             .all(&self.pool)
             .await
-            .map_err(|e| format!("failed to get user_temp_account: {}", e))?;
+            .map_err(|e| format!("failed to get pwd_change_req: {}", e))?;
         Ok(models
             .into_iter()
-            .map(|m| TempAccount {
-                temp_account_id: m.user_temp_account_id,
+            .map(|m| PwdChangeReq {
+                pwd_change_req_id: m.pwd_change_req_id,
                 email_address: m.email_address,
-                created_at: m.created_at,
+                requested_at: m.requested_at,
             })
             .collect())
     }
 
-    async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
-        let _ = entity::user_temp_account::Entity::delete_by_id(temp_account_id)
+    async fn delete_pwd_change_req(&self, pwd_change_req_id: &str) -> Result<(), Box<dyn Error>> {
+        let _ = entity::pwd_change_req::Entity::delete_by_id(pwd_change_req_id)
             .exec(&self.pool)
             .await
             .map_err(|e| {
                 format!(
-                    "failed to delete user_temp_account (temp_account_id: {}): {}",
-                    temp_account_id, e
+                    "failed to delete pwd_change_req (pwd_change_req_id: {}): {}",
+                    pwd_change_req_id, e
                 )
             })?;
         Ok(())
@@ -279,16 +280,16 @@ impl DeleteExpiredPwdChangeReqOperation for DeleteExpiredPwdChangeReqOperationIm
 }
 
 fn create_text(
-    num_of_expired_temp_accounts: usize,
+    num_of_expired_pwd_change_reqs: usize,
     num_of_delete_failed: usize,
-    delete_failed: &[TempAccount],
+    delete_failed: &[PwdChangeReq],
 ) -> String {
     format!(
-        r"user_temp_accountの期限切れレコード{}個の内、{}個の削除に失敗しました。
+        r"pwd_change_reqの期限切れレコード{}個の内、{}個の削除に失敗しました。
 
 【詳細】
 {:?}",
-        num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
+        num_of_expired_pwd_change_reqs, num_of_delete_failed, delete_failed
     )
 }
 
@@ -303,20 +304,21 @@ mod tests {
     use super::*;
 
     struct DeleteExpiredPwdChangeReqOperationMock {
-        temp_accounts: HashMap<String, (TempAccount, bool)>,
+        pwd_change_reqs: HashMap<String, (PwdChangeReq, bool)>,
         current_date_time: DateTime<FixedOffset>,
         limit: u64,
     }
 
     #[async_trait]
     impl DeleteExpiredPwdChangeReqOperation for DeleteExpiredPwdChangeReqOperationMock {
-        async fn get_expired_temp_accounts(
+        async fn get_expired_pwd_change_reqs(
             &self,
             criteria: DateTime<FixedOffset>,
             limit: Option<u64>,
-        ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
+        ) -> Result<Vec<PwdChangeReq>, Box<dyn Error>> {
             assert_eq!(
-                self.current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR),
+                self.current_date_time
+                    - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE),
                 criteria
             );
             if self.limit != 0 {
@@ -324,22 +326,25 @@ mod tests {
             } else {
                 assert_eq!(None, limit);
             }
-            let expired_temp_accounts = self
-                .temp_accounts
+            let expired_pwd_change_reqs = self
+                .pwd_change_reqs
                 .values()
                 .clone()
-                .filter(|m| m.0.created_at < criteria)
+                .filter(|m| m.0.requested_at < criteria)
                 .map(|m| m.0.clone())
                 .collect();
-            Ok(expired_temp_accounts)
+            Ok(expired_pwd_change_reqs)
         }
 
-        async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
-            let temp_account = self
-                .temp_accounts
-                .get(temp_account_id)
-                .expect("assert that temp_account has value!");
-            if !temp_account.1 {
+        async fn delete_pwd_change_req(
+            &self,
+            pwd_change_req_id: &str,
+        ) -> Result<(), Box<dyn Error>> {
+            let pwd_change_req = self
+                .pwd_change_reqs
+                .get(pwd_change_req_id)
+                .expect("assert that pwd_change_req has value!");
+            if !pwd_change_req.1 {
                 return Err("mock error message".into());
             }
             Ok(())
@@ -390,13 +395,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success0() {
+    async fn delete_expired_pwd_change_reqs_success0() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: HashMap::with_capacity(0),
+            pwd_change_reqs: HashMap::with_capacity(0),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -404,7 +409,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -417,13 +422,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success1() {
+    async fn delete_expired_pwd_change_reqs_success1() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_non_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_non_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -431,7 +436,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -443,28 +448,29 @@ mod tests {
         assert_eq!(num_deleted, 0);
     }
 
-    fn create_dummy_1_non_expired_temp_account(
+    fn create_dummy_1_non_expired_pwd_change_req(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account = TempAccount {
-            temp_account_id: temp_account_id.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR),
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id.to_string(), (temp_account, true));
+        map.insert(pwd_change_req_id.to_string(), (pwd_change_req, true));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success2() {
+    async fn delete_expired_pwd_change_reqs_success2() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -472,7 +478,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -484,30 +490,30 @@ mod tests {
         assert_eq!(num_deleted, 1);
     }
 
-    fn create_dummy_1_expired_temp_account(
+    fn create_dummy_1_expired_pwd_change_req(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account = TempAccount {
-            temp_account_id: temp_account_id.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id.to_string(), (temp_account, true));
+        map.insert(pwd_change_req_id.to_string(), (pwd_change_req, true));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success3() {
+    async fn delete_expired_pwd_change_reqs_success3() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -515,7 +521,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -528,13 +534,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success4() {
+    async fn delete_expired_pwd_change_reqs_success4() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -542,7 +548,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -555,13 +561,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success5() {
+    async fn delete_expired_pwd_change_reqs_success5() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -569,7 +575,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -581,39 +587,39 @@ mod tests {
         assert_eq!(num_deleted, 2);
     }
 
-    fn create_dummy_2_expired_temp_account(
+    fn create_dummy_2_expired_pwd_change_reqs(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account1 = TempAccount {
-            temp_account_id: temp_account_id1.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req1 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id1.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let temp_account_id2 = "c860dc5138d146ac8127b0780fabce7e";
-        let temp_account2 = TempAccount {
-            temp_account_id: temp_account_id2.to_string(),
+        let pwd_change_req_id2 = "c860dc5138d146ac8127b0780fabce7e";
+        let pwd_change_req2 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id2.to_string(),
             email_address: "test2@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id1.to_string(), (temp_account1, true));
-        map.insert(temp_account_id2.to_string(), (temp_account2, true));
+        map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, true));
+        map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success6() {
+    async fn delete_expired_pwd_change_reqs_success6() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -621,7 +627,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -634,13 +640,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success7() {
+    async fn delete_expired_pwd_change_reqs_success7() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -648,7 +654,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -661,13 +667,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success8() {
+    async fn delete_expired_pwd_change_reqs_success8() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 3;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -675,7 +681,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -688,13 +694,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success9() {
+    async fn delete_expired_pwd_change_reqs_success9() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_non_expired_and_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
+                current_date_time,
+            ),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -702,7 +710,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -714,37 +722,40 @@ mod tests {
         assert_eq!(num_deleted, 1);
     }
 
-    fn create_dummy_1_non_expired_and_1_expired_temp_account(
+    fn create_dummy_1_non_expired_and_1_expired_pwd_change_req(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account1 = TempAccount {
-            temp_account_id: temp_account_id1.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req1 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id1.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR),
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE),
         };
-        let temp_account_id2 = "c860dc5138d146ac8127b0780fabce7e";
-        let temp_account2 = TempAccount {
-            temp_account_id: temp_account_id2.to_string(),
+        let pwd_change_req_id2 = "c860dc5138d146ac8127b0780fabce7e";
+        let pwd_change_req2 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id2.to_string(),
             email_address: "test2@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id1.to_string(), (temp_account1, true));
-        map.insert(temp_account_id2.to_string(), (temp_account2, true));
+        map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, true));
+        map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success10() {
+    async fn delete_expired_pwd_change_reqs_success10() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_non_expired_and_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
+                current_date_time,
+            ),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -752,7 +763,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -765,13 +776,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success11() {
+    async fn delete_expired_pwd_change_reqs_success11() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_non_expired_and_1_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
+                current_date_time,
+            ),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -779,7 +792,7 @@ mod tests {
         let send_mail_mock =
             SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -792,13 +805,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_fail1() {
+    async fn delete_expired_pwd_change_reqs_fail1() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_failed_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_1_failed_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -806,16 +819,16 @@ mod tests {
             ADMIN_EMAIL_ADDRESS.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             format!(
-                "[{}] 定期実行ツール (delete_expired_pwd_change_req) 失敗通知",
+                "[{}] 定期実行ツール (delete_expired_pwd_change_reqs) 失敗通知",
                 WEB_SITE_NAME
             ),
             vec![
-                "user_temp_accountの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
+                "pwd_change_reqの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
                 "b860dc5138d146ac8127b0780fabce7d".to_string(),
             ],
         );
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -829,30 +842,30 @@ mod tests {
         assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
     }
 
-    fn create_dummy_1_failed_expired_temp_account(
+    fn create_dummy_1_failed_expired_pwd_change_req(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account = TempAccount {
-            temp_account_id: temp_account_id.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id.to_string(), (temp_account, false));
+        map.insert(pwd_change_req_id.to_string(), (pwd_change_req, false));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_fail2() {
+    async fn delete_expired_pwd_change_reqs_fail2() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_2_failed_expired_temp_account(current_date_time),
+            pwd_change_reqs: create_dummy_2_failed_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -860,17 +873,17 @@ mod tests {
             ADMIN_EMAIL_ADDRESS.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             format!(
-                "[{}] 定期実行ツール (delete_expired_pwd_change_req) 失敗通知",
+                "[{}] 定期実行ツール (delete_expired_pwd_change_reqs) 失敗通知",
                 WEB_SITE_NAME
             ),
             vec![
-                "user_temp_accountの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
+                "pwd_change_reqの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
                 "b860dc5138d146ac8127b0780fabce7d".to_string(),
                 "a860dc5138d146ac8127b0780fbbce7g".to_string(),
             ],
         );
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -885,41 +898,42 @@ mod tests {
         assert!(err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     }
 
-    fn create_dummy_2_failed_expired_temp_account(
+    fn create_dummy_2_failed_expired_pwd_change_reqs(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account1 = TempAccount {
-            temp_account_id: temp_account_id1.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req1 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id1.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let temp_account_id2 = "a860dc5138d146ac8127b0780fbbce7g";
-        let temp_account2 = TempAccount {
-            temp_account_id: temp_account_id2.to_string(),
+        let pwd_change_req_id2 = "a860dc5138d146ac8127b0780fbbce7g";
+        let pwd_change_req2 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id2.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id1.to_string(), (temp_account1, false));
-        map.insert(temp_account_id2.to_string(), (temp_account2, false));
+        map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, false));
+        map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, false));
         map
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_fail3() {
+    async fn delete_expired_pwd_change_reqs_fail3() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredPwdChangeReqOperationMock {
-            temp_accounts: create_dummy_1_failed_expired_temp_account_and_1_expired_temp_account(
-                current_date_time,
-            ),
+            pwd_change_reqs:
+                create_dummy_1_failed_expired_pwd_change_req_and_1_expired_pwd_change_req(
+                    current_date_time,
+                ),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -927,16 +941,16 @@ mod tests {
             ADMIN_EMAIL_ADDRESS.to_string(),
             SYSTEM_EMAIL_ADDRESS.to_string(),
             format!(
-                "[{}] 定期実行ツール (delete_expired_pwd_change_req) 失敗通知",
+                "[{}] 定期実行ツール (delete_expired_pwd_change_reqs) 失敗通知",
                 WEB_SITE_NAME
             ),
             vec![
-                "user_temp_accountの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
+                "pwd_change_reqの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
                 "b860dc5138d146ac8127b0780fabce7d".to_string(),
             ],
         );
 
-        let result = delete_expired_pwd_change_req(
+        let result = delete_expired_pwd_change_reqs(
             current_date_time,
             max_num_of_target_records,
             &op,
@@ -951,28 +965,28 @@ mod tests {
         assert!(!err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     }
 
-    fn create_dummy_1_failed_expired_temp_account_and_1_expired_temp_account(
+    fn create_dummy_1_failed_expired_pwd_change_req_and_1_expired_pwd_change_req(
         current_date_time: DateTime<FixedOffset>,
-    ) -> HashMap<String, (TempAccount, bool)> {
-        let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
-        let temp_account1 = TempAccount {
-            temp_account_id: temp_account_id1.to_string(),
+    ) -> HashMap<String, (PwdChangeReq, bool)> {
+        let pwd_change_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+        let pwd_change_req1 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id1.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let temp_account_id2 = "a860dc5138d146ac8127b0780fbbce7g";
-        let temp_account2 = TempAccount {
-            temp_account_id: temp_account_id2.to_string(),
+        let pwd_change_req_id2 = "a860dc5138d146ac8127b0780fbbce7g";
+        let pwd_change_req2 = PwdChangeReq {
+            pwd_change_req_id: pwd_change_req_id2.to_string(),
             email_address: "test1@test.com".to_string(),
-            created_at: current_date_time
-                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+            requested_at: current_date_time
+                - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
         let mut map = HashMap::with_capacity(1);
-        map.insert(temp_account_id1.to_string(), (temp_account1, false));
-        map.insert(temp_account_id2.to_string(), (temp_account2, true));
+        map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, false));
+        map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map
     }
 }

@@ -561,7 +561,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_2_expired_temp_accounts(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -581,7 +581,7 @@ mod tests {
         assert_eq!(num_deleted, 2);
     }
 
-    fn create_dummy_2_expired_temp_account(
+    fn create_dummy_2_expired_temp_accounts(
         current_date_time: DateTime<FixedOffset>,
     ) -> HashMap<String, (TempAccount, bool)> {
         let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
@@ -613,7 +613,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 1;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_2_expired_temp_accounts(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -640,7 +640,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 2;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_2_expired_temp_accounts(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -667,7 +667,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 3;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_2_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_2_expired_temp_accounts(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -852,7 +852,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_2_failed_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_2_failed_expired_temp_accounts(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -885,7 +885,7 @@ mod tests {
         assert!(err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     }
 
-    fn create_dummy_2_failed_expired_temp_account(
+    fn create_dummy_2_failed_expired_temp_accounts(
         current_date_time: DateTime<FixedOffset>,
     ) -> HashMap<String, (TempAccount, bool)> {
         let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
