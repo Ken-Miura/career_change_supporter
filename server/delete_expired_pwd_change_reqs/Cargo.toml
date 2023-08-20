@@ -1,5 +1,5 @@
 [package]
-name = "delete_expired_pwd_change_req"
+name = "delete_expired_pwd_change_reqs"
 version = "0.1.0"
 edition = "2021"
 

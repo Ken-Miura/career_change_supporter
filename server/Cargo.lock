@@ -1514,7 +1514,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "delete_expired_pwd_change_req"
+name = "delete_expired_pwd_change_reqs"
 version = "0.1.0"
 dependencies = [
  "chrono",
@@ -1526,6 +1526,17 @@ dependencies = [
 
 [[package]]
 name = "delete_expired_temp_accounts"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "common",
+ "dotenv",
+ "entity",
+ "tokio",
+]
+
+[[package]]
+name = "delete_expired_temp_mfa_secrets"
 version = "0.1.0"
 dependencies = [
  "chrono",
