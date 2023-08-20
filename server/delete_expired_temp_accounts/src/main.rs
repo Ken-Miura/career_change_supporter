@@ -391,7 +391,7 @@ mod tests {
         let op = DeleteExpiredTempAccountsOperationMock {
             temp_accounts: HashMap::with_capacity(0),
             current_date_time,
-            limit: 0,
+            limit: max_num_of_target_records,
         };
         // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
         let send_mail_mock = SendMailMock::new(
@@ -422,7 +422,7 @@ mod tests {
         let op = DeleteExpiredTempAccountsOperationMock {
             temp_accounts: create_dummy_temp_accounts1(current_date_time),
             current_date_time,
-            limit: 0,
+            limit: max_num_of_target_records,
         };
         // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
         let send_mail_mock = SendMailMock::new(
@@ -459,7 +459,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success2() {
+    async fn delete_expired_temp_accounts_success2a() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
@@ -467,7 +467,38 @@ mod tests {
         let op = DeleteExpiredTempAccountsOperationMock {
             temp_accounts: create_dummy_temp_accounts2(current_date_time),
             current_date_time,
-            limit: 0,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock = SendMailMock::new(
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        );
+
+        let result = delete_expired_temp_accounts(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 1);
+    }
+
+    #[tokio::test]
+    async fn delete_expired_temp_accounts_success2b() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 1;
+        let op = DeleteExpiredTempAccountsOperationMock {
+            temp_accounts: create_dummy_temp_accounts2(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
         };
         // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
         let send_mail_mock = SendMailMock::new(
