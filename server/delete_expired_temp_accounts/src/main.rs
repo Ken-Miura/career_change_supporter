@@ -420,7 +420,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_temp_accounts1(current_date_time),
+            temp_accounts: create_dummy_1_non_expired_temp_account(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -444,7 +444,7 @@ mod tests {
         assert_eq!(num_deleted, 0);
     }
 
-    fn create_dummy_temp_accounts1(
+    fn create_dummy_1_non_expired_temp_account(
         current_date_time: DateTime<FixedOffset>,
     ) -> HashMap<String, (TempAccount, bool)> {
         let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
@@ -459,13 +459,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success2a() {
+    async fn delete_expired_temp_accounts_success2() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_temp_accounts2(current_date_time),
+            temp_accounts: create_dummy_1_expired_temp_account(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -490,13 +490,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success2b() {
+    async fn delete_expired_temp_accounts_success3() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_temp_accounts2(current_date_time),
+            temp_accounts: create_dummy_1_expired_temp_account(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -520,7 +520,7 @@ mod tests {
         assert_eq!(num_deleted, 1);
     }
 
-    fn create_dummy_temp_accounts2(
+    fn create_dummy_1_expired_temp_account(
         current_date_time: DateTime<FixedOffset>,
     ) -> HashMap<String, (TempAccount, bool)> {
         let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
