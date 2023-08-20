@@ -249,7 +249,7 @@ impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationIm
         limit: Option<u64>,
     ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
         let models = entity::user_temp_account::Entity::find()
-            .filter(entity::user_account::Column::CreatedAt.lt(criteria))
+            .filter(entity::user_temp_account::Column::CreatedAt.lt(criteria))
             .limit(limit)
             .all(&self.pool)
             .await
