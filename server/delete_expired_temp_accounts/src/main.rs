@@ -103,9 +103,12 @@ async fn main_internal() {
     )
     .await;
 
-    if result.is_err() {
+    let deleted_num = result.unwrap_or_else(|e| {
+        println!("failed to delte expired temp accounts: {}", e);
         exit(APPLICATION_ERR)
-    }
+    });
+
+    println!("{} temp accounts were deleted successfully", deleted_num);
     exit(SUCCESS)
 }
 
@@ -160,7 +163,7 @@ async fn delete_expired_temp_accounts(
     num_of_max_target_records: u64,
     op: &impl DeleteExpiredTempAccountsOperation,
     send_mail: &impl SendMail,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<usize, Box<dyn Error>> {
     let criteria = current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR);
     let limit = if num_of_max_target_records != 0 {
         Some(num_of_max_target_records)
@@ -177,7 +180,6 @@ async fn delete_expired_temp_accounts(
             .delete_temp_account(&expired_temp_account.temp_account_id)
             .await;
         if result.is_err() {
-            println!("failed to delete temp account: {:?}", result);
             delete_failed.push(expired_temp_account);
         }
     }
@@ -202,24 +204,19 @@ async fn delete_expired_temp_accounts(
             )
             .await
             .map_err(|e| {
-                println!(
+                format!(
                     "failed to send mail (status code: {}, response body: {:?})",
                     e.0, e.1
-                );
-                "failed to send mail"
+                )
             })?;
-        println!(
+        let err_message = format!(
             "{} were processed, {} were failed (detail: {:?})",
             num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
         );
-        return Err("failed to delete temp accounts".into());
+        return Err(err_message.into());
     }
 
-    println!(
-        "{} temp accounts were deleted successfully",
-        num_of_expired_temp_accounts
-    );
-    Ok(())
+    Ok(num_of_expired_temp_accounts)
 }
 
 #[async_trait]
@@ -256,10 +253,7 @@ impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationIm
             .limit(limit)
             .all(&self.pool)
             .await
-            .map_err(|e| {
-                println!("failed to get user_temp_account: {}", e);
-                Box::new(e)
-            })?;
+            .map_err(|e| format!("failed to get user_temp_account: {}", e))?;
         Ok(models
             .into_iter()
             .map(|m| TempAccount {
@@ -275,11 +269,10 @@ impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationIm
             .exec(&self.pool)
             .await
             .map_err(|e| {
-                println!(
+                format!(
                     "failed to delete user_temp_account (temp_account_id: {}): {}",
                     temp_account_id, e
-                );
-                Box::new(e)
+                )
             })?;
         Ok(())
     }
