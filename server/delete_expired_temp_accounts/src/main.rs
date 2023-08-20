@@ -104,7 +104,7 @@ async fn main_internal() {
     .await;
 
     let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delte expired temp accounts: {}", e);
+        println!("failed to delete expired temp accounts: {}", e);
         exit(APPLICATION_ERR)
     });
 
