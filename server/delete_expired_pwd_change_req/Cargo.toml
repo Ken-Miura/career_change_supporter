@@ -1,0 +1,13 @@
+[package]
+name = "delete_expired_pwd_change_req"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+chrono = "0.4.26"
+common = { path = "../common" }
+dotenv = "0.15.0"
+entity = { path = "../entity" }
+tokio = { version = "1.29.1", features = ["full"] }
