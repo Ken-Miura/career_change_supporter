@@ -295,12 +295,14 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
+    use std::collections::HashMap;
+
     use chrono::TimeZone;
 
     use super::*;
 
     struct DeleteExpiredTempAccountsOperationMock {
-        temp_accounts: Vec<(TempAccount, bool)>,
+        temp_accounts: HashMap<String, (TempAccount, bool)>,
         current_date_time: DateTime<FixedOffset>,
         limit: u64,
     }
@@ -323,22 +325,22 @@ mod tests {
             }
             let expired_temp_accounts = self
                 .temp_accounts
+                .values()
                 .clone()
-                .into_iter()
                 .filter(|m| m.0.created_at < criteria)
-                .map(|m| m.0)
+                .map(|m| m.0.clone())
                 .collect();
             Ok(expired_temp_accounts)
         }
 
         async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
-            let temp_account_ids: Vec<String> = self
+            let temp_account = self
                 .temp_accounts
-                .clone()
-                .into_iter()
-                .map(|m| m.0.temp_account_id)
-                .collect();
-            assert!(temp_account_ids.contains(&temp_account_id.to_string()));
+                .get(temp_account_id)
+                .expect("assert that temp_account has value!");
+            if !temp_account.1 {
+                return Err("mock error message".into());
+            }
             Ok(())
         }
     }
@@ -350,7 +352,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: vec![],
+            temp_accounts: HashMap::with_capacity(0),
             current_date_time,
             limit: 0,
         };
