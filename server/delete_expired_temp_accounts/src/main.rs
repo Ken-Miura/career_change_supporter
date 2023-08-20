@@ -298,6 +298,7 @@ mod tests {
     use std::collections::HashMap;
 
     use chrono::TimeZone;
+    use common::ErrResp;
 
     use super::*;
 
@@ -345,6 +346,42 @@ mod tests {
         }
     }
 
+    #[derive(Clone, Debug)]
+    pub(super) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text: String,
+    }
+
+    impl SendMailMock {
+        pub(super) fn new(to: String, from: String, subject: String, text: String) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text,
+            }
+        }
+    }
+
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            assert_eq!(self.text, text);
+            Ok(())
+        }
+    }
+
     #[tokio::test]
     async fn delete_expired_temp_accounts_success1() {
         let current_date_time = JAPANESE_TIME_ZONE
@@ -356,8 +393,23 @@ mod tests {
             current_date_time,
             limit: 0,
         };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock = SendMailMock::new(
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        );
 
-        // let result =
-        //     delete_expired_temp_accounts(current_date_time, max_num_of_target_records).await;
+        let result = delete_expired_temp_accounts(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
     }
 }
