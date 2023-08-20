@@ -798,7 +798,7 @@ mod tests {
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredTempAccountsOperationMock {
-            temp_accounts: create_dummy_failed_1_expired_temp_account(current_date_time),
+            temp_accounts: create_dummy_1_failed_expired_temp_account(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
         };
@@ -829,7 +829,7 @@ mod tests {
         assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
     }
 
-    fn create_dummy_failed_1_expired_temp_account(
+    fn create_dummy_1_failed_expired_temp_account(
         current_date_time: DateTime<FixedOffset>,
     ) -> HashMap<String, (TempAccount, bool)> {
         let temp_account_id = "b860dc5138d146ac8127b0780fabce7d";
@@ -842,6 +842,71 @@ mod tests {
         };
         let mut map = HashMap::with_capacity(1);
         map.insert(temp_account_id.to_string(), (temp_account, false));
+        map
+    }
+
+    #[tokio::test]
+    async fn delete_expired_temp_accounts_fail2() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredTempAccountsOperationMock {
+            temp_accounts: create_dummy_2_failed_expired_temp_account(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            format!(
+                "[{}] 定期実行ツール (delete_expired_temp_accounts) 失敗通知",
+                WEB_SITE_NAME
+            ),
+            vec![
+                "user_temp_accountの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
+                "b860dc5138d146ac8127b0780fabce7d".to_string(),
+                "a860dc5138d146ac8127b0780fbbce7g".to_string(),
+            ],
+        );
+
+        let result = delete_expired_temp_accounts(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
+
+        let err = result.expect_err("failed to get Err");
+        let err_message = err.to_string();
+        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
+        assert!(err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
+    }
+
+    fn create_dummy_2_failed_expired_temp_account(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<String, (TempAccount, bool)> {
+        let temp_account_id1 = "b860dc5138d146ac8127b0780fabce7d";
+        let temp_account1 = TempAccount {
+            temp_account_id: temp_account_id1.to_string(),
+            email_address: "test1@test.com".to_string(),
+            created_at: current_date_time
+                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+                - Duration::seconds(1),
+        };
+        let temp_account_id2 = "a860dc5138d146ac8127b0780fbbce7g";
+        let temp_account2 = TempAccount {
+            temp_account_id: temp_account_id2.to_string(),
+            email_address: "test1@test.com".to_string(),
+            created_at: current_date_time
+                - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
+                - Duration::seconds(1),
+        };
+        let mut map = HashMap::with_capacity(1);
+        map.insert(temp_account_id1.to_string(), (temp_account1, false));
+        map.insert(temp_account_id2.to_string(), (temp_account2, false));
         map
     }
 }
