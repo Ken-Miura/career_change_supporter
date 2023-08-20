@@ -300,7 +300,7 @@ mod tests {
     use super::*;
 
     struct DeleteExpiredTempAccountsOperationMock {
-        temp_accounts: Vec<TempAccount>,
+        temp_accounts: Vec<(TempAccount, bool)>,
         current_date_time: DateTime<FixedOffset>,
         limit: u64,
     }
@@ -325,7 +325,8 @@ mod tests {
                 .temp_accounts
                 .clone()
                 .into_iter()
-                .filter(|m| m.created_at < criteria)
+                .filter(|m| m.0.created_at < criteria)
+                .map(|m| m.0)
                 .collect();
             Ok(expired_temp_accounts)
         }
@@ -335,7 +336,7 @@ mod tests {
                 .temp_accounts
                 .clone()
                 .into_iter()
-                .map(|m| m.temp_account_id)
+                .map(|m| m.0.temp_account_id)
                 .collect();
             assert!(temp_account_ids.contains(&temp_account_id.to_string()));
             Ok(())
@@ -343,11 +344,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_expired_temp_accounts_success() {
+    async fn delete_expired_temp_accounts_success1() {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
+        let op = DeleteExpiredTempAccountsOperationMock {
+            temp_accounts: vec![],
+            current_date_time,
+            limit: 0,
+        };
 
         // let result =
         //     delete_expired_temp_accounts(current_date_time, max_num_of_target_records).await;
