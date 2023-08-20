@@ -85,7 +85,7 @@ async fn main_internal() {
         println!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
-    let op = DeleteExpiredPwdChangeReqOperationImpl { pool };
+    let op = DeleteExpiredPwdChangeReqsOperationImpl { pool };
 
     let smtp_client = SmtpClient::new(
         AWS_SES_REGION.as_str(),
@@ -161,7 +161,7 @@ fn construct_db_url(
 async fn delete_expired_pwd_change_reqs(
     current_date_time: DateTime<FixedOffset>,
     num_of_max_target_records: u64,
-    op: &impl DeleteExpiredPwdChangeReqOperation,
+    op: &impl DeleteExpiredPwdChangeReqsOperation,
     send_mail: &impl SendMail,
 ) -> Result<usize, Box<dyn Error>> {
     let criteria =
@@ -221,7 +221,7 @@ async fn delete_expired_pwd_change_reqs(
 }
 
 #[async_trait]
-trait DeleteExpiredPwdChangeReqOperation {
+trait DeleteExpiredPwdChangeReqsOperation {
     async fn get_expired_pwd_change_reqs(
         &self,
         criteria: DateTime<FixedOffset>,
@@ -238,12 +238,12 @@ struct PwdChangeReq {
     requested_at: DateTime<FixedOffset>,
 }
 
-struct DeleteExpiredPwdChangeReqOperationImpl {
+struct DeleteExpiredPwdChangeReqsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl DeleteExpiredPwdChangeReqOperation for DeleteExpiredPwdChangeReqOperationImpl {
+impl DeleteExpiredPwdChangeReqsOperation for DeleteExpiredPwdChangeReqsOperationImpl {
     async fn get_expired_pwd_change_reqs(
         &self,
         criteria: DateTime<FixedOffset>,
@@ -303,14 +303,14 @@ mod tests {
 
     use super::*;
 
-    struct DeleteExpiredPwdChangeReqOperationMock {
+    struct DeleteExpiredPwdChangeReqsOperationMock {
         pwd_change_reqs: HashMap<String, (PwdChangeReq, bool)>,
         current_date_time: DateTime<FixedOffset>,
         limit: u64,
     }
 
     #[async_trait]
-    impl DeleteExpiredPwdChangeReqOperation for DeleteExpiredPwdChangeReqOperationMock {
+    impl DeleteExpiredPwdChangeReqsOperation for DeleteExpiredPwdChangeReqsOperationMock {
         async fn get_expired_pwd_change_reqs(
             &self,
             criteria: DateTime<FixedOffset>,
@@ -400,7 +400,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: HashMap::with_capacity(0),
             current_date_time,
             limit: max_num_of_target_records,
@@ -427,7 +427,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_non_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -469,7 +469,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -512,7 +512,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -539,7 +539,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -566,7 +566,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -618,7 +618,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -645,7 +645,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -672,7 +672,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 3;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_2_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -699,7 +699,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
                 current_date_time,
             ),
@@ -752,7 +752,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 1;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
                 current_date_time,
             ),
@@ -781,7 +781,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 2;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_non_expired_and_1_expired_pwd_change_req(
                 current_date_time,
             ),
@@ -810,7 +810,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_1_failed_expired_pwd_change_req(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -864,7 +864,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs: create_dummy_2_failed_expired_pwd_change_reqs(current_date_time),
             current_date_time,
             limit: max_num_of_target_records,
@@ -929,7 +929,7 @@ mod tests {
             .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
-        let op = DeleteExpiredPwdChangeReqOperationMock {
+        let op = DeleteExpiredPwdChangeReqsOperationMock {
             pwd_change_reqs:
                 create_dummy_1_failed_expired_pwd_change_req_and_1_expired_pwd_change_req(
                     current_date_time,
