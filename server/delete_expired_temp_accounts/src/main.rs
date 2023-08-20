@@ -195,6 +195,10 @@ async fn delete_expired_temp_accounts(
             num_of_delete_failed,
             &delete_failed,
         );
+        let err_message = format!(
+            "{} were processed, {} were failed (detail: {:?})",
+            num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
+        );
         send_mail
             .send_mail(
                 ADMIN_EMAIL_ADDRESS.as_str(),
@@ -205,14 +209,10 @@ async fn delete_expired_temp_accounts(
             .await
             .map_err(|e| {
                 format!(
-                    "failed to send mail (status code: {}, response body: {:?})",
-                    e.0, e.1
+                    "failed to send mail (status code: {}, response body: {:?}): {}",
+                    e.0, e.1, err_message
                 )
             })?;
-        let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
-            num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
-        );
         return Err(err_message.into());
     }
 
@@ -290,4 +290,10 @@ fn create_text(
 {:?}",
         num_of_expired_temp_accounts, num_of_delete_failed, delete_failed
     )
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
 }
