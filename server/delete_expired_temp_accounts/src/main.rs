@@ -230,7 +230,7 @@ trait DeleteExpiredTempAccountsOperation {
     async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>>;
 }
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct TempAccount {
     temp_account_id: String,
     email_address: String,
@@ -295,5 +295,61 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
+    use chrono::TimeZone;
+
     use super::*;
+
+    struct DeleteExpiredTempAccountsOperationMock {
+        temp_accounts: Vec<TempAccount>,
+        current_date_time: DateTime<FixedOffset>,
+        limit: u64,
+    }
+
+    #[async_trait]
+    impl DeleteExpiredTempAccountsOperation for DeleteExpiredTempAccountsOperationMock {
+        async fn get_expired_temp_accounts(
+            &self,
+            criteria: DateTime<FixedOffset>,
+            limit: Option<u64>,
+        ) -> Result<Vec<TempAccount>, Box<dyn Error>> {
+            assert_eq!(
+                self.current_date_time - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR),
+                criteria
+            );
+            if self.limit != 0 {
+                assert_eq!(Some(self.limit), limit);
+            } else {
+                assert_eq!(None, limit);
+            }
+            let expired_temp_accounts = self
+                .temp_accounts
+                .clone()
+                .into_iter()
+                .filter(|m| m.created_at < criteria)
+                .collect();
+            Ok(expired_temp_accounts)
+        }
+
+        async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
+            let temp_account_ids: Vec<String> = self
+                .temp_accounts
+                .clone()
+                .into_iter()
+                .map(|m| m.temp_account_id)
+                .collect();
+            assert!(temp_account_ids.contains(&temp_account_id.to_string()));
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn delete_expired_temp_accounts_success() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+
+        // let result =
+        //     delete_expired_temp_accounts(current_date_time, max_num_of_target_records).await;
+    }
 }
