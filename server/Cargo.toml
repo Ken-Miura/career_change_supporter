@@ -4,6 +4,7 @@ members = [
     "admin_account",
     "admin_service",
     "common",
+    "delete_expired_consultation_reqs",
     "delete_expired_temp_mfa_secrets",
     "delete_expired_pwd_change_reqs",
     "delete_expired_temp_accounts",
