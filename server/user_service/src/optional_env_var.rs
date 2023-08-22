@@ -41,6 +41,12 @@ pub(super) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy:
             min_duration_in_seconds
         );
     };
+    if min_duration_in_seconds < *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64 {
+        panic!(
+            "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS must be MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE ({}) or more ({})",
+            *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE, min_duration_in_seconds
+        );
+    }
     min_duration_in_seconds
 });
 
