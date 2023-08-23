@@ -53,7 +53,6 @@ use async_fred_session::RedisSessionStore;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
-use axum_extra::extract::cookie::Key;
 use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
 use common::log::LOG_LEVEL;
 use common::opensearch::{
@@ -64,7 +63,7 @@ use common::payment_platform::{
     KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
     KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
 };
-use common::redis::{KEY_TO_REDIS_PORT, KEY_TO_REDIS_HOST, create_redis_url};
+use common::redis::{KEY_TO_REDIS_PORT, KEY_TO_REDIS_HOST, construct_redis_url};
 use common::smtp::{
     KEY_TO_ADMIN_EMAIL_ADDRESS, KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
 };
@@ -72,7 +71,7 @@ use common::storage::{
     KEY_TO_AWS_S3_ENDPOINT_URI, KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_AWS_S3_REGION, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, StorageClient, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI,
 };
 use common::util::check_env_vars;
-use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END};
+use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END, create_key_for_singed_cookie};
 use handlers::session::authentication::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
@@ -347,37 +346,4 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
-}
-
-fn construct_redis_url(key_to_redis_host: &str, key_to_redis_port: &str) -> String {
-    let redis_host = var(key_to_redis_host).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_redis_host
-        )
-    });
-    let redis_port = var(key_to_redis_port).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_redis_port
-        )
-    });
-    create_redis_url(&redis_host, &redis_port)
-}
-
-fn create_key_for_singed_cookie(env_var_key: &str) -> Key {
-    let key_str = var(env_var_key).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            env_var_key
-        )
-    });
-    let size = key_str.len();
-    if size < 64 {
-        panic!(
-            "Size of \"{}\" value regarded as utf-8 encoding must be at least 64 bytes",
-            env_var_key
-        )
-    };
-    Key::from(key_str.as_bytes())
 }

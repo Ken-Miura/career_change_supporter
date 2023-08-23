@@ -158,6 +158,30 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
     })
 });
 
+/// シークレットへの環境変数からCookie署名用のキーを作成する
+///
+/// # panics
+/// <ol>
+///   <li>パラメータの環境変数が存在しない場合</li>
+///   <li>環境変数の値がUTF-8換算で64バイト未満の場合</li>
+/// </ol>
+pub fn create_key_for_singed_cookie(key_to_secret: &str) -> Key {
+    let key_str = var(key_to_secret).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_secret
+        )
+    });
+    let size = key_str.len();
+    if size < 64 {
+        panic!(
+            "Size of \"{}\" value regarded as utf-8 encoding must be at least 64 bytes",
+            key_to_secret
+        )
+    };
+    Key::from(key_str.as_bytes())
+}
+
 /// UTCにおける日本のタイムゾーン（正確には、UTCで日本時間を表すためのオフセットだが、タイムゾーンと同等の意味で利用）
 /// [chrono::DateTime] で日本時間を扱う際に利用する。
 pub static JAPANESE_TIME_ZONE: Lazy<FixedOffset> =

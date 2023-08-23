@@ -1,4 +1,6 @@
 // Copyright 2023 Ken Miura
+//! 管理者向けサービス (admin_service) 、管理者アカウント管理ツール (admin_account) と
+//! その他定期実行ツールが共通で使うものをまとめたモジュール
 
 use std::env::var;
 
