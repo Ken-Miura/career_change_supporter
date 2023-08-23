@@ -70,9 +70,8 @@ async fn handle_consultation_request_rejection(
     // 従って失敗した場合でもログに記録するだけで処理は先に進める
     if result.is_err() {
         warn!(
-            "failed to release credit facility (charge_id: {}, result: {:?})",
-            req.charge_id.as_str(),
-            result
+            "failed to release credit facility (charge_id: {}, consultation request: {:?}, result: {:?})",
+            req.charge_id.as_str(), req, result
         );
     };
 
