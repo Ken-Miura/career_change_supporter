@@ -41,10 +41,10 @@ pub(super) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy:
             min_duration_in_seconds
         );
     };
-    if min_duration_in_seconds < *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64 {
+    if min_duration_in_seconds < *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64 {
         panic!(
-            "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS must be MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE ({}) or more ({})",
-            *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE, min_duration_in_seconds
+            "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS must be MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS ({}) or more ({})",
+            *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS, min_duration_in_seconds
         );
     }
     min_duration_in_seconds
@@ -95,17 +95,17 @@ pub(super) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
     expiry_days_of_charge
 });
 
-const KEY_TO_MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE: &str =
-    "MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE";
+const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: &str =
+    "MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS";
 /// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：秒）
-pub(super) static MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+pub(super) static MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: Lazy<u32> =
     Lazy::new(|| {
         let min_duration_in_hour =
-            env::var(KEY_TO_MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE)
+            env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS)
                 .unwrap_or_else(|_| "21600".to_string()); // 6時間
         min_duration_in_hour
             .parse()
-            .expect("failed to parse MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE")
+            .expect("failed to parse MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS")
     });
 
 const KEY_TO_FIRST_START_HOUR_OF_CONSULTATION: &str = "FIRST_START_HOUR_OF_CONSULTATION";

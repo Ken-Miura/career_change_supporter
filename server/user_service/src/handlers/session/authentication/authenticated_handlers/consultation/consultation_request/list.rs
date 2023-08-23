@@ -24,7 +24,7 @@ use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS;
 
 const NUM_OF_CONSULTATION_REQUESTS: u64 = 20;
 
@@ -54,7 +54,7 @@ async fn handle_consultation_requests(
     op: impl ConsultationRequestsOperation,
 ) -> RespResult<ConsultationRequestsResult> {
     let criteria = *current_date_time
-        + Duration::seconds(*MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64);
+        + Duration::seconds(*MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
     let reqs = op
         .filter_consultation_req(account_id, criteria, NUM_OF_CONSULTATION_REQUESTS)
         .await?;
@@ -120,7 +120,7 @@ mod tests {
     use chrono::TimeZone;
     use once_cell::sync::Lazy;
 
-    use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
+    use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS;
 
     use super::*;
 
@@ -175,7 +175,7 @@ mod tests {
             assert_eq!(
                 self.current_date_time
                     + Duration::seconds(
-                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64
+                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64
                     ),
                 criteria
             );

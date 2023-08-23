@@ -28,7 +28,7 @@ use crate::handlers::session::authentication::authenticated_handlers::authentica
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl};
-use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS;
 
 static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み通知", WEB_SITE_NAME));
@@ -36,7 +36,7 @@ static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
 
 static MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
-    Lazy::new(|| *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE / 3600);
+    Lazy::new(|| *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS / 3600);
 
 pub(crate) async fn post_finish_request_consultation(
     VerifiedUser { user_info }: VerifiedUser,

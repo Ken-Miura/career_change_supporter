@@ -31,7 +31,7 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
     consultation_req_exists, ConsultationRequest,
 };
 use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl, UserInfo};
-use crate::optional_env_var::MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE;
+use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS;
 
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
@@ -108,6 +108,7 @@ async fn handle_consultation_request_acceptance(
         picked_candidate,
     )?;
 
+    // TODO: 選択されたミーティングがそのミーティングの開始時刻から6時間より前であるか確認する
     ensure_consultant_has_no_same_meeting_date_time(req.consultant_id, meeting_date_time, &op)
         .await?;
     ensure_user_has_no_same_meeting_date_time(req.user_account_id, meeting_date_time, &op).await?;
@@ -610,7 +611,7 @@ fn validate_consultation_req_for_acceptance(
         ));
     }
     let criteria = *current_date_time
-        + Duration::seconds(*MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64);
+        + Duration::seconds(*MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
     if consultation_req.latest_candidate_date_time_in_jst <= criteria {
         error!(
             "latest candidate ({}) is not over criteria ({})",
@@ -1856,14 +1857,14 @@ mod tests {
                                 fee_per_hour_in_yen,
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
                                 charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                             },
                             user: Some(UserInfo {
@@ -1885,7 +1886,7 @@ mod tests {
                                 fee_per_hour_in_yen,
                                 consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                             },
                             room_name: room_name.to_string(),
@@ -1919,14 +1920,14 @@ mod tests {
                                 fee_per_hour_in_yen,
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
                                 charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                             },
                             user: Some(UserInfo {
@@ -1948,7 +1949,7 @@ mod tests {
                                 fee_per_hour_in_yen,
                                 consultation_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
-                                        *MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64,
+                                        *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                                     ),
                             },
                             room_name: room_name.to_string(),
