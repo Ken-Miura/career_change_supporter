@@ -1,6 +1,6 @@
 // Copyright 2023 Ken Miura
 
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
@@ -167,15 +167,15 @@ async fn delete_expired_consultation_reqs(
     op: &impl DeleteExpiredConsultationReqsOperation,
     send_mail: &impl SendMail,
 ) -> Result<usize, Box<dyn Error>> {
+    let criteria = current_date_time
+        + Duration::seconds(common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
     let limit = if num_of_max_target_records != 0 {
         Some(num_of_max_target_records)
     } else {
         None
     };
 
-    let expired_consultation_reqs = op
-        .get_expired_consultation_reqs(current_date_time, limit)
-        .await?;
+    let expired_consultation_reqs = op.get_expired_consultation_reqs(criteria, limit).await?;
     let num_of_expired_consultation_reqs = expired_consultation_reqs.len();
 
     let mut delete_failed: Vec<ConsultationReq> =
