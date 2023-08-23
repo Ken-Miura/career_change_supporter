@@ -1,7 +1,8 @@
 // Copyright 2021 Ken Miura
 
 use chrono::{DateTime, FixedOffset};
-use common::db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT};
+use common::admin::{KEY_TO_ADMIN_TOTP_ISSUER, KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD};
+use common::db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT};
 use common::mfa::{generate_base32_encoded_secret, generate_base64_encoded_qr_code};
 use common::password::hash_password;
 use common::util::check_env_vars;
@@ -16,10 +17,6 @@ use entity::sea_orm::{
     TransactionError, TransactionTrait,
 };
 use std::{env::args, env::var, error::Error, fmt, process::exit};
-
-const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
-const KEY_TO_DB_ADMIN_PASSWORD: &str = "DB_ADMIN_PASSWORD";
-const KEY_ADMIN_TOTP_ISSUER: &str = "ADMIN_TOTP_ISSUER";
 
 const SUCCESS: i32 = 0;
 const ENV_VAR_CAPTURE_FAILURE: i32 = 1;
@@ -36,7 +33,7 @@ fn main() {
         KEY_TO_DB_NAME.to_string(),
         KEY_TO_DB_ADMIN_NAME.to_string(),
         KEY_TO_DB_ADMIN_PASSWORD.to_string(),
-        KEY_ADMIN_TOTP_ISSUER.to_string(),
+        KEY_TO_ADMIN_TOTP_ISSUER.to_string(),
     ]);
     if result.is_err() {
         println!("failed to resolve mandatory env vars (following env vars are needed)");
@@ -92,57 +89,6 @@ async fn main_internal() {
         println!("valid subcommand [ create | list | update | delete | mfa ]");
         exit(INVALID_SUB_COMMAND);
     }
-}
-
-fn construct_db_url(
-    key_to_db_host: &str,
-    key_to_db_port: &str,
-    key_to_db_name: &str,
-    key_to_db_admin_name: &str,
-    key_to_db_admin_password: &str,
-) -> String {
-    let db_host = var(key_to_db_host).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            key_to_db_host, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
-    let db_port = var(key_to_db_port).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            key_to_db_port, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
-    let db_name = var(key_to_db_name).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            key_to_db_name, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
-    let db_admin_name = var(key_to_db_admin_name).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            key_to_db_admin_name, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
-    let db_admin_password = var(key_to_db_admin_password).unwrap_or_else(|e| {
-        println!(
-            "failed to ge environment variable ({}): {}",
-            key_to_db_admin_password, e
-        );
-        exit(ENV_VAR_CAPTURE_FAILURE);
-    });
-    create_db_url(
-        &db_host,
-        &db_port,
-        &db_name,
-        &db_admin_name,
-        &db_admin_password,
-    )
 }
 
 async fn connect(database_url: &str) -> Result<DatabaseConnection, Box<dyn Error + Send + Sync>> {
@@ -366,10 +312,10 @@ async fn mfa(conn: &DatabaseConnection, args: Vec<String>) {
             );
             exit(APPLICATION_ERR);
         });
-        let issuer = var(KEY_ADMIN_TOTP_ISSUER).unwrap_or_else(|e| {
+        let issuer = var(KEY_TO_ADMIN_TOTP_ISSUER).unwrap_or_else(|e| {
             println!(
                 "failed to ge environment variable ({}): {}",
-                KEY_ADMIN_TOTP_ISSUER, e
+                KEY_TO_ADMIN_TOTP_ISSUER, e
             );
             exit(ENV_VAR_CAPTURE_FAILURE);
         });

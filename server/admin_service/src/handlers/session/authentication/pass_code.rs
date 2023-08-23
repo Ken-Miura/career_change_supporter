@@ -11,6 +11,7 @@ use axum::{extract::State, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
+use common::admin::KEY_TO_ADMIN_TOTP_ISSUER;
 use common::mfa::check_if_pass_code_matches;
 use common::util::validator::pass_code_validator::validate_pass_code;
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
@@ -26,7 +27,6 @@ use crate::handlers::session::ADMIN_SESSION_ID_COOKIE_NAME;
 use super::admin_operation::{AdminInfo, FindAdminInfoOperationImpl};
 use super::{LoginStatus, KEY_TO_ADMIN_ACCOUNT_ID, KEY_TO_LOGIN_STATUS, LOGIN_SESSION_EXPIRY};
 
-pub(crate) const KEY_TO_ADMIN_TOTP_ISSUER: &str = "ADMIN_TOTP_ISSUER";
 static ADMIN_TOTP_ISSUER: Lazy<String> = Lazy::new(|| {
     let issuer = env::var(KEY_TO_ADMIN_TOTP_ISSUER).unwrap_or_else(|_| {
         panic!(

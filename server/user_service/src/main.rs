@@ -54,7 +54,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
-use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, create_db_url};
+use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
 use common::log::LOG_LEVEL;
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
@@ -347,52 +347,6 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
-}
-
-fn construct_db_url(
-    key_to_db_host: &str,
-    key_to_db_port: &str,
-    key_to_db_name: &str,
-    key_to_db_user_name: &str,
-    key_to_db_user_password: &str,
-) -> String {
-    let db_host = var(key_to_db_host).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_host
-        )
-    });
-    let db_port = var(key_to_db_port).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_port
-        )
-    });
-    let db_name = var(key_to_db_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_name
-        )
-    });
-    let db_user_name = var(key_to_db_user_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_user_name
-        )
-    });
-    let db_user_password = var(key_to_db_user_password).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_user_password
-        )
-    });
-    create_db_url(
-        &db_host,
-        &db_port,
-        &db_name,
-        &db_user_name,
-        &db_user_password,
-    )
 }
 
 fn construct_redis_url(key_to_redis_host: &str, key_to_redis_port: &str) -> String {

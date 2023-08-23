@@ -71,7 +71,8 @@ use axum::http::Request;
 use axum::routing::{get, post};
 use axum::Router;
 use axum_extra::extract::cookie::Key;
-use common::db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME};
+use common::admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, KEY_TO_ADMIN_TOTP_ISSUER};
+use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
 use common::log::LOG_LEVEL;
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
@@ -93,7 +94,6 @@ use common::util::check_env_vars;
 use common::{AppState, RequestLogElements};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
-use handlers::session::authentication::pass_code::KEY_TO_ADMIN_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
 use std::env::var;
@@ -103,8 +103,6 @@ use tower_http::LatencyUnit;
 use tracing::{Level, Span};
 use uuid::Uuid;
 
-const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
-const KEY_TO_DB_ADMIN_PASSWORD: &str = "DB_ADMIN_PASSWORD";
 const KEY_TO_SOCKET: &str = "SOCKET_FOR_ADMIN_APP";
 const KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP: &str = "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP";
 
@@ -541,52 +539,6 @@ async fn main_internal(num_of_cpus: u32) {
         .serve(app.into_make_service())
         .await
         .expect("failed to serve app");
-}
-
-fn construct_db_url(
-    key_to_db_host: &str,
-    key_to_db_port: &str,
-    key_to_db_name: &str,
-    key_to_db_admin_name: &str,
-    key_to_db_admin_password: &str,
-) -> String {
-    let db_host = var(key_to_db_host).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_host
-        )
-    });
-    let db_port = var(key_to_db_port).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_port
-        )
-    });
-    let db_name = var(key_to_db_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_name
-        )
-    });
-    let db_admin_name = var(key_to_db_admin_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_admin_name
-        )
-    });
-    let db_admin_password = var(key_to_db_admin_password).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_admin_password
-        )
-    });
-    create_db_url(
-        &db_host,
-        &db_port,
-        &db_name,
-        &db_admin_name,
-        &db_admin_password,
-    )
 }
 
 fn construct_redis_url(key_to_redis_host: &str, key_to_redis_port: &str) -> String {

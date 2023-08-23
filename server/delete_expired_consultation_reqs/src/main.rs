@@ -6,10 +6,11 @@ use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     EntityTrait, QueryFilter, QuerySelect,
 };
-use std::{env::var, error::Error, process::exit};
+use std::{error::Error, process::exit};
 
 use common::{
-    db::{create_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS},
+    db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
@@ -19,10 +20,6 @@ use common::{
     util::check_env_vars,
     JAPANESE_TIME_ZONE, WEB_SITE_NAME,
 };
-
-const KEY_TO_DB_ADMIN_NAME: &str = "DB_ADMIN_NAME";
-const KEY_TO_DB_ADMIN_PASSWORD: &str = "DB_ADMIN_PASSWORD";
-const KEY_TO_NUM_OF_MAX_TARGET_RECORDS: &str = "NUM_OF_MAX_TARGET_RECORDS";
 
 const SUCCESS: i32 = 0;
 const ENV_VAR_CAPTURE_FAILURE: i32 = 1;
@@ -37,7 +34,6 @@ fn main() {
         KEY_TO_DB_NAME.to_string(),
         KEY_TO_DB_ADMIN_NAME.to_string(),
         KEY_TO_DB_ADMIN_PASSWORD.to_string(),
-        KEY_TO_NUM_OF_MAX_TARGET_RECORDS.to_string(),
         KEY_TO_ADMIN_EMAIL_ADDRESS.to_string(),
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
@@ -61,16 +57,6 @@ fn main() {
 
 async fn main_internal() {
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-
-    let num_of_max_target_records = var(KEY_TO_NUM_OF_MAX_TARGET_RECORDS)
-        .unwrap_or_else(|_| {
-            panic!(
-                "Not environment variable found: environment variable \"{}\" must be set",
-                KEY_TO_NUM_OF_MAX_TARGET_RECORDS
-            )
-        })
-        .parse()
-        .expect("failed to get Ok");
 
     let database_url = construct_db_url(
         KEY_TO_DB_HOST,
@@ -97,7 +83,7 @@ async fn main_internal() {
 
     let result = delete_expired_consultation_reqs(
         current_date_time,
-        num_of_max_target_records,
+        *NUM_OF_MAX_TARGET_RECORDS,
         &op,
         &smtp_client,
     )
@@ -113,52 +99,6 @@ async fn main_internal() {
         deleted_num
     );
     exit(SUCCESS)
-}
-
-fn construct_db_url(
-    key_to_db_host: &str,
-    key_to_db_port: &str,
-    key_to_db_name: &str,
-    key_to_db_admin_name: &str,
-    key_to_db_admin_password: &str,
-) -> String {
-    let db_host = var(key_to_db_host).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_host
-        )
-    });
-    let db_port = var(key_to_db_port).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_port
-        )
-    });
-    let db_name = var(key_to_db_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_name
-        )
-    });
-    let db_admin_name = var(key_to_db_admin_name).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_admin_name
-        )
-    });
-    let db_admin_password = var(key_to_db_admin_password).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            key_to_db_admin_password
-        )
-    });
-    create_db_url(
-        &db_host,
-        &db_port,
-        &db_name,
-        &db_admin_name,
-        &db_admin_password,
-    )
 }
 
 async fn delete_expired_consultation_reqs(
