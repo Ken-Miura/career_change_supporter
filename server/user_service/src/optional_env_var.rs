@@ -101,8 +101,9 @@ const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: &str =
 pub(super) static MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: Lazy<u32> =
     Lazy::new(|| {
         let min_duration_in_hour =
-            env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS)
-                .unwrap_or_else(|_| "21600".to_string()); // 6時間
+            env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS).unwrap_or_else(
+                |_| common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS.to_string(),
+            ); // 6時間
         min_duration_in_hour
             .parse()
             .expect("failed to parse MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS")
