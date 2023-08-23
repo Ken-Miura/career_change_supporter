@@ -108,7 +108,8 @@ async fn handle_consultation_request_acceptance(
         picked_candidate,
     )?;
 
-    // TODO: 選択されたミーティングがそのミーティングの開始時刻から6時間より前であるか確認する
+    ensure_there_is_enough_spare_time_before_meeting(meeting_date_time, *current_date_time)?;
+
     ensure_consultant_has_no_same_meeting_date_time(req.consultant_id, meeting_date_time, &op)
         .await?;
     ensure_user_has_no_same_meeting_date_time(req.user_account_id, meeting_date_time, &op).await?;
@@ -614,7 +615,7 @@ fn validate_consultation_req_for_acceptance(
         + Duration::seconds(*MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
     if consultation_req.latest_candidate_date_time_in_jst <= criteria {
         error!(
-            "latest candidate ({}) is not over criteria ({})",
+            "there is no enough spare time before latest candidate (latest candidate: {}, criteria: {})",
             consultation_req.latest_candidate_date_time_in_jst, criteria
         );
         return Err((
@@ -659,6 +660,27 @@ fn select_meeting_date_time(
         error!("invalid picked_candidate ({})", picked_candidate);
         Err(unexpected_err_resp())
     }
+}
+
+fn ensure_there_is_enough_spare_time_before_meeting(
+    meeting_date_time: DateTime<FixedOffset>,
+    current_date_time: DateTime<FixedOffset>,
+) -> Result<(), ErrResp> {
+    let criteria = current_date_time
+        + Duration::seconds(*MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
+    if meeting_date_time <= criteria {
+        error!(
+            "there is no enough spare time before meeting (meeting date time: {}, criteria: {})",
+            meeting_date_time, criteria
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NoEnoughSpareTimeBeforeMeeting as u32,
+            }),
+        ));
+    }
+    Ok(())
 }
 
 async fn ensure_consultant_has_no_same_meeting_date_time(
