@@ -1282,4 +1282,39 @@ describe('ConsultationRequestDetailPage.vue', () => {
     expect(errorBelowBtn.text()).toContain(Message.MEETING_DATE_TIME_OVERLAPS_MAINTENANCE_MESSAGE)
     expect(errorBelowBtn.text()).toContain(Code.MEETING_DATE_TIME_OVERLAPS_MAINTENANCE.toString())
   })
+
+  it(`displays ${Message.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING_MESSAGE} if ${Code.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING} is returned`, async () => {
+    const result = createDummyConsultationRequestDetail1(parseInt(routeParam))
+    const resp = GetConsultationRequestDetailResp.create(result)
+    getConsultationRequestDetailFuncMock.mockResolvedValue(resp)
+    const wrapper = mount(ConsultationRequestDetailPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const thirdCandidate = wrapper.find('[data-test="third-candidate"]')
+    thirdCandidate.setValue(true)
+    const userChecked = wrapper.find('[data-test="user-checked"]')
+    userChecked.setValue(true)
+    await flushPromises()
+
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING))
+    postConsultationRequestAcceptanceFuncMock.mockResolvedValue(apiErrResp)
+    const acceptBtn = wrapper.find('[data-test="accept-btn"]')
+    await acceptBtn.trigger('click')
+    await flushPromises()
+
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledTimes(1)
+    const data = JSON.parse(`{"consultation_req_id": ${result.consultation_req_id}, "picked_candidate": 3, "user_checked": true}`)
+    expect(postConsultationRequestAcceptanceFuncMock).toHaveBeenCalledWith(data)
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const errorBelowBtn = wrapper.find('[data-test="error-below-btn"]')
+    expect(errorBelowBtn.exists()).toBe(true)
+    expect(errorBelowBtn.text()).toContain(Message.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING_MESSAGE)
+    expect(errorBelowBtn.text()).toContain(Code.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING.toString())
+  })
 })

@@ -152,6 +152,7 @@ export namespace Code {
   export const INVALID_RECOVERY_CODE = 20140
   export const RECOVERY_CODE_DOES_NOT_MATCH = 20141
   export const ACCOUNT_DELETE_IS_NOT_CONFIRMED = 20142
+  export const NO_ENOUGH_SPARE_TIME_BEFORE_MEETING = 20143
 }
 
 export function createErrorMessage (code: number): string {
@@ -317,3 +318,4 @@ codeToMessage.set(Code.MFA_IS_NOT_ENABLED.toString(), `${Message.MFA_IS_NOT_ENAB
 codeToMessage.set(Code.INVALID_RECOVERY_CODE.toString(), `${Message.INVALID_RECOVERY_CODE_MESSAGE} (${Code.INVALID_RECOVERY_CODE})`)
 codeToMessage.set(Code.RECOVERY_CODE_DOES_NOT_MATCH.toString(), `${Message.RECOVERY_CODE_DOES_NOT_MATCH_MESSAGE} (${Code.RECOVERY_CODE_DOES_NOT_MATCH})`)
 codeToMessage.set(Code.ACCOUNT_DELETE_IS_NOT_CONFIRMED.toString(), `${Message.ACCOUNT_DELETE_IS_NOT_CONFIRMED_MESSAGE} (${Code.ACCOUNT_DELETE_IS_NOT_CONFIRMED})`)
+codeToMessage.set(Code.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING.toString(), `${Message.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING_MESSAGE} (${Code.NO_ENOUGH_SPARE_TIME_BEFORE_MEETING})`)
