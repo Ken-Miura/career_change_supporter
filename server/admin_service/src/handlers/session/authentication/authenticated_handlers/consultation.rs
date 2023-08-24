@@ -3,8 +3,8 @@
 use axum::{http::StatusCode, Json};
 use common::{
     payment_platform::{
-        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+        construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
+        KEY_TO_PAYMENT_PLATFORM_API_URL, KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
     ApiError, ErrResp,
 };
@@ -59,24 +59,10 @@ fn validate_settlement_id_is_positive(settlement_id: i64) -> Result<(), ErrResp>
 
 /// PAY.JPにアクセスするための情報を保持する変数
 static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
-    let url_without_path = std::env::var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_URL
-        )
-    });
-    let username = std::env::var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_USERNAME
-        )
-    });
-    let password = std::env::var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
-        )
-    });
-    let access_info = AccessInfo::new(url_without_path, username, password);
-    access_info.expect("failed to get Ok")
+    construct_access_info(
+        KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
+    )
+    .expect("failed to get Ok")
 });

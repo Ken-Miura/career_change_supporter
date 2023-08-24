@@ -124,6 +124,36 @@ impl Display for InvalidParamError {
 
 impl StdError for InvalidParamError {}
 
+/// 環境変数のからPAYJPへアクセスする情報を保持する構造体を構築する
+///
+/// # panics
+/// パラメータに指定した環境変数がない場合
+pub fn construct_access_info(
+    key_to_payment_platform_api_url: &str,
+    key_to_payment_platform_api_username: &str,
+    key_to_payment_platform_api_password: &str,
+) -> Result<AccessInfo, InvalidParamError> {
+    let url_without_path = std::env::var(key_to_payment_platform_api_url).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_payment_platform_api_url
+        )
+    });
+    let username = std::env::var(key_to_payment_platform_api_username).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_payment_platform_api_username
+        )
+    });
+    let password = std::env::var(key_to_payment_platform_api_password).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            key_to_payment_platform_api_password
+        )
+    });
+    AccessInfo::new(url_without_path, username, password)
+}
+
 /// [listオブジェクト](https://pay.jp/docs/api/#list%E3%82%AA%E3%83%96%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88) を示す構造体
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct List<T> {

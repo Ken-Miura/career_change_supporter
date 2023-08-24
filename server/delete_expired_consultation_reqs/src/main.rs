@@ -6,7 +6,7 @@ use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
 };
-use std::{env::var, error::Error, process::exit};
+use std::{error::Error, process::exit};
 
 use common::{
     admin::{
@@ -16,8 +16,8 @@ use common::{
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
-        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+        construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
+        KEY_TO_PAYMENT_PLATFORM_API_URL, KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
@@ -83,25 +83,11 @@ async fn main_internal() {
         exit(CONNECTION_ERROR)
     });
 
-    let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_URL
-        )
-    });
-    let username = var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_USERNAME
-        )
-    });
-    let password = var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
-        panic!(
-            "Not environment variable found: environment variable \"{}\" must be set",
-            KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
-        )
-    });
-    let access_info = match AccessInfo::new(url_without_path, username, password) {
+    let access_info = match construct_access_info(
+        KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
+    ) {
         Ok(ai) => ai,
         Err(e) => {
             println!("invalid PAYJP access info: {}", e);
