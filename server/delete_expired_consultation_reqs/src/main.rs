@@ -6,7 +6,7 @@ use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
 };
-use std::{error::Error, process::exit};
+use std::{env::var, error::Error, process::exit};
 
 use common::{
     admin::{
@@ -14,6 +14,11 @@ use common::{
         NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    payment_platform::{
+        charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
+        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+    },
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
@@ -43,6 +48,9 @@ fn main() {
         KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
         KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
+        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
     ]);
     if result.is_err() {
         println!("failed to resolve mandatory env vars (following env vars are needed)");
@@ -74,7 +82,34 @@ async fn main_internal() {
         println!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
-    let op = DeleteExpiredConsultationReqsOperationImpl { pool };
+
+    let url_without_path = var(KEY_TO_PAYMENT_PLATFORM_API_URL).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_URL
+        )
+    });
+    let username = var(KEY_TO_PAYMENT_PLATFORM_API_USERNAME).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_USERNAME
+        )
+    });
+    let password = var(KEY_TO_PAYMENT_PLATFORM_API_PASSWORD).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" must be set",
+            KEY_TO_PAYMENT_PLATFORM_API_PASSWORD
+        )
+    });
+    let access_info = match AccessInfo::new(url_without_path, username, password) {
+        Ok(ai) => ai,
+        Err(e) => {
+            println!("invalid PAYJP access info: {}", e);
+            exit(ENV_VAR_CAPTURE_FAILURE);
+        }
+    };
+
+    let op = DeleteExpiredConsultationReqsOperationImpl { pool, access_info };
 
     let smtp_client = SmtpClient::new(
         AWS_SES_REGION.as_str(),
@@ -199,6 +234,7 @@ struct ConsultationReq {
 
 struct DeleteExpiredConsultationReqsOperationImpl {
     pool: DatabaseConnection,
+    access_info: AccessInfo,
 }
 
 #[async_trait]
@@ -237,6 +273,8 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
         consultation_req_id: i64,
         charge_id: &str,
     ) -> Result<(), Box<dyn Error>> {
+        let charge_id = charge_id.to_string();
+        let access_info = self.access_info.clone();
         let _ = self
             .pool
             .transaction::<_, (), TransactionExecutionError>(|txn| {
@@ -251,7 +289,20 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
                             ),
                         })?;
 
-                    // TODO:
+                    let charge_op = ChargeOperationImpl::new(&access_info);
+                    let refund_reason = "credit_facility_was_released_automatically_because_consultantion_date_has_been_outdated".to_string();
+                    let query = RefundQuery::new(refund_reason).map_err(|e|{
+                        TransactionExecutionError {
+                            message: format!("failed to create RefundQuery: {}", e)
+                        }
+                    })?;
+                    // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
+                    // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
+                    let _ = charge_op.refund(&charge_id, query).await.map_err(|e| {
+                        TransactionExecutionError {
+                            message: format!("failed to release credit faclity (charge_id: {}): {}", charge_id, e)
+                        }
+                    })?;
 
                     Ok(())
                 })
