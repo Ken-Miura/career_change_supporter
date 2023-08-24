@@ -138,7 +138,9 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
         charge_id: &str,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let refund_reason = "refunded_by_consultation_request_rejection".to_string();
+        let refund_reason =
+            "credit_facility_was_released_because_consultant_rejected_consultation_request"
+                .to_string();
         let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
         // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
         // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
