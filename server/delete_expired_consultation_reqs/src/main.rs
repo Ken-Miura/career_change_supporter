@@ -10,8 +10,9 @@ use std::{error::Error, process::exit};
 
 use common::{
     admin::{
-        TransactionExecutionError, KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD,
-        NUM_OF_MAX_TARGET_RECORDS,
+        wait_for, TransactionExecutionError,
+        DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS, KEY_TO_DB_ADMIN_NAME,
+        KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     payment_platform::{
@@ -95,7 +96,12 @@ async fn main_internal() {
         }
     };
 
-    let op = DeleteExpiredConsultationReqsOperationImpl { pool, access_info };
+    let op = DeleteExpiredConsultationReqsOperationImpl {
+        pool,
+        access_info,
+        duration_per_iteration_in_milli_seconds:
+            *DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
+    };
 
     let smtp_client = SmtpClient::new(
         AWS_SES_REGION.as_str(),
@@ -151,6 +157,7 @@ async fn delete_expired_consultation_reqs(
         if result.is_err() {
             delete_failed.push(expired_consultation_req);
         }
+        op.wait_for_dependent_service_rate_limit().await;
     }
 
     if !delete_failed.is_empty() {
@@ -201,6 +208,8 @@ trait DeleteExpiredConsultationReqsOperation {
         consultation_req_id: i64,
         charge_id: &str,
     ) -> Result<(), Box<dyn Error>>;
+
+    async fn wait_for_dependent_service_rate_limit(&self);
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -221,6 +230,7 @@ struct ConsultationReq {
 struct DeleteExpiredConsultationReqsOperationImpl {
     pool: DatabaseConnection,
     access_info: AccessInfo,
+    duration_per_iteration_in_milli_seconds: u64,
 }
 
 #[async_trait]
@@ -303,6 +313,10 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
                 }
             })?;
         Ok(())
+    }
+
+    async fn wait_for_dependent_service_rate_limit(&self) {
+        wait_for(self.duration_per_iteration_in_milli_seconds).await;
     }
 }
 
