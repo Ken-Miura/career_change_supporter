@@ -535,7 +535,7 @@ mod tests {
             user_account_id: 90,
             expired_at: current_date_time - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_mfa_secret_id1, (temp_mfa_secret1, true));
         map.insert(temp_mfa_secret_id2, (temp_mfa_secret2, true));
         map
@@ -666,7 +666,7 @@ mod tests {
             user_account_id: 1234,
             expired_at: current_date_time - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_mfa_secret_id1, (temp_mfa_secret1, true));
         map.insert(temp_mfa_secret_id2, (temp_mfa_secret2, true));
         map
@@ -837,7 +837,7 @@ mod tests {
             user_account_id: 111,
             expired_at: current_date_time - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_mfa_secret_id1, (temp_mfa_secret1, false));
         map.insert(temp_mfa_secret_id2, (temp_mfa_secret2, false));
         map
@@ -900,7 +900,7 @@ mod tests {
             user_account_id: 387,
             expired_at: current_date_time - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_mfa_secret_id1, (temp_mfa_secret1, false));
         map.insert(temp_mfa_secret_id2, (temp_mfa_secret2, true));
         map

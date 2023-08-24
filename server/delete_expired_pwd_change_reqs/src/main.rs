@@ -546,7 +546,7 @@ mod tests {
                 - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, true));
         map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map
@@ -680,7 +680,7 @@ mod tests {
                 - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, true));
         map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map
@@ -857,7 +857,7 @@ mod tests {
                 - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, false));
         map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, false));
         map
@@ -924,7 +924,7 @@ mod tests {
                 - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(pwd_change_req_id1.to_string(), (pwd_change_req1, false));
         map.insert(pwd_change_req_id2.to_string(), (pwd_change_req2, true));
         map

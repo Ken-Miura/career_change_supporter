@@ -540,7 +540,7 @@ mod tests {
                 - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_account_id1.to_string(), (temp_account1, true));
         map.insert(temp_account_id2.to_string(), (temp_account2, true));
         map
@@ -671,7 +671,7 @@ mod tests {
                 - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_account_id1.to_string(), (temp_account1, true));
         map.insert(temp_account_id2.to_string(), (temp_account2, true));
         map
@@ -844,7 +844,7 @@ mod tests {
                 - Duration::hours(VALID_PERIOD_OF_TEMP_ACCOUNT_IN_HOUR)
                 - Duration::seconds(1),
         };
-        let mut map = HashMap::with_capacity(1);
+        let mut map = HashMap::with_capacity(2);
         map.insert(temp_account_id1.to_string(), (temp_account1, false));
         map.insert(temp_account_id2.to_string(), (temp_account2, false));
         map
