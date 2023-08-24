@@ -133,7 +133,7 @@ async fn main_internal() {
     });
 
     println!(
-        "{} consultation reqs were deleted successfully",
+        "{} consultation reqs were deleted and credit facilities were released successfully",
         deleted_num
     );
     exit(SUCCESS)
