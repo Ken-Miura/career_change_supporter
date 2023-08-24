@@ -4,12 +4,15 @@ use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
-    EntityTrait, QueryFilter, QuerySelect,
+    EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
 };
 use std::{error::Error, process::exit};
 
 use common::{
-    admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS},
+    admin::{
+        TransactionExecutionError, KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD,
+        NUM_OF_MAX_TARGET_RECORDS,
+    },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
@@ -121,9 +124,9 @@ async fn delete_expired_consultation_reqs(
     let mut delete_failed: Vec<ConsultationReq> =
         Vec::with_capacity(expired_consultation_reqs.len());
     for expired_consultation_req in expired_consultation_reqs {
-        let result = op
-            .delete_consultation_req(expired_consultation_req.consultation_req_id)
-            .await;
+        let req_id = expired_consultation_req.consultation_req_id;
+        let charge_id = expired_consultation_req.charge_id.as_str();
+        let result = op.delete_consultation_req(req_id, charge_id).await;
         if result.is_err() {
             delete_failed.push(expired_consultation_req);
         }
@@ -172,8 +175,11 @@ trait DeleteExpiredConsultationReqsOperation {
         limit: Option<u64>,
     ) -> Result<Vec<ConsultationReq>, Box<dyn Error>>;
 
-    async fn delete_consultation_req(&self, consultation_req_id: i64)
-        -> Result<(), Box<dyn Error>>;
+    async fn delete_consultation_req(
+        &self,
+        consultation_req_id: i64,
+        charge_id: &str,
+    ) -> Result<(), Box<dyn Error>>;
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -229,15 +235,35 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
     async fn delete_consultation_req(
         &self,
         consultation_req_id: i64,
+        charge_id: &str,
     ) -> Result<(), Box<dyn Error>> {
-        let _ = entity::consultation_req::Entity::delete_by_id(consultation_req_id)
-            .exec(&self.pool)
+        let _ = self
+            .pool
+            .transaction::<_, (), TransactionExecutionError>(|txn| {
+                Box::pin(async move {
+                    let _ = entity::consultation_req::Entity::delete_by_id(consultation_req_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| TransactionExecutionError {
+                            message: format!(
+                                "failed to delete consultation_req (consultation_req_id: {}): {}",
+                                consultation_req_id, e
+                            ),
+                        })?;
+
+                    // TODO:
+
+                    Ok(())
+                })
+            })
             .await
-            .map_err(|e| {
-                format!(
-                    "failed to delete consultation_req (consultation_req_id: {}): {}",
-                    consultation_req_id, e
-                )
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    format!("connection error: {}", db_err)
+                }
+                TransactionError::Transaction(transaction_err) => {
+                    format!("transaction error: {}", transaction_err)
+                }
             })?;
         Ok(())
     }

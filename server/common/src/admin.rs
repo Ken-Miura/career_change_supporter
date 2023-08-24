@@ -2,7 +2,7 @@
 //! 管理者向けサービス (admin_service) 、管理者アカウント管理ツール (admin_account) と
 //! その他定期実行ツールが共通で使うものをまとめたモジュール
 
-use std::env::var;
+use std::{env::var, error::Error, fmt::Display};
 
 use once_cell::sync::Lazy;
 
@@ -31,3 +31,17 @@ pub static NUM_OF_MAX_TARGET_RECORDS: Lazy<u64> = Lazy::new(|| {
         .parse()
         .expect("failed to parse NUM_OF_MAX_TARGET_RECORDS")
 });
+
+/// 定期実行ツールがトランザクション内の処理でエラーを起こした際に返す型
+#[derive(Debug)]
+pub struct TransactionExecutionError {
+    pub message: String,
+}
+
+impl Display for TransactionExecutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl Error for TransactionExecutionError {}
