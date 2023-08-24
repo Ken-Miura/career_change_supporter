@@ -473,7 +473,7 @@ mod tests {
     #[tokio::test]
     async fn delete_expired_consultation_reqs_success1() {
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .with_ymd_and_hms(2023, 8, 27, 21, 00, 40)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredConsultationReqsOperationMock {
@@ -532,48 +532,66 @@ mod tests {
         map
     }
 
-    // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success2() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn delete_expired_consultation_reqs_success2() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 27, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredConsultationReqsOperationMock {
+            consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_consultation_reqs(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 1);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 1);
+    }
 
-    // fn create_dummy_1_expired_consultation_req(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<String, (ConsultationReq, bool)> {
-    //     let consultation_req_id = "b860dc5138d146ac8127b0780fabce7d";
-    //     let consultation_req = ConsultationReq {
-    //         consultation_req_id: consultation_req_id.to_string(),
-    //         email_address: "test1@test.com".to_string(),
-    //         requested_at: current_date_time
-    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
-    //             - Duration::seconds(1),
-    //     };
-    //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id.to_string(), (consultation_req, true));
-    //     map
-    // }
+    fn create_dummy_1_expired_consultation_req(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (ConsultationReq, bool)> {
+        let consultation_req_id = 1234;
+        let consultation_req = ConsultationReq {
+            consultation_req_id,
+            user_account_id: 456,
+            consultant_id: 789,
+            first_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 25, 13, 0, 0)
+                .unwrap(),
+            second_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 26, 14, 0, 0)
+                .unwrap(),
+            third_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 27, 15, 0, 0)
+                .unwrap(),
+            // latest_candidate_date_timeが削除するかどうかの基準となる。UTでは境界値のテストをしたいので実際の値（このケースでは第三希望日時）とは異なるものを入れる。
+            latest_candidate_date_time: current_date_time
+                + Duration::seconds(
+                    common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
+                ),
+            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+            fee_per_hour_in_yen: 5000,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
+                .unwrap(),
+        };
+        let mut map = HashMap::with_capacity(1);
+        map.insert(consultation_req_id, (consultation_req, true));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_consultation_reqs_success3() {
