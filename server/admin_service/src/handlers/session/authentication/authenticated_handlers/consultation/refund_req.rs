@@ -72,7 +72,10 @@ async fn post_refund_req_internal(
         ));
     }
 
-    let message = format!("管理者 ({}) の判断による返金処理", admin_email_address);
+    let message = format!(
+        "charge_was_refunded_by_administrator ({})",
+        admin_email_address
+    );
     let query = RefundQuery::new(message.to_string()).map_err(|e| {
         error!(
             "failed to construst RefundQuery (refund_reason: {}): {}",
@@ -280,7 +283,10 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let admin_email_address = "admin@test.com";
-        let message = format!("管理者 ({}) の判断による返金処理", admin_email_address);
+        let message = format!(
+            "charge_was_refunded_by_administrator ({})",
+            admin_email_address
+        );
         let query = RefundQuery::new(message.to_string()).expect("failed to get Ok");
         let settled_at =
             current_date_time - Duration::days(REFUNDABLE_DURATION_IN_DAYS) + Duration::seconds(1);
@@ -312,7 +318,10 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let admin_email_address = "admin@test.com";
-        let message = format!("管理者 ({}) の判断による返金処理", admin_email_address);
+        let message = format!(
+            "charge_was_refunded_by_administrator ({})",
+            admin_email_address
+        );
         let query = RefundQuery::new(message.to_string()).expect("failed to get Ok");
         let settled_at = current_date_time - Duration::days(REFUNDABLE_DURATION_IN_DAYS);
         let op_mock = RefundReqOperationMock {
@@ -343,7 +352,10 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let admin_email_address = "admin@test.com";
-        let message = format!("管理者 ({}) の判断による返金処理", admin_email_address);
+        let message = format!(
+            "charge_was_refunded_by_administrator ({})",
+            admin_email_address
+        );
         let query = RefundQuery::new(message.to_string()).expect("failed to get Ok");
         let settled_at = current_date_time - Duration::days(REFUNDABLE_DURATION_IN_DAYS);
         let op_mock = RefundReqOperationMock {
@@ -405,7 +417,10 @@ mod tests {
             .with_ymd_and_hms(2023, 6, 11, 15, 30, 45)
             .unwrap();
         let admin_email_address = "admin@test.com";
-        let message = format!("管理者 ({}) の判断による返金処理", admin_email_address);
+        let message = format!(
+            "charge_was_refunded_by_administrator ({})",
+            admin_email_address
+        );
         let query = RefundQuery::new(message.to_string()).expect("failed to get Ok");
         let settled_at =
             current_date_time - Duration::days(REFUNDABLE_DURATION_IN_DAYS) - Duration::seconds(1);
