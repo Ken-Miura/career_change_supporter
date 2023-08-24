@@ -337,167 +337,200 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    // use std::collections::HashMap;
+    use std::collections::HashMap;
 
-    // use chrono::{Duration, TimeZone};
-    // use common::ErrResp;
+    use chrono::TimeZone;
+    use common::ErrResp;
 
-    // use super::*;
+    use super::*;
 
-    // struct DeleteExpiredConsultationReqsOperationMock {
-    //     consultation_reqs: HashMap<i64, (ConsultationReq, bool)>,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     limit: u64,
-    // }
+    struct DeleteExpiredConsultationReqsOperationMock {
+        consultation_reqs: HashMap<i64, (ConsultationReq, bool)>,
+        current_date_time: DateTime<FixedOffset>,
+        limit: u64,
+    }
 
-    // #[async_trait]
-    // impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOperationMock {
-    //     async fn get_expired_consultation_reqs(
-    //         &self,
-    //         criteria: DateTime<FixedOffset>,
-    //         limit: Option<u64>,
-    //     ) -> Result<Vec<ConsultationReq>, Box<dyn Error>> {
-    //         assert_eq!(self.current_date_time + Duration::seconds(*MIN_DURATION_IN_SECONDS_BEFORE_CONSULTATION_ACCEPTANCE as i64), criteria);
-    //         if self.limit != 0 {
-    //             assert_eq!(Some(self.limit), limit);
-    //         } else {
-    //             assert_eq!(None, limit);
-    //         }
-    //         let expired_consultation_reqs = self
-    //             .consultation_reqs
-    //             .values()
-    //             .clone()
-    //             .filter(|m| m.0.latest_candidate_date_time <= criteria)
-    //             .map(|m| m.0.clone())
-    //             .collect();
-    //         Ok(expired_consultation_reqs)
-    //     }
+    #[async_trait]
+    impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOperationMock {
+        async fn get_expired_consultation_reqs(
+            &self,
+            criteria: DateTime<FixedOffset>,
+            limit: Option<u64>,
+        ) -> Result<Vec<ConsultationReq>, Box<dyn Error>> {
+            assert_eq!(
+                self.current_date_time
+                    + Duration::seconds(
+                        common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64
+                    ),
+                criteria
+            );
+            if self.limit != 0 {
+                assert_eq!(Some(self.limit), limit);
+            } else {
+                assert_eq!(None, limit);
+            }
+            let expired_consultation_reqs = self
+                .consultation_reqs
+                .values()
+                .clone()
+                .filter(|m| m.0.latest_candidate_date_time <= criteria)
+                .map(|m| m.0.clone())
+                .collect();
+            Ok(expired_consultation_reqs)
+        }
 
-    //     async fn delete_consultation_req(
-    //         &self,
-    //         consultation_req_id: i64,
-    //     ) -> Result<(), Box<dyn Error>> {
-    //         let temp_mfa_secret = self
-    //             .consultation_reqs
-    //             .get(&consultation_req_id)
-    //             .expect("assert that temp_mfa_secret has value!");
-    //         if !temp_mfa_secret.1 {
-    //             return Err("mock error message".into());
-    //         }
-    //         Ok(())
-    //     }
-    // }
+        async fn delete_consultation_req(
+            &self,
+            consultation_req_id: i64,
+            charge_id: &str,
+        ) -> Result<(), Box<dyn Error>> {
+            let consultation_req = self
+                .consultation_reqs
+                .get(&consultation_req_id)
+                .expect("assert that consultation_req has value!");
+            assert_eq!(consultation_req.0.charge_id, charge_id);
+            if !consultation_req.1 {
+                return Err("mock error message".into());
+            }
+            Ok(())
+        }
 
-    // #[derive(Clone, Debug)]
-    // pub(super) struct SendMailMock {
-    //     to: String,
-    //     from: String,
-    //     subject: String,
-    //     text_keywords: Vec<String>,
-    // }
+        async fn wait_for_dependent_service_rate_limit(&self) {
+            // テストコードでは待つ必要はないので何もしない
+        }
+    }
 
-    // impl SendMailMock {
-    //     pub(super) fn new(
-    //         to: String,
-    //         from: String,
-    //         subject: String,
-    //         text_keywords: Vec<String>,
-    //     ) -> Self {
-    //         Self {
-    //             to,
-    //             from,
-    //             subject,
-    //             text_keywords,
-    //         }
-    //     }
-    // }
+    #[derive(Clone, Debug)]
+    pub(super) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text_keywords: Vec<String>,
+    }
 
-    // #[async_trait]
-    // impl SendMail for SendMailMock {
-    //     async fn send_mail(
-    //         &self,
-    //         to: &str,
-    //         from: &str,
-    //         subject: &str,
-    //         text: &str,
-    //     ) -> Result<(), ErrResp> {
-    //         assert_eq!(self.to, to);
-    //         assert_eq!(self.from, from);
-    //         assert_eq!(self.subject, subject);
-    //         for text_keyword in self.text_keywords.clone() {
-    //             assert!(text.contains(&text_keyword));
-    //         }
-    //         Ok(())
-    //     }
-    // }
+    impl SendMailMock {
+        pub(super) fn new(
+            to: String,
+            from: String,
+            subject: String,
+            text_keywords: Vec<String>,
+        ) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text_keywords,
+            }
+        }
+    }
 
-    // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success0() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: HashMap::with_capacity(0),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            for text_keyword in self.text_keywords.clone() {
+                assert!(text.contains(&text_keyword));
+            }
+            Ok(())
+        }
+    }
 
-    //     let result = delete_expired_consultation_reqs(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+    #[tokio::test]
+    async fn delete_expired_consultation_reqs_success0() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredConsultationReqsOperationMock {
+            consultation_reqs: HashMap::with_capacity(0),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 0);
-    // }
+        let result = delete_expired_consultation_reqs(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success1() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_temp_mfa_secret(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
+    }
 
-    //     let result = delete_expired_consultation_reqs(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+    #[tokio::test]
+    async fn delete_expired_consultation_reqs_success1() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredConsultationReqsOperationMock {
+            consultation_reqs: create_dummy_1_non_expired_consultation_req(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 0);
-    // }
+        let result = delete_expired_consultation_reqs(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    // fn create_dummy_1_non_expired_temp_mfa_secret(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 1;
-    //     let temp_mfa_secret = ConsultationReq {
-    //         consultation_req_id,
-    //         user_account_id: 10,
-    //         expired_at: current_date_time,
-    //     };
-    //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (temp_mfa_secret, true));
-    //     map
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
+    }
+
+    fn create_dummy_1_non_expired_consultation_req(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (ConsultationReq, bool)> {
+        let consultation_req_id = 1234;
+        let consultation_req = ConsultationReq {
+            consultation_req_id,
+            user_account_id: 456,
+            consultant_id: 789,
+            first_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 25, 13, 0, 0)
+                .unwrap(),
+            second_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 26, 14, 0, 0)
+                .unwrap(),
+            third_candidate_date_time: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 27, 15, 0, 0)
+                .unwrap(),
+            // latest_candidate_date_timeが削除するかどうかの基準となる。UTでは境界値のテストをしたいので実際の値（このケースでは第三希望日時）とは異なるものを入れる。
+            latest_candidate_date_time: current_date_time
+                + Duration::seconds(
+                    common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
+                )
+                + Duration::seconds(1),
+            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+            fee_per_hour_in_yen: 5000,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
+                .unwrap(),
+        };
+        let mut map = HashMap::with_capacity(1);
+        map.insert(consultation_req_id, (consultation_req, true));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_consultation_reqs_success2() {
@@ -506,7 +539,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_temp_mfa_secret(current_date_time),
+    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -526,17 +559,19 @@ mod tests {
     //     assert_eq!(num_deleted, 1);
     // }
 
-    // fn create_dummy_1_expired_temp_mfa_secret(
+    // fn create_dummy_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 412;
-    //     let temp_mfa_secret = ConsultationReq {
-    //         consultation_req_id,
-    //         user_account_id: 7041,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req = ConsultationReq {
+    //         consultation_req_id: consultation_req_id.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (temp_mfa_secret, true));
+    //     map.insert(consultation_req_id.to_string(), (consultation_req, true));
     //     map
     // }
 
@@ -547,7 +582,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 1;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_temp_mfa_secret(current_date_time),
+    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -574,7 +609,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 2;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_temp_mfa_secret(current_date_time),
+    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -623,22 +658,26 @@ mod tests {
 
     // fn create_dummy_2_expired_consultation_reqs(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 55;
-    //     let temp_mfa_secret1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
-    //         user_account_id: 702,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req1 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id1.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
-    //     let consultation_req_id2 = 777;
-    //     let temp_mfa_secret2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
-    //         user_account_id: 90,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    //     let consultation_req_id2 = "c860dc5138d146ac8127b0780fabce7e";
+    //     let consultation_req2 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id2.to_string(),
+    //         email_address: "test2@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id1, (temp_mfa_secret1, true));
-    //     map.insert(consultation_req_id2, (temp_mfa_secret2, true));
+    //     map.insert(consultation_req_id1.to_string(), (consultation_req1, true));
+    //     map.insert(consultation_req_id2.to_string(), (consultation_req2, true));
     //     map
     // }
 
@@ -730,7 +769,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_temp_mfa_secret(
+    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -752,24 +791,27 @@ mod tests {
     //     assert_eq!(num_deleted, 1);
     // }
 
-    // fn create_dummy_1_non_expired_and_1_expired_temp_mfa_secret(
+    // fn create_dummy_1_non_expired_and_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 1915;
-    //     let temp_mfa_secret1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
-    //         user_account_id: 846,
-    //         expired_at: current_date_time,
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req1 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id1.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE),
     //     };
-    //     let consultation_req_id2 = 9999;
-    //     let temp_mfa_secret2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
-    //         user_account_id: 1234,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    //     let consultation_req_id2 = "c860dc5138d146ac8127b0780fabce7e";
+    //     let consultation_req2 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id2.to_string(),
+    //         email_address: "test2@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id1, (temp_mfa_secret1, true));
-    //     map.insert(consultation_req_id2, (temp_mfa_secret2, true));
+    //     map.insert(consultation_req_id1.to_string(), (consultation_req1, true));
+    //     map.insert(consultation_req_id2.to_string(), (consultation_req2, true));
     //     map
     // }
 
@@ -780,7 +822,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 1;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_temp_mfa_secret(
+    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -809,7 +851,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 2;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_temp_mfa_secret(
+    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -838,7 +880,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
-    //         consultation_reqs: create_dummy_1_failed_expired_temp_mfa_secret(current_date_time),
+    //         consultation_reqs: create_dummy_1_failed_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -850,8 +892,8 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "temp_mfa_secretの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
-    //             "734".to_string(),
+    //             "consultation_reqの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
+    //             "b860dc5138d146ac8127b0780fabce7d".to_string(),
     //         ],
     //     );
 
@@ -866,20 +908,22 @@ mod tests {
     //     let err = result.expect_err("failed to get Err");
     //     let err_message = err.to_string();
     //     assert!(err_message.contains("1 were processed, 1 were failed"));
-    //     assert!(err_message.contains("734"));
+    //     assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
     // }
 
-    // fn create_dummy_1_failed_expired_temp_mfa_secret(
+    // fn create_dummy_1_failed_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 734;
-    //     let temp_mfa_secret = ConsultationReq {
-    //         consultation_req_id,
-    //         user_account_id: 231,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req = ConsultationReq {
+    //         consultation_req_id: consultation_req_id.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (temp_mfa_secret, false));
+    //     map.insert(consultation_req_id.to_string(), (consultation_req, false));
     //     map
     // }
 
@@ -902,9 +946,9 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "temp_mfa_secretの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
-    //             "45".to_string(),
-    //             "567".to_string(),
+    //             "consultation_reqの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
+    //             "b860dc5138d146ac8127b0780fabce7d".to_string(),
+    //             "a860dc5138d146ac8127b0780fbbce7g".to_string(),
     //         ],
     //     );
 
@@ -919,28 +963,32 @@ mod tests {
     //     let err = result.expect_err("failed to get Err");
     //     let err_message = err.to_string();
     //     assert!(err_message.contains("2 were processed, 2 were failed"));
-    //     assert!(err_message.contains("45"));
-    //     assert!(err_message.contains("567"));
+    //     assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
+    //     assert!(err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     // }
 
     // fn create_dummy_2_failed_expired_consultation_reqs(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 45;
-    //     let temp_mfa_secret1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
-    //         user_account_id: 478,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req1 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id1.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
-    //     let consultation_req_id2 = 567;
-    //     let temp_mfa_secret2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
-    //         user_account_id: 111,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    //     let consultation_req_id2 = "a860dc5138d146ac8127b0780fbbce7g";
+    //     let consultation_req2 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id2.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id1, (temp_mfa_secret1, false));
-    //     map.insert(consultation_req_id2, (temp_mfa_secret2, false));
+    //     map.insert(consultation_req_id1.to_string(), (consultation_req1, false));
+    //     map.insert(consultation_req_id2.to_string(), (consultation_req2, false));
     //     map
     // }
 
@@ -952,7 +1000,7 @@ mod tests {
     //     let max_num_of_target_records = 0;
     //     let op = DeleteExpiredConsultationReqsOperationMock {
     //         consultation_reqs:
-    //             create_dummy_1_failed_expired_temp_mfa_secret_and_1_expired_temp_mfa_secret(
+    //             create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
     //                 current_date_time,
     //             ),
     //         current_date_time,
@@ -966,8 +1014,8 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "temp_mfa_secretの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
-    //             "333".to_string(),
+    //             "consultation_reqの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
+    //             "b860dc5138d146ac8127b0780fabce7d".to_string(),
     //         ],
     //     );
 
@@ -982,28 +1030,32 @@ mod tests {
     //     let err = result.expect_err("failed to get Err");
     //     let err_message = err.to_string();
     //     assert!(err_message.contains("2 were processed, 1 were failed"));
-    //     assert!(err_message.contains("333"));
-    //     assert!(!err_message.contains("987"));
+    //     assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
+    //     assert!(!err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     // }
 
-    // fn create_dummy_1_failed_expired_temp_mfa_secret_and_1_expired_temp_mfa_secret(
+    // fn create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 333;
-    //     let temp_mfa_secret1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
-    //         user_account_id: 455,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    // ) -> HashMap<String, (ConsultationReq, bool)> {
+    //     let consultation_req_id1 = "b860dc5138d146ac8127b0780fabce7d";
+    //     let consultation_req1 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id1.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
-    //     let consultation_req_id2 = 987;
-    //     let temp_mfa_secret2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
-    //         user_account_id: 387,
-    //         expired_at: current_date_time - Duration::seconds(1),
+    //     let consultation_req_id2 = "a860dc5138d146ac8127b0780fbbce7g";
+    //     let consultation_req2 = ConsultationReq {
+    //         consultation_req_id: consultation_req_id2.to_string(),
+    //         email_address: "test1@test.com".to_string(),
+    //         requested_at: current_date_time
+    //             - Duration::minutes(VALID_PERIOD_OF_PASSWORD_CHANGE_REQ_IN_MINUTE)
+    //             - Duration::seconds(1),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id1, (temp_mfa_secret1, false));
-    //     map.insert(consultation_req_id2, (temp_mfa_secret2, true));
+    //     map.insert(consultation_req_id1.to_string(), (consultation_req1, false));
+    //     map.insert(consultation_req_id2.to_string(), (consultation_req2, true));
     //     map
     // }
 }
