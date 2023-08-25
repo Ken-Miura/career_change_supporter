@@ -1552,7 +1552,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "delete_expired_deleted_accounts"
+name = "delete_expired_deleted_user_accounts"
 version = "0.1.0"
 dependencies = [
  "chrono",
