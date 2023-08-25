@@ -265,7 +265,15 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
             .transaction::<_, (bool, usize, bool, bool, Option<String>), TransactionExecutionError>(
                 |txn| {
                     Box::pin(async move {
-                        lock_deleted_user_account_exclusively(user_account_id, txn).await?;
+                        let dua = lock_deleted_user_account_exclusively(user_account_id, txn).await?;
+                        let _ = dua.delete(txn).await.map_err(|e| {
+                            TransactionExecutionError {
+                                message: format!(
+                                    "failed to delete deleted_user_account (user_account_id: {}): {}",
+                                    user_account_id, e
+                                ),
+                            }
+                        })?;
 
                         let deleted_identity =
                             entity::identity::Entity::delete_by_id(user_account_id)
@@ -337,7 +345,7 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
 async fn lock_deleted_user_account_exclusively(
     user_account_id: i64,
     txn: &DatabaseTransaction,
-) -> Result<(), TransactionExecutionError> {
+) -> Result<entity::deleted_user_account::Model, TransactionExecutionError> {
     let result = entity::deleted_user_account::Entity::find_by_id(user_account_id)
         .lock_exclusive()
         .one(txn)
@@ -348,13 +356,13 @@ async fn lock_deleted_user_account_exclusively(
                 user_account_id, e
             ),
         })?;
-    let _ = result.ok_or_else(|| TransactionExecutionError {
+    let result = result.ok_or_else(|| TransactionExecutionError {
         message: format!(
             "no deleted_user_account found (user_account_id: {})",
             user_account_id
         ),
     })?;
-    Ok(())
+    Ok(result)
 }
 
 async fn delete_careers(
