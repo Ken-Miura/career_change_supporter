@@ -121,6 +121,7 @@ async fn delete_expired_pwd_change_reqs(
             .delete_pwd_change_req(&expired_pwd_change_req.pwd_change_req_id)
             .await;
         if result.is_err() {
+            println!("failed delete_pwd_change_req: {:?}", result);
             delete_failed.push(expired_pwd_change_req);
         }
     }

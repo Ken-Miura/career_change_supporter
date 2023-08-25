@@ -155,6 +155,7 @@ async fn delete_expired_consultation_reqs(
         let charge_id = expired_consultation_req.charge_id.as_str();
         let result = op.delete_consultation_req(req_id, charge_id).await;
         if result.is_err() {
+            println!("failed delete_consultation_req: {:?}", result);
             delete_failed.push(expired_consultation_req);
         }
         op.wait_for_dependent_service_rate_limit().await;

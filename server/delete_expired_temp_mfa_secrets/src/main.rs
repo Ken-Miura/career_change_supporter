@@ -121,6 +121,7 @@ async fn delete_expired_temp_mfa_secrets(
             .delete_temp_mfa_secret(expired_temp_mfa_secret.temp_mfa_secret_id)
             .await;
         if result.is_err() {
+            println!("failed delete_temp_mfa_secret: {:?}", result);
             delete_failed.push(expired_temp_mfa_secret);
         }
     }

@@ -120,6 +120,7 @@ async fn delete_expired_temp_accounts(
             .delete_temp_account(&expired_temp_account.temp_account_id)
             .await;
         if result.is_err() {
+            println!("failed delete_temp_account: {:?}", result);
             delete_failed.push(expired_temp_account);
         }
     }
