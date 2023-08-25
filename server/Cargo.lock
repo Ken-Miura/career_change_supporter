@@ -1552,6 +1552,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "delete_expired_deleted_accounts"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "common",
+ "dotenv",
+ "entity",
+ "tokio",
+]
+
+[[package]]
 name = "delete_expired_pwd_change_reqs"
 version = "0.1.0"
 dependencies = [
