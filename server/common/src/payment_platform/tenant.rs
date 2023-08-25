@@ -78,7 +78,6 @@ pub struct UpdateTenant {
 pub struct DeleteTenantResult {
     pub deleted: bool,
     pub id: String,
-    pub livemode: bool,
 }
 
 #[async_trait]

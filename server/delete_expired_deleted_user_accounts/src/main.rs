@@ -157,6 +157,7 @@ async fn delete_expired_deleted_user_accounts(
             .delete_deleted_user_account(expired_deleted_user_account.user_account_id)
             .await;
         if result.is_err() {
+            println!("failed delete_deleted_user_account: {:?}", result);
             delete_failed.push(expired_deleted_user_account);
         }
         op.wait_for_dependent_service_rate_limit().await;
@@ -423,7 +424,7 @@ async fn delete_tenant(
             ),
         })?;
     let tenant_op = TenantOperationImpl::new(access_info);
-    let r = tenant_op
+    let _ = tenant_op
         .delete_tenant(&tenant_id)
         .await
         .map_err(|e| TransactionExecutionError {
@@ -432,7 +433,6 @@ async fn delete_tenant(
                 tenant_id, e
             ),
         })?;
-    println!("{:?}", r); // TODO: 動作確認後削除する
 
     Ok(Some(tenant_id))
 }
