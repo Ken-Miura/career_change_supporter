@@ -236,7 +236,7 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use std::{cmp::min, collections::HashMap};
 
     use chrono::TimeZone;
     use common::ErrResp;
@@ -266,14 +266,24 @@ mod tests {
             } else {
                 assert_eq!(None, limit);
             }
-            let expired_pwd_change_reqs = self
+            let expired_pwd_change_reqs: Vec<PwdChangeReq> = self
                 .pwd_change_reqs
                 .values()
                 .clone()
                 .filter(|m| m.0.requested_at < criteria)
                 .map(|m| m.0.clone())
                 .collect();
-            Ok(expired_pwd_change_reqs)
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, expired_pwd_change_reqs.len());
+                let mut expired_pwd_change_reqs_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    expired_pwd_change_reqs_limited.push(expired_pwd_change_reqs[i].clone())
+                });
+                expired_pwd_change_reqs_limited
+            } else {
+                expired_pwd_change_reqs
+            };
+            Ok(results)
         }
 
         async fn delete_pwd_change_req(
@@ -576,7 +586,7 @@ mod tests {
         .await;
 
         let num_deleted = result.expect("failed to get Ok");
-        assert_eq!(num_deleted, 2);
+        assert_eq!(num_deleted, 1);
     }
 
     #[tokio::test]

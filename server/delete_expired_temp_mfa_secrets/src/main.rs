@@ -236,7 +236,7 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use std::{cmp::min, collections::HashMap};
 
     use chrono::{Duration, TimeZone};
     use common::ErrResp;
@@ -262,14 +262,24 @@ mod tests {
             } else {
                 assert_eq!(None, limit);
             }
-            let expired_temp_mfa_secrets = self
+            let expired_temp_mfa_secrets: Vec<TempMfaSecret> = self
                 .temp_mfa_secrets
                 .values()
                 .clone()
                 .filter(|m| m.0.expired_at < current_date_time)
                 .map(|m| m.0.clone())
                 .collect();
-            Ok(expired_temp_mfa_secrets)
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, expired_temp_mfa_secrets.len());
+                let mut expired_temp_mfa_secrets_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    expired_temp_mfa_secrets_limited.push(expired_temp_mfa_secrets[i].clone())
+                });
+                expired_temp_mfa_secrets_limited
+            } else {
+                expired_temp_mfa_secrets
+            };
+            Ok(results)
         }
 
         async fn delete_temp_mfa_secret(
@@ -565,7 +575,7 @@ mod tests {
         .await;
 
         let num_deleted = result.expect("failed to get Ok");
-        assert_eq!(num_deleted, 2);
+        assert_eq!(num_deleted, 1);
     }
 
     #[tokio::test]

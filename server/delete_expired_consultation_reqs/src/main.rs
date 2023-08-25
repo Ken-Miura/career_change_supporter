@@ -337,7 +337,7 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use std::{cmp::min, collections::HashMap};
 
     use chrono::TimeZone;
     use common::ErrResp;
@@ -369,14 +369,24 @@ mod tests {
             } else {
                 assert_eq!(None, limit);
             }
-            let expired_consultation_reqs = self
+            let expired_consultation_reqs: Vec<ConsultationReq> = self
                 .consultation_reqs
                 .values()
                 .clone()
                 .filter(|m| m.0.latest_candidate_date_time <= criteria)
                 .map(|m| m.0.clone())
                 .collect();
-            Ok(expired_consultation_reqs)
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, expired_consultation_reqs.len());
+                let mut expired_consultation_reqs_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    expired_consultation_reqs_limited.push(expired_consultation_reqs[i].clone())
+                });
+                expired_consultation_reqs_limited
+            } else {
+                expired_consultation_reqs
+            };
+            Ok(results)
         }
 
         async fn delete_consultation_req(
@@ -761,7 +771,7 @@ mod tests {
         .await;
 
         let num_deleted = result.expect("failed to get Ok");
-        assert_eq!(num_deleted, 2);
+        assert_eq!(num_deleted, 1);
     }
 
     #[tokio::test]

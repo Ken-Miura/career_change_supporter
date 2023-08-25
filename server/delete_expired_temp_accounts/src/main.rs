@@ -235,7 +235,7 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashMap;
+    use std::{cmp::min, collections::HashMap};
 
     use chrono::TimeZone;
     use common::ErrResp;
@@ -264,14 +264,24 @@ mod tests {
             } else {
                 assert_eq!(None, limit);
             }
-            let expired_temp_accounts = self
+            let expired_temp_accounts: Vec<TempAccount> = self
                 .temp_accounts
                 .values()
                 .clone()
                 .filter(|m| m.0.created_at < criteria)
                 .map(|m| m.0.clone())
                 .collect();
-            Ok(expired_temp_accounts)
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, expired_temp_accounts.len());
+                let mut expired_temp_accounts_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    expired_temp_accounts_limited.push(expired_temp_accounts[i].clone())
+                });
+                expired_temp_accounts_limited
+            } else {
+                expired_temp_accounts
+            };
+            Ok(results)
         }
 
         async fn delete_temp_account(&self, temp_account_id: &str) -> Result<(), Box<dyn Error>> {
@@ -570,7 +580,7 @@ mod tests {
         .await;
 
         let num_deleted = result.expect("failed to get Ok");
-        assert_eq!(num_deleted, 2);
+        assert_eq!(num_deleted, 1);
     }
 
     #[tokio::test]
