@@ -73,6 +73,14 @@ pub struct UpdateTenant {
     pub metadata: Option<Metadata>,
 }
 
+/// [テナントを削除](https://pay.jp/docs/api/#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E3%82%92%E5%89%8A%E9%99%A4)の結果を示す構造体
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DeleteTenantResult {
+    pub deleted: bool,
+    pub id: String,
+    pub livemode: bool,
+}
+
 #[async_trait]
 pub trait TenantOperation {
     /// [テナントの情報を取得](https://pay.jp/docs/api/?shell#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E6%83%85%E5%A0%B1%E3%82%92%E5%8F%96%E5%BE%97)
@@ -85,6 +93,8 @@ pub trait TenantOperation {
         tenant_id: &str,
         update_tenant: &UpdateTenant,
     ) -> Result<Tenant, Error>;
+    /// [テナントを削除](https://pay.jp/docs/api/#%E3%83%86%E3%83%8A%E3%83%B3%E3%83%88%E3%82%92%E5%89%8A%E9%99%A4)
+    async fn delete_tenant(&self, tenant_id: &str) -> Result<DeleteTenantResult, Error>;
 }
 
 pub struct TenantOperationImpl<'a> {
@@ -179,5 +189,31 @@ impl<'a> TenantOperation for TenantOperationImpl<'a> {
             .await
             .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
         return Ok(tenant);
+    }
+
+    async fn delete_tenant(&self, tenant_id: &str) -> Result<DeleteTenantResult, Error> {
+        let operation_url = self.access_info.base_url() + TENANTS_OPERATION_PATH + "/" + tenant_id;
+        let username = self.access_info.username();
+        let password = self.access_info.password();
+        let client = reqwest::Client::new();
+        let resp = client
+            .delete(operation_url)
+            .basic_auth(username, Some(password))
+            .send()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        let status_code = resp.status();
+        if status_code.is_client_error() || status_code.is_server_error() {
+            let err = resp
+                .json::<ErrorInfo>()
+                .await
+                .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+            return Err(Error::ApiError(Box::new(err)));
+        };
+        let delete_tenant_result = resp
+            .json::<DeleteTenantResult>()
+            .await
+            .map_err(|e| Error::RequestProcessingError(Box::new(e)))?;
+        return Ok(delete_tenant_result);
     }
 }

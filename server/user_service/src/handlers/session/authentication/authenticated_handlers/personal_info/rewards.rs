@@ -499,6 +499,16 @@ mod tests {
         {
             panic!("must not reach this line")
         }
+
+        async fn delete_tenant(
+            &self,
+            _tenant_id: &str,
+        ) -> Result<
+            common::payment_platform::tenant::DeleteTenantResult,
+            common::payment_platform::Error,
+        > {
+            panic!("must not reach this line")
+        }
     }
 
     struct TenantTransferOperationMock {

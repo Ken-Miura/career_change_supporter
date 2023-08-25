@@ -4,7 +4,8 @@ use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
-    EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
+    DatabaseTransaction, EntityTrait, ModelTrait, QueryFilter, QuerySelect, TransactionError,
+    TransactionTrait,
 };
 use std::{error::Error, process::exit};
 
@@ -16,9 +17,10 @@ use common::{
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     payment_platform::{
-        charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
-        construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
-        KEY_TO_PAYMENT_PLATFORM_API_URL, KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
+        construct_access_info,
+        tenant::{TenantOperation, TenantOperationImpl},
+        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
+        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
@@ -35,7 +37,7 @@ const ENV_VAR_CAPTURE_FAILURE: i32 = 1;
 const CONNECTION_ERROR: i32 = 2;
 const APPLICATION_ERR: i32 = 3;
 
-const VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS: i64 = 30;
+const VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS: i64 = 90;
 
 fn main() {
     let _ = dotenv().ok();
@@ -258,53 +260,173 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
         user_account_id: i64,
     ) -> Result<(), Box<dyn Error>> {
         let access_info = self.access_info.clone();
-        // let _ = self
-        //     .pool
-        //     .transaction::<_, (), TransactionExecutionError>(|txn| {
-        //         Box::pin(async move {
-        //             let _ = entity::deleted_user_account::Entity::delete_by_id(user_account_id)
-        //                 .exec(txn)
-        //                 .await
-        //                 .map_err(|e| TransactionExecutionError {
-        //                     message: format!(
-        //                         "failed to delete deleted_user_account (user_account_id: {}): {}",
-        //                         user_account_id, e
-        //                     ),
-        //                 })?;
+        let result = self
+            .pool
+            .transaction::<_, (bool, usize, bool, bool, Option<String>), TransactionExecutionError>(
+                |txn| {
+                    Box::pin(async move {
+                        lock_deleted_user_account_exclusively(user_account_id, txn).await?;
 
-        //             let charge_op = ChargeOperationImpl::new(&access_info);
-        //             let refund_reason = "credit_facility_was_released_automatically_because_consultantion_date_has_been_outdated".to_string();
-        //             let query = RefundQuery::new(refund_reason).map_err(|e|{
-        //                 TransactionExecutionError {
-        //                     message: format!("failed to create RefundQuery: {}", e)
-        //                 }
-        //             })?;
-        //             // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
-        //             // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
-        //             let _ = charge_op.refund(&charge_id, query).await.map_err(|e| {
-        //                 TransactionExecutionError {
-        //                     message: format!("failed to release credit faclity (charge_id: {}): {}", charge_id, e)
-        //                 }
-        //             })?;
+                        let deleted_identity =
+                            entity::identity::Entity::delete_by_id(user_account_id)
+                                .exec(txn)
+                                .await
+                                .map_err(|e| TransactionExecutionError {
+                                    message: format!(
+                                        "failed to delete identity (user_account_id: {}): {}",
+                                        user_account_id, e
+                                    ),
+                                })?;
 
-        //             Ok(())
-        //         })
-        //     })
-        //     .await
-        //     .map_err(|e| match e {
-        //         TransactionError::Connection(db_err) => {
-        //             format!("connection error: {}", db_err)
-        //         }
-        //         TransactionError::Transaction(transaction_err) => {
-        //             format!("transaction error: {}", transaction_err)
-        //         }
-        //     })?;
+                        let num_of_careers_deleted = delete_careers(user_account_id, txn).await?;
+
+                        let deleted_consulting_fee =
+                            entity::consulting_fee::Entity::delete_by_id(user_account_id)
+                                .exec(txn)
+                                .await
+                                .map_err(|e| TransactionExecutionError {
+                                    message: format!(
+                                        "failed to delete consulting_fee (user_account_id: {}): {}",
+                                        user_account_id, e
+                                    ),
+                                })?;
+
+                        let deleted_mfa_info =
+                            entity::mfa_info::Entity::delete_by_id(user_account_id)
+                                .exec(txn)
+                                .await
+                                .map_err(|e| TransactionExecutionError {
+                                    message: format!(
+                                        "failed to delete mfa_info (user_account_id: {}): {}",
+                                        user_account_id, e
+                                    ),
+                                })?;
+
+                        let deleted_tenant_id =
+                            delete_tenant(user_account_id, txn, &access_info).await?;
+
+                        Ok((
+                            deleted_identity.rows_affected != 0,
+                            num_of_careers_deleted,
+                            deleted_consulting_fee.rows_affected != 0,
+                            deleted_mfa_info.rows_affected != 0,
+                            deleted_tenant_id,
+                        ))
+                    })
+                },
+            )
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    format!("connection error: {}", db_err)
+                }
+                TransactionError::Transaction(transaction_err) => {
+                    format!("transaction error: {}", transaction_err)
+                }
+            })?;
+        println!("identity deleted: {}, num of careers deleted: {}, consulting fee deleted: {}, mfa info deleted: {}, deleted tenant id: {:?}",
+            result.0, result.1, result.2, result.3, result.4);
         Ok(())
     }
 
     async fn wait_for_dependent_service_rate_limit(&self) {
         wait_for(self.duration_per_iteration_in_milli_seconds).await;
     }
+}
+
+async fn lock_deleted_user_account_exclusively(
+    user_account_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<(), TransactionExecutionError> {
+    let result = entity::deleted_user_account::Entity::find_by_id(user_account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!(
+                "failed to find deleted_user_account (user_account_id: {}): {}",
+                user_account_id, e
+            ),
+        })?;
+    let _ = result.ok_or_else(|| TransactionExecutionError {
+        message: format!(
+            "no deleted_user_account found (user_account_id: {})",
+            user_account_id
+        ),
+    })?;
+    Ok(())
+}
+
+async fn delete_careers(
+    user_account_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<usize, TransactionExecutionError> {
+    let models = entity::career::Entity::find()
+        .filter(entity::career::Column::UserAccountId.eq(user_account_id))
+        .all(txn)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!(
+                "failed to filter career (user_account_id: {}): {}",
+                user_account_id, e
+            ),
+        })?;
+    // ユーザーアカウントひとつあたりの職務経歴数は制限してあるため、繰り返し処理を許容する
+    for model in &models {
+        let career_id = model.career_id;
+        let _ = entity::career::Entity::delete_by_id(career_id)
+            .exec(txn)
+            .await
+            .map_err(|e| TransactionExecutionError {
+                message: format!("failed to delete career (career_id: {}): {}", career_id, e),
+            })?;
+    }
+    Ok(models.len())
+}
+
+// DB外へのアクセスがあるため、トランザクションの最後に実施する
+async fn delete_tenant(
+    user_account_id: i64,
+    txn: &DatabaseTransaction,
+    access_info: &AccessInfo,
+) -> Result<Option<String>, TransactionExecutionError> {
+    let model_option = entity::tenant::Entity::find_by_id(user_account_id)
+        .one(txn)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!(
+                "failed to find tenant (user_account_id: {}): {}",
+                user_account_id, e
+            ),
+        })?;
+    let model = match model_option {
+        Some(m) => m,
+        None => return Ok(None),
+    };
+
+    let tenant_id = model.tenant_id.clone();
+    let _ = model
+        .delete(txn)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!(
+                "failed to delete tenant (user_account_id: {}): {}",
+                user_account_id, e
+            ),
+        })?;
+    let tenant_op = TenantOperationImpl::new(access_info);
+    let r = tenant_op
+        .delete_tenant(&tenant_id)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!(
+                "failed to delete tenant on payment platform (tenant_id: {}): {}",
+                tenant_id, e
+            ),
+        })?;
+    println!("{:?}", r); // TODO: 動作確認後削除する
+
+    Ok(Some(tenant_id))
 }
 
 fn create_text(
