@@ -107,8 +107,6 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(confirmationDescription.text()).toContain('私は下記に記載の内容を理解した上でアカウントの削除を行います。')
     const firstConfirmation = wrapper.find('[data-test="first-confirmation"]')
     expect(firstConfirmation.text()).toContain('未入金の報酬を受け取れなくなる可能性があることを理解しています。')
-    const secondConfirmation = wrapper.find('[data-test="second-confirmation"]')
-    expect(secondConfirmation.text()).toContain('受け付け済みの相談を実施しないことにより問題が発生した場合、その責任を負うことを理解しています。')
     const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
     expect(deleteAccountButton.text()).toContain('アカウントを削除する')
     const buttonDisabledAttr = deleteAccountButton.attributes('disabled')
@@ -298,6 +296,38 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     const resultMessage = alertMessage.text()
     expect(resultMessage).toContain(Message.ACCOUNT_DELETE_IS_NOT_CONFIRMED_MESSAGE)
     expect(resultMessage).toContain(Code.ACCOUNT_DELETE_IS_NOT_CONFIRMED.toString())
+  })
+
+  it(`displays ${Message.CONSULTATION_HAS_NOT_BEEN_FINISHED_MESSAGE} if ${Code.CONSULTATION_HAS_NOT_BEEN_FINISHED} is returned when account delete`, async () => {
+    refreshFuncMock.mockResolvedValue(RefreshResp.create())
+    const apiErrResp = ApiErrorResp.create(401, ApiError.create(Code.CONSULTATION_HAS_NOT_BEEN_FINISHED))
+    deleteAccountFuncMock.mockResolvedValue(apiErrResp)
+    const wrapper = mount(DeleteAccountConfirmationPage, {
+      global: {
+        stubs: {
+          RouterLink: RouterLinkStub
+        }
+      }
+    })
+    await flushPromises()
+
+    const accountDeleteConfirmed = wrapper.find('[data-test="account-delete-confirmed"]')
+    await accountDeleteConfirmed.setValue(true)
+    await flushPromises()
+
+    const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
+    await deleteAccountButton.trigger('click')
+    await flushPromises()
+
+    expect(routerPushMock).toHaveBeenCalledTimes(0)
+    const alertMessages = wrapper.findAllComponents(AlertMessage)
+    expect(alertMessages.length).toBe(1)
+    const alertMessage = alertMessages[0]
+    const classes = alertMessage.classes()
+    expect(classes).not.toContain('hidden')
+    const resultMessage = alertMessage.text()
+    expect(resultMessage).toContain(Message.CONSULTATION_HAS_NOT_BEEN_FINISHED_MESSAGE)
+    expect(resultMessage).toContain(Code.CONSULTATION_HAS_NOT_BEEN_FINISHED.toString())
   })
 
   it('displays alert message if connection fails when account delete', async () => {
