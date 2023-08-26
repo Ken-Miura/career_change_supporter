@@ -3,8 +3,9 @@
 use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
-    prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
-    EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
+    prelude::async_trait::async_trait, ActiveModelTrait, ActiveValue::NotSet, ColumnTrait,
+    ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, ModelTrait,
+    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use std::{error::Error, process::exit};
 
@@ -16,7 +17,7 @@ use common::{
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     payment_platform::{
-        charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
+        charge::{ChargeOperation, ChargeOperationImpl},
         construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
         KEY_TO_PAYMENT_PLATFORM_API_URL, KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
     },
@@ -27,13 +28,15 @@ use common::{
         KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_SYSTEM_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
     },
     util::check_env_vars,
-    JAPANESE_TIME_ZONE, WEB_SITE_NAME,
+    JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE, WEB_SITE_NAME,
 };
 
 const SUCCESS: i32 = 0;
 const ENV_VAR_CAPTURE_FAILURE: i32 = 1;
 const CONNECTION_ERROR: i32 = 2;
 const APPLICATION_ERR: i32 = 3;
+
+const DURATION_ALLOWED_AS_UNHANDLED_IN_DAYS: i64 = 14;
 
 fn main() {
     let _ = dotenv().ok();
@@ -96,7 +99,7 @@ async fn main_internal() {
         }
     };
 
-    let op = DeleteExpiredConsultationReqsOperationImpl {
+    let op = MakePaymentOfUnhandledSettlementOperationImpl {
         pool,
         access_info,
         duration_per_iteration_in_milli_seconds:
@@ -111,7 +114,7 @@ async fn main_internal() {
     )
     .await;
 
-    let result = delete_expired_consultation_reqs(
+    let result = make_payment_of_unhandled_settlement(
         current_date_time,
         *NUM_OF_MAX_TARGET_RECORDS,
         &op,
@@ -119,62 +122,58 @@ async fn main_internal() {
     )
     .await;
 
-    let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delete expired consultation reqs: {}", e);
+    let num_of_handled = result.unwrap_or_else(|e| {
+        println!("failed to make payment of unhandled settlement: {}", e);
         exit(APPLICATION_ERR)
     });
 
-    println!(
-        "{} consultation reqs were deleted and credit facilities were released successfully",
-        deleted_num
-    );
+    println!("{} payments were made successfully", num_of_handled);
     exit(SUCCESS)
 }
 
-async fn delete_expired_consultation_reqs(
+async fn make_payment_of_unhandled_settlement(
     current_date_time: DateTime<FixedOffset>,
     num_of_max_target_records: u64,
-    op: &impl DeleteExpiredConsultationReqsOperation,
+    op: &impl MakePaymentOfUnhandledSettlementOperation,
     send_mail: &impl SendMail,
 ) -> Result<usize, Box<dyn Error>> {
     let criteria = current_date_time
-        + Duration::seconds(common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64);
+        - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+        - Duration::days(DURATION_ALLOWED_AS_UNHANDLED_IN_DAYS);
     let limit = if num_of_max_target_records != 0 {
         Some(num_of_max_target_records)
     } else {
         None
     };
 
-    let expired_consultation_reqs = op.get_expired_consultation_reqs(criteria, limit).await?;
-    let num_of_expired_consultation_reqs = expired_consultation_reqs.len();
+    let unhandled_settlements = op.get_unhandled_settlements(criteria, limit).await?;
+    let num_of_unhandled_settlements = unhandled_settlements.len();
 
-    let mut delete_failed: Vec<ConsultationReq> =
-        Vec::with_capacity(expired_consultation_reqs.len());
-    for expired_consultation_req in expired_consultation_reqs {
-        let req_id = expired_consultation_req.consultation_req_id;
-        let charge_id = expired_consultation_req.charge_id.as_str();
-        let result = op.delete_consultation_req(req_id, charge_id).await;
+    let mut make_payment_failed: Vec<Settlement> = Vec::with_capacity(unhandled_settlements.len());
+    for unhandled_settlement in unhandled_settlements {
+        let settlement_id = unhandled_settlement.settlement_id;
+        let result = op.make_payment(settlement_id, current_date_time).await;
         if result.is_err() {
-            println!("failed delete_consultation_req: {:?}", result);
-            delete_failed.push(expired_consultation_req);
+            println!("failed make_payment: {:?}", result);
+            make_payment_failed.push(unhandled_settlement);
         }
         op.wait_for_dependent_service_rate_limit().await;
     }
 
-    if !delete_failed.is_empty() {
+    if !make_payment_failed.is_empty() {
         let subject = format!(
-            "[{}] 定期実行ツール (delete_expired_consultation_reqs) 失敗通知",
+            "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
             WEB_SITE_NAME
         );
-        let num_of_delete_failed = delete_failed.len();
+        let num_of_make_payment_failed = make_payment_failed.len();
         let text = create_text(
-            num_of_expired_consultation_reqs,
-            num_of_delete_failed,
-            &delete_failed,
+            num_of_unhandled_settlements,
+            num_of_make_payment_failed,
+            &make_payment_failed,
         );
         let err_message = format!(
             "{} were processed, {} were failed (detail: {:?})",
-            num_of_expired_consultation_reqs, num_of_delete_failed, delete_failed
+            num_of_unhandled_settlements, num_of_make_payment_failed, make_payment_failed
         );
         send_mail
             .send_mail(
@@ -193,113 +192,111 @@ async fn delete_expired_consultation_reqs(
         return Err(err_message.into());
     }
 
-    Ok(num_of_expired_consultation_reqs)
+    Ok(num_of_unhandled_settlements)
 }
 
 #[async_trait]
-trait DeleteExpiredConsultationReqsOperation {
-    async fn get_expired_consultation_reqs(
+trait MakePaymentOfUnhandledSettlementOperation {
+    async fn get_unhandled_settlements(
         &self,
         criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
-    ) -> Result<Vec<ConsultationReq>, Box<dyn Error>>;
+    ) -> Result<Vec<Settlement>, Box<dyn Error>>;
 
-    async fn delete_consultation_req(
+    async fn make_payment(
         &self,
-        consultation_req_id: i64,
-        charge_id: &str,
+        settlement_id: i64,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), Box<dyn Error>>;
 
     async fn wait_for_dependent_service_rate_limit(&self);
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-struct ConsultationReq {
-    consultation_req_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    first_candidate_date_time: DateTime<FixedOffset>,
-    second_candidate_date_time: DateTime<FixedOffset>,
-    third_candidate_date_time: DateTime<FixedOffset>,
-    latest_candidate_date_time: DateTime<FixedOffset>,
+struct Settlement {
+    settlement_id: i64,
+    consultation_id: i64,
     charge_id: String,
     fee_per_hour_in_yen: i32,
     platform_fee_rate_in_percentage: String,
     credit_facilities_expired_at: DateTime<FixedOffset>,
 }
 
-struct DeleteExpiredConsultationReqsOperationImpl {
+struct MakePaymentOfUnhandledSettlementOperationImpl {
     pool: DatabaseConnection,
     access_info: AccessInfo,
     duration_per_iteration_in_milli_seconds: u64,
 }
 
 #[async_trait]
-impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOperationImpl {
-    async fn get_expired_consultation_reqs(
+impl MakePaymentOfUnhandledSettlementOperation for MakePaymentOfUnhandledSettlementOperationImpl {
+    async fn get_unhandled_settlements(
         &self,
         criteria: DateTime<FixedOffset>,
         limit: Option<u64>,
-    ) -> Result<Vec<ConsultationReq>, Box<dyn Error>> {
-        let models = entity::consultation_req::Entity::find()
-            .filter(entity::consultation_req::Column::LatestCandidateDateTime.lte(criteria)) // 受け付け時の仕様と合わせて <= とする
+    ) -> Result<Vec<Settlement>, Box<dyn Error>> {
+        let models = entity::settlement::Entity::find()
+            .find_also_related(entity::consultation::Entity)
+            .filter(entity::consultation::Column::MeetingAt.lt(criteria))
             .limit(limit)
             .all(&self.pool)
             .await
-            .map_err(|e| format!("failed to get consultation_req: {}", e))?;
+            .map_err(|e| format!("failed to get settlement and consultation: {}", e))?;
         Ok(models
             .into_iter()
-            .map(|m| ConsultationReq {
-                consultation_req_id: m.consultation_req_id,
-                user_account_id: m.user_account_id,
-                consultant_id: m.consultant_id,
-                first_candidate_date_time: m.first_candidate_date_time,
-                second_candidate_date_time: m.second_candidate_date_time,
-                third_candidate_date_time: m.third_candidate_date_time,
-                latest_candidate_date_time: m.latest_candidate_date_time,
-                charge_id: m.charge_id,
-                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-                credit_facilities_expired_at: m.credit_facilities_expired_at,
+            .map(|m| Settlement {
+                settlement_id: m.0.settlement_id,
+                consultation_id: m.0.consultation_id,
+                charge_id: m.0.charge_id,
+                fee_per_hour_in_yen: m.0.fee_per_hour_in_yen,
+                platform_fee_rate_in_percentage: m.0.platform_fee_rate_in_percentage,
+                credit_facilities_expired_at: m.0.credit_facilities_expired_at,
             })
             .collect())
     }
 
-    async fn delete_consultation_req(
+    async fn make_payment(
         &self,
-        consultation_req_id: i64,
-        charge_id: &str,
+        settlement_id: i64,
+        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), Box<dyn Error>> {
-        let charge_id = charge_id.to_string();
         let access_info = self.access_info.clone();
         let _ = self
             .pool
             .transaction::<_, (), TransactionExecutionError>(|txn| {
                 Box::pin(async move {
-                    let _ = entity::consultation_req::Entity::delete_by_id(consultation_req_id)
-                        .exec(txn)
+                    let settlement_model = entity::settlement::Entity::find_by_id(settlement_id)
+                        .lock_exclusive()
+                        .one(txn)
                         .await
                         .map_err(|e| TransactionExecutionError {
                             message: format!(
-                                "failed to delete consultation_req (consultation_req_id: {}): {}",
-                                consultation_req_id, e
+                                "failed to find settlement (settlement_id: {}): {}",
+                                settlement_id, e
                             ),
                         })?;
+                    let settlement_model = match settlement_model {
+                        Some(m) => m,
+                        None => {
+                            println!("no settlement (settlement_id: {}) found (maybe it has been already handled)", settlement_id);
+                            return Ok(());
+                        }
+                    };
+
+                    insert_receipt(txn, &settlement_model, current_date_time).await?;
+
+                    let charge_id = settlement_model.charge_id.clone();
+                    let _ = settlement_model.delete(txn).await.map_err(|e| {
+                        TransactionExecutionError { message: format!("failed to delete settlement (settlement_id {}): {}", settlement_id, e) }
+                    })?;
 
                     let charge_op = ChargeOperationImpl::new(&access_info);
-                    let refund_reason = "credit_facility_was_released_automatically_because_consultantion_date_has_been_outdated".to_string();
-                    let query = RefundQuery::new(refund_reason).map_err(|e|{
-                        TransactionExecutionError {
-                            message: format!("failed to create RefundQuery: {}", e)
-                        }
-                    })?;
-                    // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
-                    // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
-                    let _ = charge_op.refund(&charge_id, query).await.map_err(|e| {
-                        TransactionExecutionError {
-                            message: format!("failed to release credit faclity (charge_id: {}): {}", charge_id, e)
-                        }
-                    })?;
+                    let _ = charge_op
+                        .capture_the_charge(charge_id.as_str())
+                        .await
+                        .map_err(|e| {
+                            TransactionExecutionError { message: format!("failed to capture the charge (charge_id {}): {}", charge_id, e) }
+                        })?;
 
                     Ok(())
                 })
@@ -321,17 +318,39 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
     }
 }
 
+async fn insert_receipt(
+    txn: &DatabaseTransaction,
+    model: &entity::settlement::Model,
+    current_date_time: DateTime<FixedOffset>,
+) -> Result<(), TransactionExecutionError> {
+    let active_model = entity::receipt::ActiveModel {
+        receipt_id: NotSet,
+        consultation_id: Set(model.consultation_id),
+        charge_id: Set(model.charge_id.clone()),
+        fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
+        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage.clone()),
+        settled_at: Set(current_date_time),
+    };
+    let _ = active_model
+        .insert(txn)
+        .await
+        .map_err(|e| TransactionExecutionError {
+            message: format!("failed to insert receipt (settlement: {:?}): {}", model, e),
+        })?;
+    Ok(())
+}
+
 fn create_text(
-    num_of_expired_consultation_reqs: usize,
-    num_of_delete_failed: usize,
-    delete_failed: &[ConsultationReq],
+    num_of_unhandled_settlements: usize,
+    num_of_make_payment_failed: usize,
+    make_payment_failed: &[Settlement],
 ) -> String {
     format!(
-        r"consultation_reqの期限切れレコード{}個の内、{}個の削除に失敗しました。
+        r"処理されていないsettlementレコード{}個の内、{}個の処理に失敗しました。
 
 【詳細】
 {:?}",
-        num_of_expired_consultation_reqs, num_of_delete_failed, delete_failed
+        num_of_unhandled_settlements, num_of_make_payment_failed, make_payment_failed
     )
 }
 
@@ -345,19 +364,19 @@ mod tests {
 
     // use super::*;
 
-    // struct DeleteExpiredConsultationReqsOperationMock {
-    //     consultation_reqs: HashMap<i64, (ConsultationReq, bool)>,
+    // struct MakePaymentOfUnhandledSettlementOperationMock {
+    //     consultation_reqs: HashMap<i64, (Settlement, bool)>,
     //     current_date_time: DateTime<FixedOffset>,
     //     limit: u64,
     // }
 
     // #[async_trait]
-    // impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOperationMock {
-    //     async fn get_expired_consultation_reqs(
+    // impl MakePaymentOfUnhandledSettlementOperation for MakePaymentOfUnhandledSettlementOperationMock {
+    //     async fn get_unhandled_settlements(
     //         &self,
     //         criteria: DateTime<FixedOffset>,
     //         limit: Option<u64>,
-    //     ) -> Result<Vec<ConsultationReq>, Box<dyn Error>> {
+    //     ) -> Result<Vec<Settlement>, Box<dyn Error>> {
     //         assert_eq!(
     //             self.current_date_time
     //                 + Duration::seconds(
@@ -370,7 +389,7 @@ mod tests {
     //         } else {
     //             assert_eq!(None, limit);
     //         }
-    //         let expired_consultation_reqs: Vec<ConsultationReq> = self
+    //         let expired_consultation_reqs: Vec<Settlement> = self
     //             .consultation_reqs
     //             .values()
     //             .clone()
@@ -390,14 +409,14 @@ mod tests {
     //         Ok(results)
     //     }
 
-    //     async fn delete_consultation_req(
+    //     async fn make_payment(
     //         &self,
-    //         consultation_req_id: i64,
+    //         settlement_id: i64,
     //         charge_id: &str,
     //     ) -> Result<(), Box<dyn Error>> {
     //         let consultation_req = self
     //             .consultation_reqs
-    //             .get(&consultation_req_id)
+    //             .get(&settlement_id)
     //             .expect("assert that consultation_req has value!");
     //         assert_eq!(consultation_req.0.charge_id, charge_id);
     //         if !consultation_req.1 {
@@ -455,12 +474,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success0() {
+    // async fn make_payment_of_unhandled_settlement_success0() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: HashMap::with_capacity(0),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -469,7 +488,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -482,12 +501,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success1() {
+    // async fn make_payment_of_unhandled_settlement_success1() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_non_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -496,7 +515,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -510,10 +529,10 @@ mod tests {
 
     // fn create_dummy_1_non_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 1234;
-    //     let consultation_req = ConsultationReq {
-    //         consultation_req_id,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id = 1234;
+    //     let consultation_req = Settlement {
+    //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -539,17 +558,17 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (consultation_req, true));
+    //     map.insert(settlement_id, (consultation_req, true));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success2() {
+    // async fn make_payment_of_unhandled_settlement_success2() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -558,7 +577,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -572,10 +591,10 @@ mod tests {
 
     // fn create_dummy_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 1234;
-    //     let consultation_req = ConsultationReq {
-    //         consultation_req_id,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id = 1234;
+    //     let consultation_req = Settlement {
+    //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -600,17 +619,17 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (consultation_req, true));
+    //     map.insert(settlement_id, (consultation_req, true));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success3() {
+    // async fn make_payment_of_unhandled_settlement_success3() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 1;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -619,7 +638,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -632,12 +651,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success4() {
+    // async fn make_payment_of_unhandled_settlement_success4() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 2;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -646,7 +665,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -659,12 +678,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success5() {
+    // async fn make_payment_of_unhandled_settlement_success5() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -673,7 +692,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -687,10 +706,10 @@ mod tests {
 
     // fn create_dummy_2_expired_consultation_reqs(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 1234;
-    //     let consultation_req1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id1 = 1234;
+    //     let consultation_req1 = Settlement {
+    //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -715,9 +734,9 @@ mod tests {
     //             .unwrap(),
     //     };
 
-    //     let consultation_req_id2 = 56;
-    //     let consultation_req2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
+    //     let settlement_id2 = 56;
+    //     let consultation_req2 = Settlement {
+    //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -743,18 +762,18 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(consultation_req_id1, (consultation_req1, true));
-    //     map.insert(consultation_req_id2, (consultation_req2, true));
+    //     map.insert(settlement_id1, (consultation_req1, true));
+    //     map.insert(settlement_id2, (consultation_req2, true));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success6() {
+    // async fn make_payment_of_unhandled_settlement_success6() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 21, 8, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 1;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -763,7 +782,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -776,12 +795,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success7() {
+    // async fn make_payment_of_unhandled_settlement_success7() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 21, 8, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 2;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -790,7 +809,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -803,12 +822,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success8() {
+    // async fn make_payment_of_unhandled_settlement_success8() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 3;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -817,7 +836,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -830,12 +849,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success9() {
+    // async fn make_payment_of_unhandled_settlement_success9() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
@@ -846,7 +865,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -860,10 +879,10 @@ mod tests {
 
     // fn create_dummy_1_non_expired_and_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 1234;
-    //     let consultation_req1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id1 = 1234;
+    //     let consultation_req1 = Settlement {
+    //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -889,9 +908,9 @@ mod tests {
     //             .unwrap(),
     //     };
 
-    //     let consultation_req_id2 = 56;
-    //     let consultation_req2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
+    //     let settlement_id2 = 56;
+    //     let consultation_req2 = Settlement {
+    //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -917,18 +936,18 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(consultation_req_id1, (consultation_req1, true));
-    //     map.insert(consultation_req_id2, (consultation_req2, true));
+    //     map.insert(settlement_id1, (consultation_req1, true));
+    //     map.insert(settlement_id2, (consultation_req2, true));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success10() {
+    // async fn make_payment_of_unhandled_settlement_success10() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 1;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
@@ -939,7 +958,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -952,12 +971,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_success11() {
+    // async fn make_payment_of_unhandled_settlement_success11() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 40)
     //         .unwrap();
     //     let max_num_of_target_records = 2;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
     //             current_date_time,
     //         ),
@@ -968,7 +987,7 @@ mod tests {
     //     let send_mail_mock =
     //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -981,12 +1000,12 @@ mod tests {
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_fail1() {
+    // async fn make_payment_of_unhandled_settlement_fail1() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_1_failed_expired_consultation_req(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -995,7 +1014,7 @@ mod tests {
     //         ADMIN_EMAIL_ADDRESS.to_string(),
     //         SYSTEM_EMAIL_ADDRESS.to_string(),
     //         format!(
-    //             "[{}] 定期実行ツール (delete_expired_consultation_reqs) 失敗通知",
+    //             "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
     //             WEB_SITE_NAME
     //         ),
     //         vec![
@@ -1008,7 +1027,7 @@ mod tests {
     //         ],
     //     );
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -1028,10 +1047,10 @@ mod tests {
 
     // fn create_dummy_1_failed_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id = 1234;
-    //     let consultation_req = ConsultationReq {
-    //         consultation_req_id,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id = 1234;
+    //     let consultation_req = Settlement {
+    //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -1056,17 +1075,17 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(consultation_req_id, (consultation_req, false));
+    //     map.insert(settlement_id, (consultation_req, false));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_fail2() {
+    // async fn make_payment_of_unhandled_settlement_fail2() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs: create_dummy_2_failed_expired_consultation_reqs(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
@@ -1075,7 +1094,7 @@ mod tests {
     //         ADMIN_EMAIL_ADDRESS.to_string(),
     //         SYSTEM_EMAIL_ADDRESS.to_string(),
     //         format!(
-    //             "[{}] 定期実行ツール (delete_expired_consultation_reqs) 失敗通知",
+    //             "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
     //             WEB_SITE_NAME
     //         ),
     //         vec![
@@ -1093,7 +1112,7 @@ mod tests {
     //         ],
     //     );
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -1120,10 +1139,10 @@ mod tests {
 
     // fn create_dummy_2_failed_expired_consultation_reqs(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 1234;
-    //     let consultation_req1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id1 = 1234;
+    //     let consultation_req1 = Settlement {
+    //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -1148,9 +1167,9 @@ mod tests {
     //             .unwrap(),
     //     };
 
-    //     let consultation_req_id2 = 56;
-    //     let consultation_req2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
+    //     let settlement_id2 = 56;
+    //     let consultation_req2 = Settlement {
+    //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -1176,18 +1195,18 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(consultation_req_id1, (consultation_req1, false));
-    //     map.insert(consultation_req_id2, (consultation_req2, false));
+    //     map.insert(settlement_id1, (consultation_req1, false));
+    //     map.insert(settlement_id2, (consultation_req2, false));
     //     map
     // }
 
     // #[tokio::test]
-    // async fn delete_expired_consultation_reqs_fail3() {
+    // async fn make_payment_of_unhandled_settlement_fail3() {
     //     let current_date_time = JAPANESE_TIME_ZONE
     //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
     //         .unwrap();
     //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredConsultationReqsOperationMock {
+    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
     //         consultation_reqs:
     //             create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
     //                 current_date_time,
@@ -1199,7 +1218,7 @@ mod tests {
     //         ADMIN_EMAIL_ADDRESS.to_string(),
     //         SYSTEM_EMAIL_ADDRESS.to_string(),
     //         format!(
-    //             "[{}] 定期実行ツール (delete_expired_consultation_reqs) 失敗通知",
+    //             "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
     //             WEB_SITE_NAME
     //         ),
     //         vec![
@@ -1212,7 +1231,7 @@ mod tests {
     //         ],
     //     );
 
-    //     let result = delete_expired_consultation_reqs(
+    //     let result = make_payment_of_unhandled_settlement(
     //         current_date_time,
     //         max_num_of_target_records,
     //         &op,
@@ -1239,10 +1258,10 @@ mod tests {
 
     // fn create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
     //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (ConsultationReq, bool)> {
-    //     let consultation_req_id1 = 1234;
-    //     let consultation_req1 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id1,
+    // ) -> HashMap<i64, (Settlement, bool)> {
+    //     let settlement_id1 = 1234;
+    //     let consultation_req1 = Settlement {
+    //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -1268,9 +1287,9 @@ mod tests {
     //             .unwrap(),
     //     };
 
-    //     let consultation_req_id2 = 56;
-    //     let consultation_req2 = ConsultationReq {
-    //         consultation_req_id: consultation_req_id2,
+    //     let settlement_id2 = 56;
+    //     let consultation_req2 = Settlement {
+    //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
     //         first_candidate_date_time: JAPANESE_TIME_ZONE
@@ -1296,8 +1315,8 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(consultation_req_id1, (consultation_req1, true));
-    //     map.insert(consultation_req_id2, (consultation_req2, false));
+    //     map.insert(settlement_id1, (consultation_req1, true));
+    //     map.insert(settlement_id2, (consultation_req2, false));
     //     map
     // }
 }
