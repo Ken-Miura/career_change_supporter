@@ -1118,129 +1118,113 @@ mod tests {
         map
     }
 
-    // #[tokio::test]
-    // async fn delete_expired_deleted_user_accounts_fail2() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredDeletedUserAccountsOperationMock {
-    //         deleted_user_accounts: create_dummy_2_failed_expired_deleted_user_accounts(
-    //             current_date_time,
-    //         ),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     let send_mail_mock = SendMailMock::new(
-    //         ADMIN_EMAIL_ADDRESS.to_string(),
-    //         SYSTEM_EMAIL_ADDRESS.to_string(),
-    //         format!(
-    //             "[{}] 定期実行ツール (delete_expired_deleted_user_accounts) 失敗通知",
-    //             WEB_SITE_NAME
-    //         ),
-    //         vec![
-    //             "deleted_user_accountの期限切れレコード2個の内、2個の削除に失敗しました。"
-    //                 .to_string(),
-    //             "1234".to_string(),
-    //             "456".to_string(),
-    //             "789".to_string(),
-    //             "ch_fa990a4c10672a93053a774730b0a".to_string(),
-    //             "2023-08-27T14:00:00+09:00".to_string(),
-    //             "56".to_string(),
-    //             "32".to_string(),
-    //             "87".to_string(),
-    //             "ch_ea990a4c10672a93053a774730b0b".to_string(),
-    //             "2023-08-27T14:00:00+09:00".to_string(),
-    //         ],
-    //     );
+    #[tokio::test]
+    async fn delete_expired_deleted_user_accounts_fail2() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredDeletedUserAccountsOperationMock {
+            deleted_user_accounts: create_dummy_2_failed_expired_deleted_user_accounts(
+                current_date_time,
+            ),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            format!(
+                "[{}] 定期実行ツール (delete_expired_deleted_user_accounts) 失敗通知",
+                WEB_SITE_NAME
+            ),
+            vec![
+                "deleted_user_accountの期限切れレコード2個の内、2個の削除に失敗しました。"
+                    .to_string(),
+                "1234".to_string(),
+                "test1@test.com".to_string(),
+                "2023-08-05T13:24:56+09:00".to_string(),
+                "2023-08-01T10:02:01+09:00".to_string(),
+                "2023-05-29T07:59:59+09:00".to_string(),
+                "4567".to_string(),
+                "test2@test.com".to_string(),
+                "2023-07-15T18:42:23+09:00".to_string(),
+                "2022-12-01T11:32:11+09:00".to_string(),
+                "2023-05-29T07:59:59+09:00".to_string(),
+            ],
+        );
 
-    //     let result = delete_expired_deleted_user_accounts(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_deleted_user_accounts(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let err = result.expect_err("failed to get Err");
-    //     let err_message = err.to_string();
-    //     assert!(err_message.contains("2 were processed, 2 were failed"));
+        let err = result.expect_err("failed to get Err");
+        let err_message = err.to_string();
+        assert!(err_message.contains("2 were processed, 2 were failed"));
 
-    //     assert!(err_message.contains("1234"));
-    //     assert!(err_message.contains("456"));
-    //     assert!(err_message.contains("789"));
-    //     assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
-    //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
+        assert!(err_message.contains("1234"));
+        assert!(err_message.contains("test1@test.com"));
+        assert!(err_message.contains("2023-08-05T13:24:56+09:00"));
+        assert!(err_message.contains("2023-08-01T10:02:01+09:00"));
+        assert!(err_message.contains("2023-05-29T07:59:59+09:00"));
 
-    //     assert!(err_message.contains("56"));
-    //     assert!(err_message.contains("32"));
-    //     assert!(err_message.contains("87"));
-    //     assert!(err_message.contains("ch_ea990a4c10672a93053a774730b0b"));
-    //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
-    // }
+        assert!(err_message.contains("4567"));
+        assert!(err_message.contains("test2@test.com"));
+        assert!(err_message.contains("2023-07-15T18:42:23+09:00"));
+        assert!(err_message.contains("2022-12-01T11:32:11+09:00"));
+        assert!(err_message.contains("2023-05-29T07:59:59+09:00"));
+    }
 
-    // fn create_dummy_2_failed_expired_deleted_user_accounts(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (DeletedUserAccount, bool)> {
-    //     let deleted_user_account_id1 = 1234;
-    //     let deleted_user_account1 = DeletedUserAccount {
-    //         user_account_id: deleted_user_account_id1,
-    //         user_account_id: 456,
-    //         consultant_id: 789,
-    //         first_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 25, 13, 0, 0)
-    //             .unwrap(),
-    //         second_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 26, 14, 0, 0)
-    //             .unwrap(),
-    //         third_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 27, 15, 0, 0)
-    //             .unwrap(),
-    //         // latest_candidate_date_timeが削除するかどうかの基準となる。UTでは境界値のテストをしたいので実際の値（このケースでは第三希望日時）とは異なるものを入れる。
-    //         latest_candidate_date_time: current_date_time
-    //             + Duration::seconds(
-    //                 common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
-    //             ),
-    //         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-    //         fee_per_hour_in_yen: 5000,
-    //         platform_fee_rate_in_percentage: "30.0".to_string(),
-    //         credit_facilities_expired_at: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-    //             .unwrap(),
-    //     };
+    fn create_dummy_2_failed_expired_deleted_user_accounts(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (DeletedUserAccount, bool)> {
+        let user_account_id1 = 1234;
+        let deleted_user_account1 = DeletedUserAccount {
+            user_account_id: user_account_id1,
+            email_address: "test1@test.com".to_string(),
+            last_login_time: Some(
+                JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2023, 8, 5, 13, 24, 56)
+                    .unwrap(),
+            ),
+            created_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 8, 1, 10, 2, 1)
+                .unwrap(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+            deleted_at: current_date_time
+                - Duration::days(VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS)
+                - Duration::seconds(1),
+        };
 
-    //     let deleted_user_account_id2 = 56;
-    //     let deleted_user_account2 = DeletedUserAccount {
-    //         user_account_id: deleted_user_account_id2,
-    //         user_account_id: 32,
-    //         consultant_id: 87,
-    //         first_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 25, 7, 0, 0)
-    //             .unwrap(),
-    //         second_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 27, 15, 0, 0)
-    //             .unwrap(),
-    //         third_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 23, 21, 0, 0)
-    //             .unwrap(),
-    //         // latest_candidate_date_timeが削除するかどうかの基準となる。UTでは境界値のテストをしたいので実際の値（このケースでは第二希望日時）とは異なるものを入れる。
-    //         latest_candidate_date_time: current_date_time
-    //             + Duration::seconds(
-    //                 common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
-    //             ),
-    //         charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
-    //         fee_per_hour_in_yen: 8000,
-    //         platform_fee_rate_in_percentage: "30.0".to_string(),
-    //         credit_facilities_expired_at: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 10, 17, 15, 0, 0)
-    //             .unwrap(),
-    //     };
+        let user_account_id2 = 4567;
+        let deleted_user_account2 = DeletedUserAccount {
+            user_account_id: user_account_id2,
+            email_address: "test2@test.com".to_string(),
+            last_login_time: Some(
+                JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2023, 7, 15, 18, 42, 23)
+                    .unwrap(),
+            ),
+            created_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2022, 12, 1, 11, 32, 11)
+                .unwrap(),
+            mfa_enabled_at: None,
+            disabled_at: None,
+            deleted_at: current_date_time
+                - Duration::days(VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS)
+                - Duration::seconds(1),
+        };
 
-    //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(deleted_user_account_id1, (deleted_user_account1, false));
-    //     map.insert(deleted_user_account_id2, (deleted_user_account2, false));
-    //     map
-    // }
+        let mut map = HashMap::with_capacity(2);
+        map.insert(user_account_id1, (deleted_user_account1, false));
+        map.insert(user_account_id2, (deleted_user_account2, false));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_deleted_user_accounts_fail3() {
