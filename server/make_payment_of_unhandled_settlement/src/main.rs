@@ -149,7 +149,7 @@ async fn make_payment_of_unhandled_settlement(
     let unhandled_settlements = op.get_unhandled_settlements(criteria, limit).await?;
     let num_of_unhandled_settlements = unhandled_settlements.len();
 
-    let mut make_payment_failed: Vec<Settlement> = Vec::with_capacity(unhandled_settlements.len());
+    let mut make_payment_failed: Vec<Settlement> = Vec::with_capacity(num_of_unhandled_settlements);
     for unhandled_settlement in unhandled_settlements {
         let settlement_id = unhandled_settlement.settlement_id;
         let result = op.make_payment(settlement_id, current_date_time).await;
