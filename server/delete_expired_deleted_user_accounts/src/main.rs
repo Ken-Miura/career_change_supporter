@@ -454,145 +454,145 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    // use std::{cmp::min, collections::HashMap};
+    use std::{cmp::min, collections::HashMap};
 
-    // use chrono::TimeZone;
-    // use common::ErrResp;
+    use chrono::TimeZone;
+    use common::ErrResp;
 
-    // use super::*;
+    use super::*;
 
-    // struct DeleteExpiredDeletedUserAccountsOperationMock {
-    //     deleted_user_accounts: HashMap<i64, (DeletedUserAccount, bool)>,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     limit: u64,
-    // }
+    struct DeleteExpiredDeletedUserAccountsOperationMock {
+        deleted_user_accounts: HashMap<i64, (DeletedUserAccount, bool)>,
+        current_date_time: DateTime<FixedOffset>,
+        limit: u64,
+    }
 
-    // #[async_trait]
-    // impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccountsOperationMock {
-    //     async fn get_expired_deleted_user_accounts(
-    //         &self,
-    //         criteria: DateTime<FixedOffset>,
-    //         limit: Option<u64>,
-    //     ) -> Result<Vec<DeletedUserAccount>, Box<dyn Error>> {
-    //         assert_eq!(
-    //             self.current_date_time
-    //                 + Duration::days(VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS),
-    //             criteria
-    //         );
-    //         if self.limit != 0 {
-    //             assert_eq!(Some(self.limit), limit);
-    //         } else {
-    //             assert_eq!(None, limit);
-    //         }
-    //         let expired_deleted_user_accounts: Vec<DeletedUserAccount> = self
-    //             .deleted_user_accounts
-    //             .values()
-    //             .clone()
-    //             .filter(|m| m.0.deleted_at < criteria)
-    //             .map(|m| m.0.clone())
-    //             .collect();
-    //         let results = if let Some(limit) = limit {
-    //             let limit = min(limit as usize, expired_deleted_user_accounts.len());
-    //             let mut expired_deleted_user_accounts_limited = Vec::with_capacity(limit);
-    //             (0..limit).for_each(|i| {
-    //                 expired_deleted_user_accounts_limited
-    //                     .push(expired_deleted_user_accounts[i].clone())
-    //             });
-    //             expired_deleted_user_accounts_limited
-    //         } else {
-    //             expired_deleted_user_accounts
-    //         };
-    //         Ok(results)
-    //     }
+    #[async_trait]
+    impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccountsOperationMock {
+        async fn get_expired_deleted_user_accounts(
+            &self,
+            criteria: DateTime<FixedOffset>,
+            limit: Option<u64>,
+        ) -> Result<Vec<DeletedUserAccount>, Box<dyn Error>> {
+            assert_eq!(
+                self.current_date_time
+                    - Duration::days(VALID_PERIOD_OF_DELETED_USER_ACCOUNT_IN_DAYS),
+                criteria
+            );
+            if self.limit != 0 {
+                assert_eq!(Some(self.limit), limit);
+            } else {
+                assert_eq!(None, limit);
+            }
+            let expired_deleted_user_accounts: Vec<DeletedUserAccount> = self
+                .deleted_user_accounts
+                .values()
+                .clone()
+                .filter(|m| m.0.deleted_at < criteria)
+                .map(|m| m.0.clone())
+                .collect();
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, expired_deleted_user_accounts.len());
+                let mut expired_deleted_user_accounts_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    expired_deleted_user_accounts_limited
+                        .push(expired_deleted_user_accounts[i].clone())
+                });
+                expired_deleted_user_accounts_limited
+            } else {
+                expired_deleted_user_accounts
+            };
+            Ok(results)
+        }
 
-    //     async fn delete_deleted_user_account(
-    //         &self,
-    //         user_account_id: i64,
-    //     ) -> Result<(), Box<dyn Error>> {
-    //         let deleted_user_account = self
-    //             .deleted_user_accounts
-    //             .get(&user_account_id)
-    //             .expect("assert that deleted_user_account has value!");
-    //         if !deleted_user_account.1 {
-    //             return Err("mock error message".into());
-    //         }
-    //         Ok(())
-    //     }
+        async fn delete_deleted_user_account(
+            &self,
+            user_account_id: i64,
+        ) -> Result<(), Box<dyn Error>> {
+            let deleted_user_account = self
+                .deleted_user_accounts
+                .get(&user_account_id)
+                .expect("assert that deleted_user_account has value!");
+            if !deleted_user_account.1 {
+                return Err("mock error message".into());
+            }
+            Ok(())
+        }
 
-    //     async fn wait_for_dependent_service_rate_limit(&self) {
-    //         // テストコードでは待つ必要はないので何もしない
-    //     }
-    // }
+        async fn wait_for_dependent_service_rate_limit(&self) {
+            // テストコードでは待つ必要はないので何もしない
+        }
+    }
 
-    // #[derive(Clone, Debug)]
-    // pub(super) struct SendMailMock {
-    //     to: String,
-    //     from: String,
-    //     subject: String,
-    //     text_keywords: Vec<String>,
-    // }
+    #[derive(Clone, Debug)]
+    pub(super) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text_keywords: Vec<String>,
+    }
 
-    // impl SendMailMock {
-    //     pub(super) fn new(
-    //         to: String,
-    //         from: String,
-    //         subject: String,
-    //         text_keywords: Vec<String>,
-    //     ) -> Self {
-    //         Self {
-    //             to,
-    //             from,
-    //             subject,
-    //             text_keywords,
-    //         }
-    //     }
-    // }
+    impl SendMailMock {
+        pub(super) fn new(
+            to: String,
+            from: String,
+            subject: String,
+            text_keywords: Vec<String>,
+        ) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text_keywords,
+            }
+        }
+    }
 
-    // #[async_trait]
-    // impl SendMail for SendMailMock {
-    //     async fn send_mail(
-    //         &self,
-    //         to: &str,
-    //         from: &str,
-    //         subject: &str,
-    //         text: &str,
-    //     ) -> Result<(), ErrResp> {
-    //         assert_eq!(self.to, to);
-    //         assert_eq!(self.from, from);
-    //         assert_eq!(self.subject, subject);
-    //         for text_keyword in self.text_keywords.clone() {
-    //             assert!(text.contains(&text_keyword));
-    //         }
-    //         Ok(())
-    //     }
-    // }
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            for text_keyword in self.text_keywords.clone() {
+                assert!(text.contains(&text_keyword));
+            }
+            Ok(())
+        }
+    }
 
-    // #[tokio::test]
-    // async fn delete_expired_deleted_user_accounts_success0() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredDeletedUserAccountsOperationMock {
-    //         deleted_user_accounts: HashMap::with_capacity(0),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn delete_expired_deleted_user_accounts_success0() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredDeletedUserAccountsOperationMock {
+            deleted_user_accounts: HashMap::with_capacity(0),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_deleted_user_accounts(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_deleted_user_accounts(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 0);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
+    }
 
     // #[tokio::test]
     // async fn delete_expired_deleted_user_accounts_success1() {
