@@ -10,15 +10,14 @@ use chrono::{DateTime, FixedOffset};
 use common::opensearch::{delete_document, INDEX_NAME};
 use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
-use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
+    ModelTrait, QueryFilter, Set, TransactionError, TransactionTrait,
 };
 use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
@@ -78,13 +77,6 @@ pub(crate) struct DeleteAccountsResult {}
 trait DeleteAccountsOperation {
     async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp>;
 
-    /// 役務の提供（ユーザーとの相談）が未実施の支払いに関して、コンサルタント（この削除するアカウント）が受け取るのを止める
-    async fn stop_payment(
-        &self,
-        settlement_id: i64,
-        stopped_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp>;
-
     async fn delete_user_account(
         &self,
         account_id: i64,
@@ -120,63 +112,6 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
             .into_iter()
             .map(|m| m.0.settlement_id)
             .collect::<Vec<i64>>())
-    }
-
-    async fn stop_payment(
-        &self,
-        settlement_id: i64,
-        stopped_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        self.pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let s_option =
-                        find_settlement_by_settlement_id_with_exclusive_lock(txn, settlement_id)
-                            .await?;
-                    let s = match s_option {
-                        Some(s) => s,
-                        None => {
-                            // 一度リストアップしたsettlementをイテレートしている途中のため、存在しない確率は低い
-                            // （確率が低いだけで正常なケースもありえる。例えば、リストアップされた後、ここに到達するまでの間にユーザーがコンサルタントの評価（決済）を行った等）
-                            // 正常なケースも考えられるが、低確率のためwarnでログに記録しておく
-                            warn!(
-                                "no settelment (settelment_id: {}) found when stopping payment",
-                                settlement_id
-                            );
-                            return Ok(());
-                        }
-                    };
-
-                    insert_stopped_settlement(txn, s, stopped_date_time).await?;
-
-                    let _ = entity::settlement::Entity::delete_by_id(settlement_id)
-                        .exec(txn)
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to delete settlement (settlement_id: {}): {}",
-                                settlement_id, e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to stop_payment: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
     }
 
     async fn delete_user_account(
@@ -220,52 +155,6 @@ impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
             })?;
         Ok(())
     }
-}
-
-async fn find_settlement_by_settlement_id_with_exclusive_lock(
-    txn: &DatabaseTransaction,
-    settlement_id: i64,
-) -> Result<Option<entity::settlement::Model>, ErrRespStruct> {
-    let model = entity::settlement::Entity::find_by_id(settlement_id)
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find settlement (settlement_id): {}): {}",
-                settlement_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(model)
-}
-
-async fn insert_stopped_settlement(
-    txn: &DatabaseTransaction,
-    model: entity::settlement::Model,
-    stopped_date_time: DateTime<FixedOffset>,
-) -> Result<(), ErrRespStruct> {
-    let active_model = entity::stopped_settlement::ActiveModel {
-        stopped_settlement_id: NotSet,
-        consultation_id: Set(model.consultation_id),
-        charge_id: Set(model.charge_id.clone()),
-        fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage.clone()),
-        credit_facilities_expired_at: Set(model.credit_facilities_expired_at),
-        stopped_at: Set(stopped_date_time),
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!(
-            "failed to insert stopped_settlement (settlement: {:?}, stopped_date_time: {}): {}",
-            model, stopped_date_time, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
 }
 
 async fn delete_user_account_with_user_account_exclusive_lock(
@@ -395,8 +284,17 @@ async fn handle_delete_accounts(
     ensure_account_delete_confirmed(account_id, account_delete_confirmed)?;
 
     let settlement_ids = op.get_settlement_ids(account_id).await?;
-    for s_id in settlement_ids {
-        op.stop_payment(s_id, current_date_time).await?;
+    if !settlement_ids.is_empty() {
+        error!(
+            "cannot delete user_account (user_account: {}) because settlements ({:?}) still exist",
+            account_id, settlement_ids
+        );
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultationHasNotBeenFinished as u32,
+            }),
+        ));
     }
 
     op.delete_user_account(account_id, INDEX_NAME.to_string(), current_date_time)
@@ -460,16 +358,6 @@ mod tests {
             Ok(self.settlement_ids.clone())
         }
 
-        async fn stop_payment(
-            &self,
-            settlement_id: i64,
-            stopped_date_time: DateTime<FixedOffset>,
-        ) -> Result<(), ErrResp> {
-            assert!(self.settlement_ids.contains(&settlement_id));
-            assert_eq!(self.current_date_time, stopped_date_time);
-            Ok(())
-        }
-
         async fn delete_user_account(
             &self,
             account_id: i64,
@@ -518,7 +406,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_delete_accounts_success_1_settlement() {
+    async fn handle_delete_accounts_fail_1_settlement() {
         let account_id = 5517;
         let email_address = "test0@test.com";
         let current_date_time = JAPANESE_TIME_ZONE
@@ -546,13 +434,13 @@ mod tests {
         )
         .await;
 
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::ConsultationHasNotBeenFinished as u32, resp.1 .0.code);
     }
 
     #[tokio::test]
-    async fn handle_delete_accounts_success_2_settlements() {
+    async fn handle_delete_accounts_fail_2_settlements() {
         let account_id = 5517;
         let email_address = "test0@test.com";
         let current_date_time = JAPANESE_TIME_ZONE
@@ -580,9 +468,9 @@ mod tests {
         )
         .await;
 
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(DeleteAccountsResult {}, resp.1 .0);
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::ConsultationHasNotBeenFinished as u32, resp.1 .0.code);
     }
 
     #[tokio::test]

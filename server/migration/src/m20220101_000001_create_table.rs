@@ -608,7 +608,6 @@ impl MigrationTrait for Migration {
              * 下記のタイミングで削除される
              *   - ユーザーがコンサルタントの評価をしたとき（=決済をしたとき）（決済し、領収書テーブルへ情報を移動する）
              *   - 生成されてから一定期間後（ユーザーが評価せずに放置し続けた場合）(定期実行ツールにより削除される（決済し、領収書テーブルへ情報を移動する）)
-             *   - ユーザーがアカウントを削除したとき（削除されたユーザーテーブルに移されたとき）（決済中止テーブルへ情報を移動する）
              *   - 管理者がユーザーを無効化したとき（決済中止テーブルへ情報を移動する）
              *   - 管理者が決済中止操作を行ったとき（決済中止テーブルへ情報を移動する）（ユーザーからの問い合わせで、悪意のあるコンサルタントであると判断した場合、決済中止を行う）
              *   - 管理者がメンテナンス期間を設定し、かつ相談日時がそのメンテナンス期間に重なっているとき（決済中止テーブルへ情報を移動する）
@@ -662,7 +661,6 @@ impl MigrationTrait for Migration {
         let _ = conn
             /* 下記のタイミングで決済テーブルの情報を元に生成される。
              *   - 管理者がユーザーを無効化したとき
-             *   - ユーザーがアカウントを削除したとき（削除されたユーザーテーブルに移されたとき）
              *   - 管理者が決済中止操作を行ったとき
              *   - 管理者がメンテナンス期間を設定し、かつ相談日時がそのメンテナンス期間に重なっているとき
              *
@@ -688,19 +686,11 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(
-                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.stopped_settlement To user_app;"),
-            )
+            .execute(sql.stmt(r"GRANT SELECT ON ccs_schema.stopped_settlement To user_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.stopped_settlement To admin_app;"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.stopped_settlement_stopped_settlement_id_seq TO user_app;",
-            ))
             .await
             .map(|_| ())?;
         let _ = conn

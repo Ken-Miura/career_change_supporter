@@ -153,6 +153,7 @@ pub(crate) enum Code {
     RecoveryCodeDoesNotMatch = 20141,
     AccountDeleteIsNotConfirmed = 20142,
     NoEnoughSpareTimeBeforeMeeting = 20143,
+    ConsultationHasNotBeenFinished = 20144,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
