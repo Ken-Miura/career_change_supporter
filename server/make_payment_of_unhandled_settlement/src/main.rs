@@ -924,85 +924,79 @@ mod tests {
         assert_eq!(num_handled, 1);
     }
 
-    // #[tokio::test]
-    // async fn make_payment_of_unhandled_settlement_fail1() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         settlements: create_dummy_1_failed_expired_settlement(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     let send_mail_mock = SendMailMock::new(
-    //         ADMIN_EMAIL_ADDRESS.to_string(),
-    //         SYSTEM_EMAIL_ADDRESS.to_string(),
-    //         format!(
-    //             "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
-    //             WEB_SITE_NAME
-    //         ),
-    //         vec![
-    //             "settlementの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
-    //             "1234".to_string(),
-    //             "456".to_string(),
-    //             "789".to_string(),
-    //             "ch_fa990a4c10672a93053a774730b0a".to_string(),
-    //             "2023-08-27T14:00:00+09:00".to_string(),
-    //         ],
-    //     );
+    #[tokio::test]
+    async fn make_payment_of_unhandled_settlement_fail1() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = MakePaymentOfUnhandledSettlementOperationMock {
+            settlements: create_dummy_1_failed_unhandled_settlement(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            format!(
+                "[{}] 定期実行ツール (make_payment_of_unhandled_settlement) 失敗通知",
+                WEB_SITE_NAME
+            ),
+            vec![
+                "処理されていないsettlementレコード1個の内、1個の処理に失敗しました。".to_string(),
+                "1234".to_string(),
+                "45".to_string(),
+                "ch_fa990a4c10672a93053a774730b0a".to_string(),
+                "5000".to_string(),
+                "30.0".to_string(),
+                "2023-10-19T15:00:00+09:00".to_string(),
+            ],
+        );
 
-    //     let result = make_payment_of_unhandled_settlement(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = make_payment_of_unhandled_settlement(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let err = result.expect_err("failed to get Err");
-    //     let err_message = err.to_string();
-    //     assert!(err_message.contains("1 were processed, 1 were failed"));
-    //     assert!(err_message.contains("1234"));
-    //     assert!(err_message.contains("456"));
-    //     assert!(err_message.contains("789"));
-    //     assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
-    //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
-    // }
+        let err = result.expect_err("failed to get Err");
+        let err_message = err.to_string();
+        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1234"));
+        assert!(err_message.contains("45"));
+        assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
+        assert!(err_message.contains("5000"));
+        assert!(err_message.contains("30.0"));
+        assert!(err_message.contains("2023-10-19T15:00:00+09:00"));
 
-    // fn create_dummy_1_failed_expired_settlement(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (Settlement, bool)> {
-    //     let settlement_id = 1234;
-    //     let settlement = Settlement {
-    //         settlement_id,
-    //         user_account_id: 456,
-    //         consultant_id: 789,
-    //         first_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 25, 13, 0, 0)
-    //             .unwrap(),
-    //         second_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 26, 14, 0, 0)
-    //             .unwrap(),
-    //         third_candidate_date_time: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 8, 27, 15, 0, 0)
-    //             .unwrap(),
-    //         // latest_candidate_date_timeが削除するかどうかの基準となる。UTでは境界値のテストをしたいので実際の値（このケースでは第三希望日時）とは異なるものを入れる。
-    //         latest_candidate_date_time: current_date_time
-    //             + Duration::seconds(
-    //                 common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
-    //             ),
-    //         charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
-    //         fee_per_hour_in_yen: 5000,
-    //         platform_fee_rate_in_percentage: "30.0".to_string(),
-    //         credit_facilities_expired_at: JAPANESE_TIME_ZONE
-    //             .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-    //             .unwrap(),
-    //     };
-    //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(settlement_id, (settlement, false));
-    //     map
-    // }
+        println!("{}", err_message);
+    }
+
+    fn create_dummy_1_failed_unhandled_settlement(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (Settlement, DateTime<FixedOffset>, bool)> {
+        let settlement_id = 1234;
+        let settlement = Settlement {
+            settlement_id,
+            consultation_id: 45,
+            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
+            fee_per_hour_in_yen: 5000,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
+                .unwrap(),
+        };
+        let meeting_at = current_date_time
+            - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+            - Duration::days(DURATION_ALLOWED_AS_UNHANDLED_IN_DAYS)
+            - Duration::seconds(1);
+
+        let mut map = HashMap::with_capacity(1);
+        map.insert(settlement_id, (settlement, meeting_at, false));
+        map
+    }
 
     // #[tokio::test]
     // async fn make_payment_of_unhandled_settlement_fail2() {
