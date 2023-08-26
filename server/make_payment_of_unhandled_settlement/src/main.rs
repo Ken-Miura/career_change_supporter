@@ -357,148 +357,147 @@ fn create_text(
 #[cfg(test)]
 mod tests {
 
-    // use std::{cmp::min, collections::HashMap};
+    use std::{cmp::min, collections::HashMap};
 
-    // use chrono::TimeZone;
-    // use common::ErrResp;
+    use chrono::TimeZone;
+    use common::ErrResp;
 
-    // use super::*;
+    use super::*;
 
-    // struct MakePaymentOfUnhandledSettlementOperationMock {
-    //     consultation_reqs: HashMap<i64, (Settlement, bool)>,
-    //     current_date_time: DateTime<FixedOffset>,
-    //     limit: u64,
-    // }
+    struct MakePaymentOfUnhandledSettlementOperationMock {
+        settlements: HashMap<i64, (Settlement, DateTime<FixedOffset>, bool)>,
+        current_date_time: DateTime<FixedOffset>,
+        limit: u64,
+    }
 
-    // #[async_trait]
-    // impl MakePaymentOfUnhandledSettlementOperation for MakePaymentOfUnhandledSettlementOperationMock {
-    //     async fn get_unhandled_settlements(
-    //         &self,
-    //         criteria: DateTime<FixedOffset>,
-    //         limit: Option<u64>,
-    //     ) -> Result<Vec<Settlement>, Box<dyn Error>> {
-    //         assert_eq!(
-    //             self.current_date_time
-    //                 + Duration::seconds(
-    //                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64
-    //                 ),
-    //             criteria
-    //         );
-    //         if self.limit != 0 {
-    //             assert_eq!(Some(self.limit), limit);
-    //         } else {
-    //             assert_eq!(None, limit);
-    //         }
-    //         let expired_consultation_reqs: Vec<Settlement> = self
-    //             .consultation_reqs
-    //             .values()
-    //             .clone()
-    //             .filter(|m| m.0.latest_candidate_date_time <= criteria)
-    //             .map(|m| m.0.clone())
-    //             .collect();
-    //         let results = if let Some(limit) = limit {
-    //             let limit = min(limit as usize, expired_consultation_reqs.len());
-    //             let mut expired_consultation_reqs_limited = Vec::with_capacity(limit);
-    //             (0..limit).for_each(|i| {
-    //                 expired_consultation_reqs_limited.push(expired_consultation_reqs[i].clone())
-    //             });
-    //             expired_consultation_reqs_limited
-    //         } else {
-    //             expired_consultation_reqs
-    //         };
-    //         Ok(results)
-    //     }
+    #[async_trait]
+    impl MakePaymentOfUnhandledSettlementOperation for MakePaymentOfUnhandledSettlementOperationMock {
+        async fn get_unhandled_settlements(
+            &self,
+            criteria: DateTime<FixedOffset>,
+            limit: Option<u64>,
+        ) -> Result<Vec<Settlement>, Box<dyn Error>> {
+            assert_eq!(
+                self.current_date_time
+                    - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+                    - Duration::days(DURATION_ALLOWED_AS_UNHANDLED_IN_DAYS),
+                criteria
+            );
+            if self.limit != 0 {
+                assert_eq!(Some(self.limit), limit);
+            } else {
+                assert_eq!(None, limit);
+            }
+            let unhandled_settlements: Vec<Settlement> = self
+                .settlements
+                .values()
+                .clone()
+                .filter(|m| m.1 < criteria)
+                .map(|m| m.0.clone())
+                .collect();
+            let results = if let Some(limit) = limit {
+                let limit = min(limit as usize, unhandled_settlements.len());
+                let mut unhandled_settlements_limited = Vec::with_capacity(limit);
+                (0..limit).for_each(|i| {
+                    unhandled_settlements_limited.push(unhandled_settlements[i].clone())
+                });
+                unhandled_settlements_limited
+            } else {
+                unhandled_settlements
+            };
+            Ok(results)
+        }
 
-    //     async fn make_payment(
-    //         &self,
-    //         settlement_id: i64,
-    //         charge_id: &str,
-    //     ) -> Result<(), Box<dyn Error>> {
-    //         let consultation_req = self
-    //             .consultation_reqs
-    //             .get(&settlement_id)
-    //             .expect("assert that consultation_req has value!");
-    //         assert_eq!(consultation_req.0.charge_id, charge_id);
-    //         if !consultation_req.1 {
-    //             return Err("mock error message".into());
-    //         }
-    //         Ok(())
-    //     }
+        async fn make_payment(
+            &self,
+            settlement_id: i64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), Box<dyn Error>> {
+            let settlement = self
+                .settlements
+                .get(&settlement_id)
+                .expect("assert that settlement has value!");
+            assert_eq!(self.current_date_time, current_date_time);
+            if !settlement.2 {
+                return Err("mock error message".into());
+            }
+            Ok(())
+        }
 
-    //     async fn wait_for_dependent_service_rate_limit(&self) {
-    //         // テストコードでは待つ必要はないので何もしない
-    //     }
-    // }
+        async fn wait_for_dependent_service_rate_limit(&self) {
+            // テストコードでは待つ必要はないので何もしない
+        }
+    }
 
-    // #[derive(Clone, Debug)]
-    // pub(super) struct SendMailMock {
-    //     to: String,
-    //     from: String,
-    //     subject: String,
-    //     text_keywords: Vec<String>,
-    // }
+    #[derive(Clone, Debug)]
+    pub(super) struct SendMailMock {
+        to: String,
+        from: String,
+        subject: String,
+        text_keywords: Vec<String>,
+    }
 
-    // impl SendMailMock {
-    //     pub(super) fn new(
-    //         to: String,
-    //         from: String,
-    //         subject: String,
-    //         text_keywords: Vec<String>,
-    //     ) -> Self {
-    //         Self {
-    //             to,
-    //             from,
-    //             subject,
-    //             text_keywords,
-    //         }
-    //     }
-    // }
+    impl SendMailMock {
+        pub(super) fn new(
+            to: String,
+            from: String,
+            subject: String,
+            text_keywords: Vec<String>,
+        ) -> Self {
+            Self {
+                to,
+                from,
+                subject,
+                text_keywords,
+            }
+        }
+    }
 
-    // #[async_trait]
-    // impl SendMail for SendMailMock {
-    //     async fn send_mail(
-    //         &self,
-    //         to: &str,
-    //         from: &str,
-    //         subject: &str,
-    //         text: &str,
-    //     ) -> Result<(), ErrResp> {
-    //         assert_eq!(self.to, to);
-    //         assert_eq!(self.from, from);
-    //         assert_eq!(self.subject, subject);
-    //         for text_keyword in self.text_keywords.clone() {
-    //             assert!(text.contains(&text_keyword));
-    //         }
-    //         Ok(())
-    //     }
-    // }
+    #[async_trait]
+    impl SendMail for SendMailMock {
+        async fn send_mail(
+            &self,
+            to: &str,
+            from: &str,
+            subject: &str,
+            text: &str,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(self.to, to);
+            assert_eq!(self.from, from);
+            assert_eq!(self.subject, subject);
+            for text_keyword in self.text_keywords.clone() {
+                assert!(text.contains(&text_keyword));
+            }
+            Ok(())
+        }
+    }
 
-    // #[tokio::test]
-    // async fn make_payment_of_unhandled_settlement_success0() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: HashMap::with_capacity(0),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn make_payment_of_unhandled_settlement_success0() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = MakePaymentOfUnhandledSettlementOperationMock {
+            settlements: HashMap::with_capacity(0),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = make_payment_of_unhandled_settlement(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = make_payment_of_unhandled_settlement(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 0);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
+    }
 
     // #[tokio::test]
     // async fn make_payment_of_unhandled_settlement_success1() {
@@ -507,7 +506,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_consultation_req(current_date_time),
+    //         settlements: create_dummy_1_non_expired_settlement(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -527,11 +526,11 @@ mod tests {
     //     assert_eq!(num_deleted, 0);
     // }
 
-    // fn create_dummy_1_non_expired_consultation_req(
+    // fn create_dummy_1_non_expired_settlement(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id = 1234;
-    //     let consultation_req = Settlement {
+    //     let settlement = Settlement {
     //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -558,7 +557,7 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(settlement_id, (consultation_req, true));
+    //     map.insert(settlement_id, (settlement, true));
     //     map
     // }
 
@@ -569,7 +568,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
+    //         settlements: create_dummy_1_expired_settlement(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -589,11 +588,11 @@ mod tests {
     //     assert_eq!(num_deleted, 1);
     // }
 
-    // fn create_dummy_1_expired_consultation_req(
+    // fn create_dummy_1_expired_settlement(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id = 1234;
-    //     let consultation_req = Settlement {
+    //     let settlement = Settlement {
     //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -619,7 +618,7 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(settlement_id, (consultation_req, true));
+    //     map.insert(settlement_id, (settlement, true));
     //     map
     // }
 
@@ -630,7 +629,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 1;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
+    //         settlements: create_dummy_1_expired_settlement(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -657,7 +656,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 2;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_expired_consultation_req(current_date_time),
+    //         settlements: create_dummy_1_expired_settlement(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -684,7 +683,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
+    //         settlements: create_dummy_2_expired_settlements(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -704,11 +703,11 @@ mod tests {
     //     assert_eq!(num_deleted, 2);
     // }
 
-    // fn create_dummy_2_expired_consultation_reqs(
+    // fn create_dummy_2_expired_settlements(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id1 = 1234;
-    //     let consultation_req1 = Settlement {
+    //     let settlement1 = Settlement {
     //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -735,7 +734,7 @@ mod tests {
     //     };
 
     //     let settlement_id2 = 56;
-    //     let consultation_req2 = Settlement {
+    //     let settlement2 = Settlement {
     //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
@@ -762,8 +761,8 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(settlement_id1, (consultation_req1, true));
-    //     map.insert(settlement_id2, (consultation_req2, true));
+    //     map.insert(settlement_id1, (settlement1, true));
+    //     map.insert(settlement_id2, (settlement2, true));
     //     map
     // }
 
@@ -774,7 +773,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 1;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
+    //         settlements: create_dummy_2_expired_settlements(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -801,7 +800,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 2;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
+    //         settlements: create_dummy_2_expired_settlements(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -828,7 +827,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 3;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_2_expired_consultation_reqs(current_date_time),
+    //         settlements: create_dummy_2_expired_settlements(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -855,7 +854,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
+    //         settlements: create_dummy_1_non_expired_and_1_expired_settlement(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -877,11 +876,11 @@ mod tests {
     //     assert_eq!(num_deleted, 1);
     // }
 
-    // fn create_dummy_1_non_expired_and_1_expired_consultation_req(
+    // fn create_dummy_1_non_expired_and_1_expired_settlement(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id1 = 1234;
-    //     let consultation_req1 = Settlement {
+    //     let settlement1 = Settlement {
     //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -909,7 +908,7 @@ mod tests {
     //     };
 
     //     let settlement_id2 = 56;
-    //     let consultation_req2 = Settlement {
+    //     let settlement2 = Settlement {
     //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
@@ -936,8 +935,8 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(settlement_id1, (consultation_req1, true));
-    //     map.insert(settlement_id2, (consultation_req2, true));
+    //     map.insert(settlement_id1, (settlement1, true));
+    //     map.insert(settlement_id2, (settlement2, true));
     //     map
     // }
 
@@ -948,7 +947,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 1;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
+    //         settlements: create_dummy_1_non_expired_and_1_expired_settlement(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -977,7 +976,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 2;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_non_expired_and_1_expired_consultation_req(
+    //         settlements: create_dummy_1_non_expired_and_1_expired_settlement(
     //             current_date_time,
     //         ),
     //         current_date_time,
@@ -1006,7 +1005,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_1_failed_expired_consultation_req(current_date_time),
+    //         settlements: create_dummy_1_failed_expired_settlement(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -1018,7 +1017,7 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "consultation_reqの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
+    //             "settlementの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
     //             "1234".to_string(),
     //             "456".to_string(),
     //             "789".to_string(),
@@ -1045,11 +1044,11 @@ mod tests {
     //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     // }
 
-    // fn create_dummy_1_failed_expired_consultation_req(
+    // fn create_dummy_1_failed_expired_settlement(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id = 1234;
-    //     let consultation_req = Settlement {
+    //     let settlement = Settlement {
     //         settlement_id,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -1075,7 +1074,7 @@ mod tests {
     //             .unwrap(),
     //     };
     //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(settlement_id, (consultation_req, false));
+    //     map.insert(settlement_id, (settlement, false));
     //     map
     // }
 
@@ -1086,7 +1085,7 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs: create_dummy_2_failed_expired_consultation_reqs(current_date_time),
+    //         settlements: create_dummy_2_failed_expired_settlements(current_date_time),
     //         current_date_time,
     //         limit: max_num_of_target_records,
     //     };
@@ -1098,7 +1097,7 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "consultation_reqの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
+    //             "settlementの期限切れレコード2個の内、2個の削除に失敗しました。".to_string(),
     //             "1234".to_string(),
     //             "456".to_string(),
     //             "789".to_string(),
@@ -1137,11 +1136,11 @@ mod tests {
     //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     // }
 
-    // fn create_dummy_2_failed_expired_consultation_reqs(
+    // fn create_dummy_2_failed_expired_settlements(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id1 = 1234;
-    //     let consultation_req1 = Settlement {
+    //     let settlement1 = Settlement {
     //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -1168,7 +1167,7 @@ mod tests {
     //     };
 
     //     let settlement_id2 = 56;
-    //     let consultation_req2 = Settlement {
+    //     let settlement2 = Settlement {
     //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
@@ -1195,8 +1194,8 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(settlement_id1, (consultation_req1, false));
-    //     map.insert(settlement_id2, (consultation_req2, false));
+    //     map.insert(settlement_id1, (settlement1, false));
+    //     map.insert(settlement_id2, (settlement2, false));
     //     map
     // }
 
@@ -1207,8 +1206,8 @@ mod tests {
     //         .unwrap();
     //     let max_num_of_target_records = 0;
     //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         consultation_reqs:
-    //             create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
+    //         settlements:
+    //             create_dummy_1_failed_expired_settlement_and_1_expired_settlement(
     //                 current_date_time,
     //             ),
     //         current_date_time,
@@ -1222,7 +1221,7 @@ mod tests {
     //             WEB_SITE_NAME
     //         ),
     //         vec![
-    //             "consultation_reqの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
+    //             "settlementの期限切れレコード2個の内、1個の削除に失敗しました。".to_string(),
     //             "56".to_string(),
     //             "32".to_string(),
     //             "87".to_string(),
@@ -1256,11 +1255,11 @@ mod tests {
     //     assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     // }
 
-    // fn create_dummy_1_failed_expired_consultation_req_and_1_expired_consultation_req(
+    // fn create_dummy_1_failed_expired_settlement_and_1_expired_settlement(
     //     current_date_time: DateTime<FixedOffset>,
     // ) -> HashMap<i64, (Settlement, bool)> {
     //     let settlement_id1 = 1234;
-    //     let consultation_req1 = Settlement {
+    //     let settlement1 = Settlement {
     //         settlement_id: settlement_id1,
     //         user_account_id: 456,
     //         consultant_id: 789,
@@ -1288,7 +1287,7 @@ mod tests {
     //     };
 
     //     let settlement_id2 = 56;
-    //     let consultation_req2 = Settlement {
+    //     let settlement2 = Settlement {
     //         settlement_id: settlement_id2,
     //         user_account_id: 32,
     //         consultant_id: 87,
@@ -1315,8 +1314,8 @@ mod tests {
     //     };
 
     //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(settlement_id1, (consultation_req1, true));
-    //     map.insert(settlement_id2, (consultation_req2, false));
+    //     map.insert(settlement_id1, (settlement1, true));
+    //     map.insert(settlement_id2, (settlement2, false));
     //     map
     // }
 }
