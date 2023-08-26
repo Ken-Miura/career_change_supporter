@@ -600,59 +600,59 @@ mod tests {
         map
     }
 
-    // #[tokio::test]
-    // async fn make_payment_of_unhandled_settlement_success3() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 1;
-    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         settlements: create_dummy_1_expired_settlement(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn make_payment_of_unhandled_settlement_success3() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 1;
+        let op = MakePaymentOfUnhandledSettlementOperationMock {
+            settlements: create_dummy_1_unhandled_settlement(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = make_payment_of_unhandled_settlement(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = make_payment_of_unhandled_settlement(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 1);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 1);
+    }
 
-    // #[tokio::test]
-    // async fn make_payment_of_unhandled_settlement_success4() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 2;
-    //     let op = MakePaymentOfUnhandledSettlementOperationMock {
-    //         settlements: create_dummy_1_expired_settlement(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn make_payment_of_unhandled_settlement_success4() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 27, 8, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 2;
+        let op = MakePaymentOfUnhandledSettlementOperationMock {
+            settlements: create_dummy_1_unhandled_settlement(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = make_payment_of_unhandled_settlement(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = make_payment_of_unhandled_settlement(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 1);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 1);
+    }
 
     // #[tokio::test]
     // async fn make_payment_of_unhandled_settlement_success5() {
