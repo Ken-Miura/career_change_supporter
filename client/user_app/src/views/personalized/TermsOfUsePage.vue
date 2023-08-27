@@ -1,15 +1,15 @@
 <template>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 class="text-xl lg:text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main class="flex flex-col justify-center bg-white max-w-3xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <TermsOfUse/>
-      <div data-test="terms-of-use-agreement-area" class="flex justify-center mt-6">
-        <router-link to="/" class="mr-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意しない</router-link>
-        <button v-on:click="agreeTermsOfUseHandler" class="ml-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">利用規約に同意する</button>
+      <div data-test="terms-of-use-agreement-area" class="flex justify-center mt-2">
+        <router-link to="/" class="mr-3 text-base lg:text-xl bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">同意しない</router-link>
+        <button v-on:click="agreeTermsOfUseHandler" class="ml-3 text-base lg:text-xl bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">同意する</button>
       </div>
       <AlertMessage v-bind:class="['mt-6', { 'hidden': isHidden }]" v-bind:message="errorMessage"/>
     </main>

@@ -64,7 +64,7 @@ describe('TermsOfUsePage.vue', () => {
     })
     const area = wrapper.find('[data-test="terms-of-use-agreement-area"]')
     const button = area.find('button')
-    expect(button.text()).toContain('利用規約に同意する')
+    expect(button.text()).toContain('同意する')
     await button.trigger('click')
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
@@ -83,7 +83,7 @@ describe('TermsOfUsePage.vue', () => {
     })
     const area = wrapper.find('[data-test="terms-of-use-agreement-area"]')
     const link = area.findComponent(RouterLinkStub)
-    expect(link.text()).toContain('利用規約に同意しない')
+    expect(link.text()).toContain('同意しない')
     expect(link.props().to).toBe('/')
   })
 
