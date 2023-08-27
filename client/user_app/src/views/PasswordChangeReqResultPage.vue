@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 class="text-xl lg:text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="flex justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main class="flex justify-center bg-white max-w-lg mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <div class="flex flex-col justify-center">
-        <p data-test="title" class="font-bold text-xl">まだパスワード変更は完了していません</p>
-        <p data-test="message" class="mt-4 font-bold text-lg">
+        <p data-test="title" class="font-bold text-lg lg:text-xl">まだパスワード変更は完了していません</p>
+        <p data-test="message" class="mt-4 font-bold text-base lg:text-lg">
           指定されたメールアドレスにパスワード変更用のURLを記載したメールを送信しました。メールに記載されたURLにアクセスし、パスワード変更を完了させて下さい。
         </p>
         <div class="mt-4" role="note">
