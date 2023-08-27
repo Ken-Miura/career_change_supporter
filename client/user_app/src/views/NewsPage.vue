@@ -1,8 +1,8 @@
 <template>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 class="text-xl lg:text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
     <div>
@@ -10,21 +10,21 @@
         <WaitingCircle />
       </div>
       <main v-else>
-        <div v-if="!errMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="news-label" class="font-bold text-2xl">お知らせ</h3>
-          <div data-test="no-news-found" class="mt-6 ml-2 text-xl" v-if="newsArray.length === 0">お知らせはありません</div>
+        <div v-if="!errMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="news-label" class="font-bold text-xl lg:text-2xl">お知らせ</h3>
+          <div data-test="no-news-found" class="mt-6 ml-2 text-base lg:text-xl" v-if="newsArray.length === 0">お知らせはありません</div>
           <div v-else>
             <ul>
               <li v-for="news in newsArray" v-bind:key="news.news_id">
                 <div v-bind:data-test="'news-id-' + news.news_id" class="mt-6 ml-2">
-                  <h2 data-test="title" class="font-bold text-xl">{{ news.published_date_in_jst.year }}年{{ news.published_date_in_jst.month }}月{{ news.published_date_in_jst.day }}日 【{{ news.title }}】</h2>
-                  <p data-test="body" class="mt-2 ml-4 text-xl whitespace-pre-wrap">{{ news.body }}</p>
+                  <h2 data-test="title" class="font-bold text-base lg:text-xl">{{ news.published_date_in_jst.year }}年{{ news.published_date_in_jst.month }}月{{ news.published_date_in_jst.day }}日 【{{ news.title }}】</h2>
+                  <p data-test="body" class="mt-2 ml-2 text-base lg:text-xl whitespace-pre-wrap">{{ news.body }}</p>
                 </div>
               </li>
             </ul>
           </div>
         </div>
-        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage v-bind:message="errMessage"/>
         </div>
       </main>
