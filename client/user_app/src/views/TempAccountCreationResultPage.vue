@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 class="text-xl lg:text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
-    <main class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main class="bg-white max-w-lg mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <div class="flex flex-col justify-center">
-        <p data-test="title" class="font-bold text-2xl">まだ新規登録は完了していません</p>
-        <p data-test="message" class="mt-4 font-bold text-lg">
+        <p data-test="title" class="font-bold text-lg lg:text-2xl">まだ新規登録は完了していません</p>
+        <p data-test="message" class="mt-4 font-bold text-base lg:text-lg">
           指定されたメールアドレスにメールを送信しました。メールに記載されたURLをクリックし、新規登録を完了させて下さい。
         </p>
         <div class="mt-4" role="note">
