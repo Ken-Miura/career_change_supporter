@@ -4,7 +4,7 @@
     <nav class="fixed w-full z-30 top-0 text-white bg-gradient-to-r from-gray-500 to-gray-900">
       <div class="w-full container mx-auto flex flex-wrap items-center justify-between mt-0 py-2">
         <div class="pl-4 flex items-center">
-          <p class="toggleColour text-white no-underline hover:no-underline font-bold text-2xl lg:text-4xl">
+          <p class="toggleColour text-white no-underline hover:no-underline font-bold text-lg lg:text-4xl">
             就職先・転職先を見極めるためのサイト
           </p>
         </div>
@@ -33,32 +33,32 @@
       <hr class="border-b border-gray-100 opacity-25 my-0 py-0" />
     </nav>
     <!--Hero-->
-    <div class="pt-24">
-      <div class="container px-3 mx-auto flex flex-wrap flex-col md:flex-row items-center">
+    <div class="pt-12 lg:pt-24">
+      <div class="container px-3 mx-auto flex flex-wrap flex-col lg:flex-row items-center">
         <!--Left Col-->
-        <div class="flex flex-col w-full md:w-2/5 justify-center items-start text-center md:text-left">
-          <h1 class="my-4 text-3xl font-bold leading-tight">
+        <div class="flex flex-col w-full lg:w-2/5 justify-center items-start text-left">
+          <h1 class="my-4 text-lg lg:text-3xl font-bold leading-tight">
             就職先・転職先を選ぶ手助けに
           </h1>
-          <p class="leading-normal text-xl mb-8">
+          <p class="leading-normal text-base lg:text-xl mb-4 lg:mb-8">
             いざ働いてみると、求人票に書かれていたことと違う、職場の雰囲気が想像していたものと違うなど、働いてみて初めてわかる問題に遭遇したことはありませんか？このサイトは、そのような問題を避けて、就職、転職後のミスマッチを減らす支援をする目的で開設されました。
           </p>
-          <h1 class="my-4 text-3xl font-bold leading-tight">
+          <h1 class="my-4 text-lg lg:text-3xl font-bold leading-tight">
             匿名でのやり取り
           </h1>
-          <p class="leading-normal text-xl mb-8">
+          <p class="leading-normal text-base lg:text-xl mb-8">
             働いてみて初めてわかる問題は、実際に働いている方（働いたことのある方）に事前に相談することで回避できる可能性があります。そのため、このサイトでは、就職先、転職先について確認がしたいユーザーと、そのユーザーが確認したい就職先、転職先で働いている（働いたことがある）ユーザーをマッチングさせ、相談の場を提供することで問題の回避を支援します。マッチングから相談まで、やり取りは匿名（※1）（※2）で行うことが出来、お互いに素性を知られることなく、安心して相談が可能です。
           </p>
-          <p class="leading-normal text-xl mb-8">
+          <p class="leading-normal text-base lg:text-xl mb-4 lg:mb-8">
             （※1）相談をしたいユーザーの相談申し込みの判断に利用されるため、相談を受けるユーザーの職務経歴は公開されます。
           </p>
-          <p class="leading-normal text-xl mb-8">
+          <p class="leading-normal text-base lg:text-xl mb-8">
             （※2）相談は音声のやり取りで行います。そのため、相談を行う際はマイクとスピーカーが必要となります（映像は利用しないため、カメラは不要です）相談の際の音声は加工されてから相手に送られます。
           </p>
         </div>
         <!--Right Col-->
-        <div class="flex justify-center items-center w-full md:w-3/5 px-2 py-6 text-center">
-          <img class="w-full md:w-4/5" src="consultation.png" />
+        <div class="flex justify-center items-center w-full lg:w-3/5 px-2 py-6 text-center">
+          <img class="w-full lg:w-4/5" src="consultation.png" />
         </div>
       </div>
     </div>
@@ -79,19 +79,19 @@
     <!--Footer-->
     <footer class="bg-white">
       <div class="container text-center mx-auto px-8">
-        <div class="w-full flex flex-col md:flex-row py-6">
+        <div class="w-full flex flex-col lg:flex-row py-6">
           <div class="flex-1">
             <ul class="list-reset mb-6">
-              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+              <li class="mt-2 inline-block mr-2 lg:block lg:mr-0">
                 <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/published-terms-of-use">利用規約</router-link>
               </li>
-              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+              <li class="mt-2 inline-block mr-2 lg:block lg:mr-0">
                 <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/transaction-law">特定商取引法に基づく表記</router-link>
               </li>
-              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+              <li class="mt-2 inline-block mr-2 lg:block lg:mr-0">
                 <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>
               </li>
-              <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+              <li class="mt-2 inline-block mr-2 lg:block lg:mr-0">
                 <router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/oss-license">OSSライセンス表記</router-link>
               </li>
             </ul>
