@@ -536,53 +536,67 @@ mod tests {
         assert_eq!(num_deleted, 1);
     }
 
-    // #[tokio::test]
-    // async fn delete_expired_stopped_settlements_success5() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredStoppedSettlementsOperationMock {
-    //         stopped_settlements: create_dummy_2_expired_stopped_settlements(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn delete_expired_stopped_settlements_success5() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredStoppedSettlementsOperationMock {
+            stopped_settlements: create_dummy_2_expired_stopped_settlements(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_stopped_settlements(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_stopped_settlements(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 2);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 2);
+    }
 
-    // fn create_dummy_2_expired_stopped_settlements(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (StoppedSettlement, bool)> {
-    //     let stopped_settlement_id1 = 55;
-    //     let stopped_settlement1 = StoppedSettlement {
-    //         stopped_settlement_id: stopped_settlement_id1,
-    //         user_account_id: 702,
-    //         expired_at: current_date_time - Duration::seconds(1),
-    //     };
-    //     let stopped_settlement_id2 = 777;
-    //     let stopped_settlement2 = StoppedSettlement {
-    //         stopped_settlement_id: stopped_settlement_id2,
-    //         user_account_id: 90,
-    //         expired_at: current_date_time - Duration::seconds(1),
-    //     };
-    //     let mut map = HashMap::with_capacity(2);
-    //     map.insert(stopped_settlement_id1, (stopped_settlement1, true));
-    //     map.insert(stopped_settlement_id2, (stopped_settlement2, true));
-    //     map
-    // }
+    fn create_dummy_2_expired_stopped_settlements(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (StoppedSettlement, bool)> {
+        let stopped_settlement_id1 = 233;
+        let stopped_settlement1 = StoppedSettlement {
+            stopped_settlement_id: stopped_settlement_id1,
+            consultation_id: 123,
+            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
+            fee_per_hour_in_yen: 4500,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: current_date_time - Duration::seconds(1),
+            stopped_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 21, 0, 0)
+                .unwrap(),
+        };
+
+        let stopped_settlement_id2 = 77;
+        let stopped_settlement2 = StoppedSettlement {
+            stopped_settlement_id: stopped_settlement_id2,
+            consultation_id: 98,
+            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
+            fee_per_hour_in_yen: 3000,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: current_date_time - Duration::seconds(1),
+            stopped_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 21, 0, 0)
+                .unwrap(),
+        };
+
+        let mut map = HashMap::with_capacity(2);
+        map.insert(stopped_settlement_id1, (stopped_settlement1, true));
+        map.insert(stopped_settlement_id2, (stopped_settlement2, true));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_stopped_settlements_success6() {
