@@ -388,46 +388,52 @@ mod tests {
         assert_eq!(num_deleted, 0);
     }
 
-    // #[tokio::test]
-    // async fn delete_expired_stopped_settlements_success1() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredStoppedSettlementsOperationMock {
-    //         stopped_settlements: create_dummy_1_non_expired_stopped_settlement(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
-    //     let send_mail_mock =
-    //         SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
+    #[tokio::test]
+    async fn delete_expired_stopped_settlements_success1() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredStoppedSettlementsOperationMock {
+            stopped_settlements: create_dummy_1_non_expired_stopped_settlement(current_date_time),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        // 成功時はメールを送らないので、わざと失敗するような内容でモックを生成する
+        let send_mail_mock =
+            SendMailMock::new("".to_string(), "".to_string(), "".to_string(), vec![]);
 
-    //     let result = delete_expired_stopped_settlements(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_stopped_settlements(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let num_deleted = result.expect("failed to get Ok");
-    //     assert_eq!(num_deleted, 0);
-    // }
+        let num_deleted = result.expect("failed to get Ok");
+        assert_eq!(num_deleted, 0);
+    }
 
-    // fn create_dummy_1_non_expired_stopped_settlement(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (StoppedSettlement, bool)> {
-    //     let stopped_settlement_id = 1;
-    //     let stopped_settlement = StoppedSettlement {
-    //         stopped_settlement_id,
-    //         user_account_id: 10,
-    //         expired_at: current_date_time,
-    //     };
-    //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(stopped_settlement_id, (stopped_settlement, true));
-    //     map
-    // }
+    fn create_dummy_1_non_expired_stopped_settlement(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (StoppedSettlement, bool)> {
+        let stopped_settlement_id = 1;
+        let stopped_settlement = StoppedSettlement {
+            stopped_settlement_id,
+            consultation_id: 123,
+            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
+            fee_per_hour_in_yen: 4500,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: current_date_time,
+            stopped_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 21, 0, 0)
+                .unwrap(),
+        };
+        let mut map = HashMap::with_capacity(1);
+        map.insert(stopped_settlement_id, (stopped_settlement, true));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_stopped_settlements_success2() {
