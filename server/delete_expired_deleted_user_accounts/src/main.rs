@@ -128,7 +128,7 @@ async fn main_internal() {
         exit(APPLICATION_ERR)
     });
 
-    println!("{} deleted user accounts were deleted", deleted_num);
+    println!("{} deleted user account(s) were (was) deleted", deleted_num);
     exit(SUCCESS)
 }
 
@@ -175,7 +175,7 @@ async fn delete_expired_deleted_user_accounts(
             &delete_failed,
         );
         let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
+            "{} processed, {} failed (detail: {:?})",
             num_of_expired_deleted_user_accounts, num_of_delete_failed, delete_failed
         );
         send_mail
@@ -1084,7 +1084,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1 processed, 1 failed"));
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("test1@test.com"));
         assert!(err_message.contains("2023-08-05T13:24:56+09:00"));
@@ -1164,7 +1164,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("2 processed, 2 failed"));
 
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("test1@test.com"));
@@ -1268,7 +1268,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 1 were failed"));
+        assert!(err_message.contains("2 processed, 1 failed"));
 
         assert!(!err_message.contains("1234"));
         assert!(!err_message.contains("test1@test.com"));

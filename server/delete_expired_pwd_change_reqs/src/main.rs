@@ -94,7 +94,10 @@ async fn main_internal() {
         exit(APPLICATION_ERR)
     });
 
-    println!("{} pwd change reqs were deleted successfully", deleted_num);
+    println!(
+        "{} pwd change req(s) were (was) deleted successfully",
+        deleted_num
+    );
     exit(SUCCESS)
 }
 
@@ -138,7 +141,7 @@ async fn delete_expired_pwd_change_reqs(
             &delete_failed,
         );
         let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
+            "{} processed, {} failed (detail: {:?})",
             num_of_expired_pwd_change_reqs, num_of_delete_failed, delete_failed
         );
         send_mail
@@ -789,7 +792,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1 processed, 1 failed"));
         assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
     }
 
@@ -844,7 +847,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("2 processed, 2 failed"));
         assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
         assert!(err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     }
@@ -911,7 +914,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 1 were failed"));
+        assert!(err_message.contains("2 processed, 1 failed"));
         assert!(err_message.contains("b860dc5138d146ac8127b0780fabce7d"));
         assert!(!err_message.contains("a860dc5138d146ac8127b0780fbbce7g"));
     }

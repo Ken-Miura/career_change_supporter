@@ -94,7 +94,10 @@ async fn main_internal() {
         exit(APPLICATION_ERR)
     });
 
-    println!("{} temp mfa secrets were deleted successfully", deleted_num);
+    println!(
+        "{} temp mfa secret(s) were (was) deleted successfully",
+        deleted_num
+    );
     exit(SUCCESS)
 }
 
@@ -138,7 +141,7 @@ async fn delete_expired_temp_mfa_secrets(
             &delete_failed,
         );
         let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
+            "{} processed, {} failed (detail: {:?})",
             num_of_expired_temp_mfa_secrets, num_of_delete_failed, delete_failed
         );
         send_mail
@@ -775,7 +778,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1 processed, 1 failed"));
         assert!(err_message.contains("734"));
     }
 
@@ -828,7 +831,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("2 processed, 2 failed"));
         assert!(err_message.contains("45"));
         assert!(err_message.contains("567"));
     }
@@ -891,7 +894,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 1 were failed"));
+        assert!(err_message.contains("2 processed, 1 failed"));
         assert!(err_message.contains("333"));
         assert!(!err_message.contains("987"));
     }

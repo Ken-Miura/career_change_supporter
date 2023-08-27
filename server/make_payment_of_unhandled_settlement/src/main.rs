@@ -127,7 +127,7 @@ async fn main_internal() {
         exit(APPLICATION_ERR)
     });
 
-    println!("{} payments were made successfully", num_of_handled);
+    println!("{} payment(s) were (was) made successfully", num_of_handled);
     exit(SUCCESS)
 }
 
@@ -172,7 +172,7 @@ async fn make_payment_of_unhandled_settlement(
             &make_payment_failed,
         );
         let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
+            "{} processed, {} failed (detail: {:?})",
             num_of_unhandled_settlements, num_of_make_payment_failed, make_payment_failed
         );
         send_mail
@@ -963,7 +963,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1 processed, 1 failed"));
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("45"));
         assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
@@ -1043,7 +1043,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("2 processed, 2 failed"));
 
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("45"));
@@ -1142,7 +1142,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 1 were failed"));
+        assert!(err_message.contains("2 processed, 1 failed"));
 
         assert!(!err_message.contains("1234"));
         assert!(!err_message.contains("458"));

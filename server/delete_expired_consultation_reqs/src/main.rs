@@ -125,7 +125,7 @@ async fn main_internal() {
     });
 
     println!(
-        "{} consultation reqs were deleted and credit facilities were released successfully",
+        "{} consultation req(s) were (was) deleted and its credit facility was released successfully",
         deleted_num
     );
     exit(SUCCESS)
@@ -173,7 +173,7 @@ async fn delete_expired_consultation_reqs(
             &delete_failed,
         );
         let err_message = format!(
-            "{} were processed, {} were failed (detail: {:?})",
+            "{} processed, {} failed (detail: {:?})",
             num_of_expired_consultation_reqs, num_of_delete_failed, delete_failed
         );
         send_mail
@@ -1018,7 +1018,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("1 were processed, 1 were failed"));
+        assert!(err_message.contains("1 processed, 1 failed"));
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("456"));
         assert!(err_message.contains("789"));
@@ -1103,7 +1103,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 2 were failed"));
+        assert!(err_message.contains("2 processed, 2 failed"));
 
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("456"));
@@ -1222,7 +1222,7 @@ mod tests {
 
         let err = result.expect_err("failed to get Err");
         let err_message = err.to_string();
-        assert!(err_message.contains("2 were processed, 1 were failed"));
+        assert!(err_message.contains("2 processed, 1 failed"));
 
         assert!(!err_message.contains("1234"));
         assert!(!err_message.contains("456"));
