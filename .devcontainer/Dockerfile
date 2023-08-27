@@ -94,6 +94,69 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/admin
 ENV PATH="${PATH}:/home/admin-account-operator/workspace"
 ENTRYPOINT [ "admin_account" ]
 
+FROM application-base as delete-expired-consultation-reqs
+RUN useradd -m -s /bin/bash -U delete-expired-consultation-reqs-operator
+USER delete-expired-consultation-reqs-operator
+RUN mkdir -p /home/delete-expired-consultation-reqs-operator/workspace
+WORKDIR /home/delete-expired-consultation-reqs-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_consultation_reqs ./
+ENV PATH="${PATH}:/home/delete-expired-consultation-reqs-operator/workspace"
+ENTRYPOINT [ "delete_expired_consultation_reqs" ]
+
+FROM application-base as delete-expired-deleted-user-accounts
+RUN useradd -m -s /bin/bash -U delete-expired-deleted-user-accounts-operator
+USER delete-expired-deleted-user-accounts-operator
+RUN mkdir -p /home/delete-expired-deleted-user-accounts-operator/workspace
+WORKDIR /home/delete-expired-deleted-user-accounts-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_deleted_user_accounts ./
+ENV PATH="${PATH}:/home/delete-expired-deleted-user-accounts-operator/workspace"
+ENTRYPOINT [ "delete_expired_deleted_user_accounts" ]
+
+FROM application-base as delete-expired-pwd-change-reqs
+RUN useradd -m -s /bin/bash -U delete-expired-pwd-change-reqs-operator
+USER delete-expired-pwd-change-reqs-operator
+RUN mkdir -p /home/delete-expired-pwd-change-reqs-operator/workspace
+WORKDIR /home/delete-expired-pwd-change-reqs-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_pwd_change_reqs ./
+ENV PATH="${PATH}:/home/delete-expired-pwd-change-reqs-operator/workspace"
+ENTRYPOINT [ "delete_expired_pwd_change_reqs" ]
+
+FROM application-base as delete-expired-stopped-settlements
+RUN useradd -m -s /bin/bash -U delete-expired-stopped-settlements-operator
+USER delete-expired-stopped-settlements-operator
+RUN mkdir -p /home/delete-expired-stopped-settlements-operator/workspace
+WORKDIR /home/delete-expired-stopped-settlements-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_stopped_settlements ./
+ENV PATH="${PATH}:/home/delete-expired-stopped-settlements-operator/workspace"
+ENTRYPOINT [ "delete_expired_stopped_settlements" ]
+
+FROM application-base as delete-expired-temp-accounts
+RUN useradd -m -s /bin/bash -U delete-expired-temp-accounts-operator
+USER delete-expired-temp-accounts-operator
+RUN mkdir -p /home/delete-expired-temp-accounts-operator/workspace
+WORKDIR /home/delete-expired-temp-accounts-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_accounts ./
+ENV PATH="${PATH}:/home/delete-expired-temp-accounts-operator/workspace"
+ENTRYPOINT [ "delete_expired_temp_accounts" ]
+
+FROM application-base as delete-expired-temp-mfa-secrets
+RUN useradd -m -s /bin/bash -U delete-expired-temp-mfa-secrets-operator
+USER delete-expired-temp-mfa-secrets-operator
+RUN mkdir -p /home/delete-expired-temp-mfa-secrets-operator/workspace
+WORKDIR /home/delete-expired-temp-mfa-secrets-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_mfa_secrets ./
+ENV PATH="${PATH}:/home/delete-expired-temp-mfa-secrets-operator/workspace"
+ENTRYPOINT [ "delete_expired_temp_mfa_secrets" ]
+
+FROM application-base as make-payment-of-unhandled-settlement
+RUN useradd -m -s /bin/bash -U make-payment-of-unhandled-settlement-operator
+USER make-payment-of-unhandled-settlement-operator
+RUN mkdir -p /home/make-payment-of-unhandled-settlement-operator/workspace
+WORKDIR /home/make-payment-of-unhandled-settlement-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/make_payment_of_unhandled_settlement ./
+ENV PATH="${PATH}:/home/make-payment-of-unhandled-settlement-operator/workspace"
+ENTRYPOINT [ "make_payment_of_unhandled_settlement" ]
+
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
 FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
