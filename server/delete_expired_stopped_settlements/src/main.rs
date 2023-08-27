@@ -182,8 +182,12 @@ trait DeleteExpiredStoppedSettlementsOperation {
 #[derive(Clone, Eq, PartialEq, Debug)]
 struct StoppedSettlement {
     stopped_settlement_id: i64,
-    user_account_id: i64,
-    expired_at: DateTime<FixedOffset>,
+    consultation_id: i64,
+    charge_id: String,
+    fee_per_hour_in_yen: i32,
+    platform_fee_rate_in_percentage: String,
+    credit_facilities_expired_at: DateTime<FixedOffset>,
+    stopped_at: DateTime<FixedOffset>,
 }
 
 struct DeleteExpiredStoppedSettlementsOperationImpl {
@@ -197,21 +201,26 @@ impl DeleteExpiredStoppedSettlementsOperation for DeleteExpiredStoppedSettlement
         current_date_time: DateTime<FixedOffset>,
         limit: Option<u64>,
     ) -> Result<Vec<StoppedSettlement>, Box<dyn Error>> {
-        todo!()
-        // let models = entity::stopped_settlement::Entity::find()
-        //     .filter(entity::stopped_settlement::Column::CreditFacilitiesExpiredAt.lt(current_date_time))
-        //     .limit(limit)
-        //     .all(&self.pool)
-        //     .await
-        //     .map_err(|e| format!("failed to get stopped_settlement: {}", e))?;
-        // Ok(models
-        //     .into_iter()
-        //     .map(|m| StoppedSettlement {
-        //         stopped_settlement_id: m.stopped_settlement_id,
-        //         user_account_id: m.user_account_id,
-        //         expired_at: m.expired_at,
-        //     })
-        //     .collect())
+        let models = entity::stopped_settlement::Entity::find()
+            .filter(
+                entity::stopped_settlement::Column::CreditFacilitiesExpiredAt.lt(current_date_time),
+            )
+            .limit(limit)
+            .all(&self.pool)
+            .await
+            .map_err(|e| format!("failed to get stopped_settlement: {}", e))?;
+        Ok(models
+            .into_iter()
+            .map(|m| StoppedSettlement {
+                stopped_settlement_id: m.stopped_settlement_id,
+                consultation_id: m.consultation_id,
+                charge_id: m.charge_id,
+                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
+                credit_facilities_expired_at: m.credit_facilities_expired_at,
+                stopped_at: m.stopped_at,
+            })
+            .collect())
     }
 
     async fn delete_stopped_settlement(
