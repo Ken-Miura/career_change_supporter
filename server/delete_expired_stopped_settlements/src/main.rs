@@ -801,57 +801,78 @@ mod tests {
         assert_eq!(num_deleted, 1);
     }
 
-    // #[tokio::test]
-    // async fn delete_expired_stopped_settlements_fail1() {
-    //     let current_date_time = JAPANESE_TIME_ZONE
-    //         .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
-    //         .unwrap();
-    //     let max_num_of_target_records = 0;
-    //     let op = DeleteExpiredStoppedSettlementsOperationMock {
-    //         stopped_settlements: create_dummy_1_failed_expired_stopped_settlement(current_date_time),
-    //         current_date_time,
-    //         limit: max_num_of_target_records,
-    //     };
-    //     let send_mail_mock = SendMailMock::new(
-    //         ADMIN_EMAIL_ADDRESS.to_string(),
-    //         SYSTEM_EMAIL_ADDRESS.to_string(),
-    //         format!(
-    //             "[{}] 定期実行ツール (delete_expired_stopped_settlements) 失敗通知",
-    //             WEB_SITE_NAME
-    //         ),
-    //         vec![
-    //             "stopped_settlementの期限切れレコード1個の内、1個の削除に失敗しました。".to_string(),
-    //             "734".to_string(),
-    //         ],
-    //     );
+    #[tokio::test]
+    async fn delete_expired_stopped_settlements_fail1() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 8, 5, 21, 00, 40)
+            .unwrap();
+        let max_num_of_target_records = 0;
+        let op = DeleteExpiredStoppedSettlementsOperationMock {
+            stopped_settlements: create_dummy_1_failed_expired_stopped_settlement(
+                current_date_time,
+            ),
+            current_date_time,
+            limit: max_num_of_target_records,
+        };
+        let send_mail_mock = SendMailMock::new(
+            ADMIN_EMAIL_ADDRESS.to_string(),
+            SYSTEM_EMAIL_ADDRESS.to_string(),
+            format!(
+                "[{}] 定期実行ツール (delete_expired_stopped_settlements) 失敗通知",
+                WEB_SITE_NAME
+            ),
+            vec![
+                "stopped_settlementの期限切れレコード1個の内、1個の削除に失敗しました。"
+                    .to_string(),
+                "111".to_string(),
+                "123".to_string(),
+                "ch_ea990a4c10672a93053a774730b0b".to_string(),
+                "4500".to_string(),
+                "30.0".to_string(),
+                "2023-08-05T21:00:39+09:00".to_string(),
+                "2023-06-23T21:00:00+09:00".to_string(),
+            ],
+        );
 
-    //     let result = delete_expired_stopped_settlements(
-    //         current_date_time,
-    //         max_num_of_target_records,
-    //         &op,
-    //         &send_mail_mock,
-    //     )
-    //     .await;
+        let result = delete_expired_stopped_settlements(
+            current_date_time,
+            max_num_of_target_records,
+            &op,
+            &send_mail_mock,
+        )
+        .await;
 
-    //     let err = result.expect_err("failed to get Err");
-    //     let err_message = err.to_string();
-    //     assert!(err_message.contains("1 processed, 1 failed"));
-    //     assert!(err_message.contains("734"));
-    // }
+        let err = result.expect_err("failed to get Err");
+        let err_message = err.to_string();
+        assert!(err_message.contains("1 processed, 1 failed"));
+        assert!(err_message.contains("111"));
+        assert!(err_message.contains("123"));
+        assert!(err_message.contains("ch_ea990a4c10672a93053a774730b0b"));
+        assert!(err_message.contains("4500"));
+        assert!(err_message.contains("30.0"));
+        assert!(err_message.contains("2023-08-05T21:00:39+09:00"));
+        assert!(err_message.contains("2023-06-23T21:00:00+09:00"));
+    }
 
-    // fn create_dummy_1_failed_expired_stopped_settlement(
-    //     current_date_time: DateTime<FixedOffset>,
-    // ) -> HashMap<i64, (StoppedSettlement, bool)> {
-    //     let stopped_settlement_id = 734;
-    //     let stopped_settlement = StoppedSettlement {
-    //         stopped_settlement_id,
-    //         user_account_id: 231,
-    //         expired_at: current_date_time - Duration::seconds(1),
-    //     };
-    //     let mut map = HashMap::with_capacity(1);
-    //     map.insert(stopped_settlement_id, (stopped_settlement, false));
-    //     map
-    // }
+    fn create_dummy_1_failed_expired_stopped_settlement(
+        current_date_time: DateTime<FixedOffset>,
+    ) -> HashMap<i64, (StoppedSettlement, bool)> {
+        let stopped_settlement_id = 111;
+        let stopped_settlement = StoppedSettlement {
+            stopped_settlement_id,
+            consultation_id: 123,
+            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
+            fee_per_hour_in_yen: 4500,
+            platform_fee_rate_in_percentage: "30.0".to_string(),
+            credit_facilities_expired_at: current_date_time - Duration::seconds(1),
+            stopped_at: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2023, 6, 23, 21, 0, 0)
+                .unwrap(),
+        };
+        let mut map = HashMap::with_capacity(1);
+        map.insert(stopped_settlement_id, (stopped_settlement, false));
+        map
+    }
 
     // #[tokio::test]
     // async fn delete_expired_stopped_settlements_fail2() {
