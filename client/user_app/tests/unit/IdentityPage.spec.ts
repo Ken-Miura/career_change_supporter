@@ -28,11 +28,13 @@ let imagesMock = reactive({
 })
 const onImage1StateChangeFuncMock = jest.fn()
 const onImage2StateChangeFuncMock = jest.fn()
+const resetImagesFuncMock = jest.fn()
 jest.mock('@/views/personalized/useImages', () => ({
   useImages: () => ({
     images: imagesMock,
     onImage1StateChange: onImage1StateChangeFuncMock,
-    onImage2StateChange: onImage2StateChangeFuncMock
+    onImage2StateChange: onImage2StateChangeFuncMock,
+    resetImages: resetImagesFuncMock
   })
 }))
 
@@ -72,6 +74,7 @@ describe('IdentityPage.vue', () => {
     getMaxImageJpegImageSizeInBytesMock.mockReturnValue(MAX_JPEG_IMAGE_SIZE_IN_BYTES)
     onImage1StateChangeFuncMock.mockReset()
     onImage2StateChangeFuncMock.mockReset()
+    resetImagesFuncMock.mockReset()
     routerPushMock.mockClear()
     storeCommitMock.mockClear()
     identityMock = null

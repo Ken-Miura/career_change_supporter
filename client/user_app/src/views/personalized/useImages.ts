@@ -6,6 +6,7 @@ export function useImages () {
     image1: null as File | null,
     image2: null as File | null
   })
+
   const onImage1StateChange = (e: Event) => {
     const target = (e && e.target)
     if (!(target instanceof HTMLInputElement)) {
@@ -28,6 +29,7 @@ export function useImages () {
     }
     images.image1 = files[0]
   }
+
   const onImage2StateChange = (e: Event) => {
     const target = (e && e.target)
     if (!(target instanceof HTMLInputElement)) {
@@ -50,9 +52,16 @@ export function useImages () {
     }
     images.image2 = files[0]
   }
+
+  const resetImages = () => {
+    images.image1 = null
+    images.image2 = null
+  }
+
   return {
     images,
     onImage1StateChange,
-    onImage2StateChange
+    onImage2StateChange,
+    resetImages
   }
 }

@@ -165,7 +165,8 @@ export default defineComponent({
     const {
       images,
       onImage1StateChange,
-      onImage2StateChange
+      onImage2StateChange,
+      resetImages
     } = useImages()
     const { waitingPostIdentityDone, postIdentityFunc } = usePostIdentity()
 
@@ -278,6 +279,8 @@ export default defineComponent({
       } catch (e) {
         isHidden.value = false
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        resetImages()
       }
     }
 

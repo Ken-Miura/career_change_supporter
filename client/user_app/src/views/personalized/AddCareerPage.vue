@@ -189,7 +189,8 @@ export default defineComponent({
     const {
       images,
       onImage1StateChange,
-      onImage2StateChange
+      onImage2StateChange,
+      resetImages
     } = useImages()
     const {
       form,
@@ -205,6 +206,7 @@ export default defineComponent({
     const yearList = createYearList(START_YEAR, currentYear)
     const monthList = createMonthList()
     const dayList = createDayList()
+
     onMounted(async () => {
       try {
         const resp = await refresh()
@@ -228,6 +230,7 @@ export default defineComponent({
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
+
     const submitCareer = async () => {
       if (images.image1 === null) {
         isHidden.value = false
@@ -320,8 +323,11 @@ export default defineComponent({
       } catch (e) {
         isHidden.value = false
         errorMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      } finally {
+        resetImages()
       }
     }
+
     return {
       submitCareer,
       isHidden,
