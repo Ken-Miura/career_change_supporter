@@ -1,24 +1,24 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getProfileDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="errorExists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="errorMessage"/>
         </div>
       </div>
       <div v-else>
-        <div data-test="email-address" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">Eメールアドレス</h3>
-          <p class="mt-2 text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
-          <p class="mt-4 ml-4 text-2xl">{{ emailAddress }}</p>
+        <div data-test="email-address" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">Eメールアドレス</h3>
+          <p class="mt-2 text-base lg:text-lg">登録したEメールアドレスです。他のユーザーに公開されることはありません。</p>
+          <p class="mt-4 ml-4 text-2xl lg:text-3xl">{{ emailAddress }}</p>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">ユーザー情報</h3>
-          <p class="mt-2 text-lg">本人確認のために利用される情報です（本人確認の完了後、相談申し込みが可能となります）ユーザー情報が他のユーザーに公開されることはありません。</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">ユーザー情報</h3>
+          <p class="mt-2 text-base lg:text-lg">本人確認のために利用される情報です（本人確認の完了後、相談申し込みが可能となります）ユーザー情報が他のユーザーに公開されることはありません。</p>
           <div v-if="identity !== null" data-test="identity-set" class="m-4 text-2xl grid grid-cols-3">
             <div class="mt-2 justify-self-start col-span-1">名前</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name }}　{{ identity.first_name }}</div>
             <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-2">{{ identity.last_name_furigana }}　{{ identity.first_name_furigana }}</div>
@@ -30,13 +30,13 @@
             <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-2">{{ identity.address_line2 }}</div>
             <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-2">{{ identity.telephone_number }}</div>
           </div>
-          <p v-else data-test="no-identity-set" class="m-4 text-xl">ユーザー情報が設定されていません。</p>
+          <p v-else data-test="no-identity-set" class="m-4 text-base lg:text-xl">ユーザー情報が設定されていません。</p>
           <button data-test="move-to-identity-page-button" v-on:click="moveToIdentityPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">ユーザー情報を編集する</button>
         </div>
-        <div data-test="career-descriptions" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">職務経歴</h3>
-          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。職務経歴は、最大{{ MAX_CAREER_NUM }}個まで登録可能です。</p>
-          <div v-if="careerDescriptions.length === 0" data-test="no-career-descriptions-set" class="mt-4 ml-4 text-xl">職務経歴は登録されていません。</div>
+        <div data-test="career-descriptions" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">職務経歴</h3>
+          <p class="mt-2 text-base lg:text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>入社日と退社日は在籍年数（3年未満、3年以上5年未満、5年以上10年未満、10年以上15年未満、15年以上20年未満、20年以上）という形に変換され、そのまま公開されることはありません。職務経歴は、最大{{ MAX_CAREER_NUM }}個まで登録可能です。</p>
+          <div v-if="careerDescriptions.length === 0" data-test="no-career-descriptions-set" class="mt-4 ml-4 text-lg lg:text-xl">職務経歴は登録されていません。</div>
           <div v-else data-test="career-descriptions-set">
             <ul>
               <li v-for="(careerDescription, index) in careerDescriptions" v-bind:key="careerDescription.career_id">
@@ -70,25 +70,25 @@
           <button data-test="move-to-add-career-page-button" v-on:click="moveToAddCareerPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を追加する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canAddCareer }]" v-bind:message="canAddCareerErrMessage"/>
         </div>
-        <div data-test="fee-per-hour-in-yen" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
-          <p class="mt-2 text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>相談料から本サイト利用の手数料（{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント）が差し引かれた金額が報酬として計上されます。</p>
+        <div data-test="fee-per-hour-in-yen" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">相談一回（１時間）の相談料</h3>
+          <p class="mt-2 text-base lg:text-lg">相談受け付けを行うために必要となる情報です。<span class=" text-red-500">相談申し込みの判断に使われるため、他のユーザーに公開されます。</span>相談料から本サイト利用の手数料（{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント）が差し引かれた金額が報酬として計上されます。</p>
           <div v-if="feePerHourInYen !== null" data-test="fee-per-hour-in-yen-set" class="flex justify-end">
             <p class="m-4 mr-10 text-3xl">{{ feePerHourInYen }}円</p>
           </div>
-          <p v-else data-test="no-fee-per-hour-in-yen-set" class="m-4 text-xl">相談料が設定されていません。</p>
+          <p v-else data-test="no-fee-per-hour-in-yen-set" class="m-4 text-lg lg:text-xl">相談料が設定されていません。</p>
           <button data-test="move-to-fee-per-hour-in-yen-page-button" v-on:click="moveToFeePerHourInYenPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談料を編集する</button>
           <AlertMessage v-bind:class="['mt-6', { 'hidden': canEditFeePerHourInYen }]" v-bind:message="canEditFeePerHourInYenErrMessage"/>
         </div>
-        <div data-test="mfa" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">二段階認証設定</h3>
+        <div data-test="mfa" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">二段階認証設定</h3>
           <div data-test="mfa-status" class="flex justify-end">
-            <p v-if="mfaEnabled" class="m-4 mr-10 text-3xl">有効</p>
-            <p v-else class="m-4 mr-10 text-3xl">無効</p>
+            <p v-if="mfaEnabled" class="m-4 mr-10 text-2xl lg:text-3xl">有効</p>
+            <p v-else class="m-4 mr-10 text-2xl lg:text-3xl">無効</p>
           </div>
           <button data-test="move-to-mfa-setting-page-button" v-on:click="moveToMfaSettingPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">設定を変更する</button>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <button data-test="move-to-delete-account-confirmation-page-button" v-on:click="moveToDeleteAccountConfirmationPage" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウントを削除する</button>
         </div>
       </div>
