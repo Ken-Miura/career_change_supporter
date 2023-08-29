@@ -6,7 +6,7 @@
       </router-link>
     </header>
     <main class="bg-white max-w-3xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-      <h1 class="font-bold text-2xl">OSSライセンス表記</h1>
+      <h1 class="font-bold text-xl lg:text-2xl">OSSライセンス表記</h1>
       <p class="mt-2">このWebサイトが含めているOSSに関して、そのライセンスに従い、必要な記載事項を下記に列挙します。</p>
       <div class="mt-4">
         <h2 class="font-bold"><a class="hover:underline" href="https://github.com/indutny/fft.js/">FFT.js</a></h2>
