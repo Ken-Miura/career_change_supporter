@@ -41,11 +41,11 @@
             <ul>
               <li v-for="(careerDescription, index) in careerDescriptions" v-bind:key="careerDescription.career_id">
                 <div class="mt-4">
-                  <div class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
-                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div class="mt-2 justify-self-start col-span-1">勤務先名称</div><div class="justify-self-start col-span-2">{{ careerDescription.company_name }}</div>
-                    <div class="mt-2 justify-self-start col-span-1">雇用形態</div>
-                    <div class="justify-self-start col-span-2">
+                  <div class="text-lg lg:text-xl bg-gray-600 text-white font-bold rounded-t px-4 py-2">職務経歴{{ index + 1 }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-lg lg:text-xl grid grid-cols-3">
+                    <div class="my-1 lg:my-2 justify-self-start col-span-1">勤務先名称</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ careerDescription.company_name }}</div>
+                    <div class="my-1 lg:my-2 justify-self-start col-span-1">雇用形態</div>
+                    <div class="my-1 lg:my-2 justify-self-start col-span-2">
                       <div v-if="careerDescription.contract_type === 'regular'">
                         正社員
                       </div>
@@ -59,8 +59,8 @@
                         その他
                       </div>
                     </div>
-                    <div class="mt-2 justify-self-start col-span-1">入社日</div><div class="justify-self-start col-span-2">{{ careerDescription.career_start_date.year }}年{{ careerDescription.career_start_date.month }}月{{ careerDescription.career_start_date.day }}日</div>
-                    <div v-if="careerDescription.career_end_date !== null" class="mt-2 justify-self-start col-span-1">退社日</div><div v-if="careerDescription.career_end_date !== null" class="justify-self-start col-span-2">{{ careerDescription.career_end_date.year }}年{{ careerDescription.career_end_date.month }}月{{ careerDescription.career_end_date.day }}日</div>
+                    <div class="my-1 lg:my-2 justify-self-start col-span-1">入社日</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ careerDescription.career_start_date.year }}年{{ careerDescription.career_start_date.month }}月{{ careerDescription.career_start_date.day }}日</div>
+                    <div v-if="careerDescription.career_end_date !== null" class="my-1 lg:my-2 justify-self-start col-span-1">退社日</div><div v-if="careerDescription.career_end_date !== null" class="my-1 lg:my-2 justify-self-start col-span-2">{{ careerDescription.career_end_date.year }}年{{ careerDescription.career_end_date.month }}月{{ careerDescription.career_end_date.day }}日</div>
                     <button data-test="move-to-career-detail-page-button" v-on:click="moveToCareerDetailPage(careerDescription.career_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
                   </div>
                 </div>
