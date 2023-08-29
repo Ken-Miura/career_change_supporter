@@ -24,10 +24,10 @@
             <div class="mt-2 justify-self-start col-span-1">フリガナ</div><div class="mt-2 justify-self-start col-span-1">{{ identity.last_name_furigana }}　{{ identity.first_name_furigana }}</div>
             <div class="mt-2 justify-self-start col-span-1">生年月日</div><div class="mt-2 justify-self-start col-span-1">{{ identity.date_of_birth.year }}年{{ identity.date_of_birth.month }}月{{ identity.date_of_birth.day }}日</div>
             <div class="mt-2 justify-self-start col-span-2">住所</div>
-            <div class="mt-2 ml-2 lg:ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-1">{{ identity.prefecture }}</div>
-            <div class="mt-2 ml-2 lg:ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-1">{{ identity.city }}</div>
-            <div class="mt-2 ml-2 lg:ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-1">{{ identity.address_line1 }}</div>
-            <div v-if="identity.address_line2 !== null" class="mt-2 ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-1">{{ identity.address_line2 }}</div>
+            <div class="mt-2 ml-1 lg:ml-3 justify-self-start col-span-1">都道府県</div><div class="mt-2 justify-self-start col-span-1">{{ identity.prefecture }}</div>
+            <div class="mt-2 ml-1 lg:ml-3 justify-self-start col-span-1">市区町村</div><div class="mt-2 justify-self-start col-span-1">{{ identity.city }}</div>
+            <div class="mt-2 ml-1 lg:ml-3 justify-self-start col-span-1">番地</div><div class="mt-2 justify-self-start col-span-1">{{ identity.address_line1 }}</div>
+            <div v-if="identity.address_line2 !== null" class="mt-2 ml-1 lg:ml-3 justify-self-start col-span-1">建物名・部屋番号</div><div v-if="identity.address_line2 !== null" class="mt-2 justify-self-start col-span-1">{{ identity.address_line2 }}</div>
             <div class="mt-2 justify-self-start col-span-1">電話番号</div><div class="mt-2 justify-self-start col-span-1">{{ identity.telephone_number }}</div>
           </div>
           <p v-else data-test="no-identity-set" class="m-4 text-base lg:text-xl">ユーザー情報が設定されていません。</p>
