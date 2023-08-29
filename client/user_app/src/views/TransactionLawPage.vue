@@ -6,45 +6,45 @@
       </router-link>
     </header>
     <main class="bg-white max-w-3xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-      <h1 class="font-bold text-2xl">特定商取引法に基づく表記</h1>
+      <h1 class="font-bold text-xl lg:text-2xl">特定商取引法に基づく表記</h1>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">事業者名</h2>
-        <p class="ml-2 text-lg">{{ businessOperatorName }}</p>
+        <h2 class="font-bold text-lg lg:text-xl">事業者名</h2>
+        <p class="ml-2 text-base lg:text-lg">{{ businessOperatorName }}</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">事業者の所在</h2>
-        <p class="ml-2 text-lg">〒{{ businessOperatorZipCode }}</p>
-        <p class="ml-2 text-lg">{{ businessOperatorAddress }}</p>
-        <p class="ml-2 text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
-        <p class="ml-2 text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
+        <h2 class="font-bold text-lg lg:text-xl">事業者の所在</h2>
+        <p class="ml-2 text-base lg:text-lg">〒{{ businessOperatorZipCode }}</p>
+        <p class="ml-2 text-base lg:text-lg">{{ businessOperatorAddress }}</p>
+        <p class="ml-2 text-base lg:text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
+        <p class="ml-2 text-base lg:text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">お問い合わせ先</h2>
-        <p class="ml-2 text-lg">{{ businessOperatorInquiryEmailAddress }}</p>
+        <h2 class="font-bold text-lg lg:text-xl">お問い合わせ先</h2>
+        <p class="ml-2 text-base lg:text-lg">{{ businessOperatorInquiryEmailAddress }}</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">相談料と手数料</h2>
-        <p class="ml-2 text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
-        <ol class="list-disc ml-8 text-lg">
+        <h2 class="font-bold text-lg lg:text-xl">相談料と手数料</h2>
+        <p class="ml-2 text-base lg:text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
+        <ol class="list-disc ml-8 text-base lg:text-lg">
           <li>プラットフォーム利用料：相談１回につき、相談料の{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント</li>
           <li>報酬の入金口座への振込手数料：{{ TRANSFER_FEE_IN_YEN }}円</li>
         </ol>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">お支払い方法</h2>
-        <p class="ml-2 text-lg">クレジットカード（Visa/Master/American Express/JCB/Diners Club/Discover）</p>
+        <h2 class="font-bold text-lg lg:text-xl">お支払い方法</h2>
+        <p class="ml-2 text-base lg:text-lg">クレジットカード（Visa/Master/American Express/JCB/Diners Club/Discover）</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">個人情報の取扱について</h2>
-        <p class="ml-2 text-lg"><router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>をご参照下さい。</p>
+        <h2 class="font-bold text-lg lg:text-xl">個人情報の取扱について</h2>
+        <p class="ml-2 text-base lg:text-lg"><router-link class="no-underline hover:underline text-gray-800 hover:text-gray-500" to="/privacy-policy">プライバシーポリシー</router-link>をご参照下さい。</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">返金、キャンセルについて</h2>
-        <p class="ml-2 text-lg">サービスの特性上、決済後の返金・キャンセルはお受けできません。</p>
+        <h2 class="font-bold text-lg lg:text-xl">返金、キャンセルについて</h2>
+        <p class="ml-2 text-base lg:text-lg">サービスの特性上、決済後の返金・キャンセルはお受けできません。</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-xl">サービスの提供時期</h2>
-        <p class="ml-2 text-lg">相談を申し込みたい方と相談を受け付けたい方が合意した開始時刻に相談を行うことが可能になります。</p>
+        <h2 class="font-bold text-lg lg:text-xl">サービスの提供時期</h2>
+        <p class="ml-2 text-base lg:text-lg">相談を申し込みたい方と相談を受け付けたい方が合意した開始時刻に相談を行うことが可能になります。</p>
       </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
