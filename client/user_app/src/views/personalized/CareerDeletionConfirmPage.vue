@@ -1,18 +1,18 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!deleteCareerDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="error.exists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="error.message"/>
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <p data-test="delete-confirm-label" class="text-xl">遷移前に表示していた職務経歴を削除します。削除後は元に戻せないためご注意下さい。</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <p data-test="delete-confirm-label" class="text-base lg:text-xl">遷移前に表示していた職務経歴を削除します。削除後は元に戻せないためご注意下さい。</p>
           <button data-test="delete-career-button" v-on:click="deleteCareer" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">職務経歴を削除する</button>
         </div>
       </div>
