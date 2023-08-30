@@ -1,8 +1,8 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-      <h3 class="font-bold text-lg text-center">{{ message }}</h3>
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
+    <main class="flex flex-col justify-center bg-white max-w-lg mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+      <h3 class="font-bold text-lg lg:text-xl text-center">{{ message }}</h3>
     </main>
     <footer class="max-w-lg mx-auto flex flex-col text-white">
       <router-link to="/profile" class="hover:underline text-center">プロフィールへ</router-link>
