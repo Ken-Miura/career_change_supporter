@@ -1,22 +1,22 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!(getTempMfaSecretDone && postEnableMfaReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="errMessageOnOpen" class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="errMessageOnOpen" class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <AlertMessage v-bind:message="errMessageOnOpen"/>
       </div>
-      <div v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-else class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 data-test="description" class="font-bold text-xl">下記の手順を実施して二段階認証を有効化して下さい。</h3>
-        <ol class="mt-4 ml-6 list-decimal font-bold text-xl">
+        <ol class="mt-4 ml-6 list-decimal font-bold text-base lg:text-xl">
           <li data-test="qr-code-label" class="mt-2">認証アプリを起動し、QRコードを読み込んで下さい。</li>
           <div class="flex justify-center w-full">
             <img data-test="qr-code-value" class="mt-2" v-bind:src="base64EncodedImageUrl" />
           </div>
-          <p data-test="secret-label" class="mt-2 text-lg">QRコードが読み込めない場合、次の文字列をキーとして手動で入力して下さい。</p>
-          <p data-test="secret-value" class="mt-2 ml-2 text-lg">{{ base32EncodedSecret }}</p>
+          <p data-test="secret-label" class="mt-2">QRコードが読み込めない場合、次の文字列をキーとして認証アプリに手動で入力して下さい。</p>
+          <p data-test="secret-value" class="mt-2 ml-1 lg:ml-2 text-sm lg:text-xl">{{ base32EncodedSecret }}</p>
           <li data-test="pass-code-label" class="mt-4">認証アプリに表示された数値を入力して、下記の送信を押して下さい。</li>
           <form @submit.prevent="submitPassCodeToEnableMfa">
             <PassCodeInput @on-pass-code-updated="setPassCode"/>

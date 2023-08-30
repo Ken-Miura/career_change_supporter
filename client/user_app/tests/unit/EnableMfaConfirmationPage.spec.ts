@@ -122,7 +122,7 @@ describe('EnableMfaConfirmationPage.vue', () => {
     const qrCodeValue = wrapper.find('[data-test="qr-code-value"]')
     expect(qrCodeValue.attributes('src')).toContain(`data:image/png;base64,${tempMfaSecret.base64_encoded_image}`)
     const secretLabel = wrapper.find('[data-test="secret-label"]')
-    expect(secretLabel.text()).toContain('QRコードが読み込めない場合、次の文字列をキーとして手動で入力して下さい。')
+    expect(secretLabel.text()).toContain('QRコードが読み込めない場合、次の文字列をキーとして認証アプリに手動で入力して下さい。')
     const secretValue = wrapper.find('[data-test="secret-value"]')
     expect(secretValue.text()).toContain(`${tempMfaSecret.base32_encoded_secret}`)
     const passCodeLabel = wrapper.find('[data-test="pass-code-label"]')
