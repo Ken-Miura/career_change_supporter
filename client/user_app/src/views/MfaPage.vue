@@ -1,14 +1,14 @@
 <template>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <header class="max-w-lg mx-auto">
       <router-link to="/">
-        <h1 data-test="header" class="text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
+        <h1 data-test="header" class="text-xl lg:text-2xl font-bold text-white text-center">就職先・転職先を見極めるためのサイト</h1>
       </router-link>
     </header>
     <div v-if="!postPassCodeDone" class="m-6">
       <WaitingCircle />
     </div>
-    <main v-else class="bg-white max-w-lg mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main v-else class="bg-white max-w-lg mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <section>
         <h3 data-test="login-label" class="font-bold text-2xl">ログイン</h3>
       </section>
