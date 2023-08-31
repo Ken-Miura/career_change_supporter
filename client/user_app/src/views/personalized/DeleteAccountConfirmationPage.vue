@@ -1,21 +1,21 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!(refreshDone && deleteAccountDone)" class="m-6">
       <WaitingCircle />
     </div>
-    <main v-else class="flex flex-col justify-center bg-white max-w-xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+    <main v-else class="flex flex-col justify-center bg-white max-w-xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <div v-if="refreshErrorMessage">
         <AlertMessage class="mt-2" v-bind:message="refreshErrorMessage"/>
       </div>
       <div v-else>
         <h3 data-test="label" class="font-bold text-2xl">アカウントの削除</h3>
         <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
-          <p data-test="confirmation-label">確認事項</p>
+          <p data-test="confirmation-label" class="text-xl lg:text-2xl">確認事項</p>
           <p data-test="confirmation-description" class="mt-2 ml-2 text-lg">私は下記に記載の内容を理解した上でアカウントの削除を行います。</p>
         </div>
         <div class="mt-2 min-w-full justify-self-start col-span-6 rounded bg-gray-200">
-          <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
+          <div class="p-4 text-lg lg:text-xl grid grid-cols-6 justify-center items-center">
             <div class="col-span-5">
               <ul class="ml-4 space-y-2 list-disc">
                 <li data-test="first-confirmation">未入金の報酬を受け取れなくなる可能性があることを理解しています。</li>
