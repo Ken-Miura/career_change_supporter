@@ -1,52 +1,52 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!postBankAccountDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">報酬の入金口座</h3>
+      <div class="flex flex-col justify-center bg-white max-w-xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-xl lg:text-2xl">報酬の入金口座</h3>
         <form @submit.prevent="submitBankAccount">
-          <div class="m-4 text-2xl grid grid-cols-6">
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+          <div class="m-4 text-xl lg:text-2xl grid grid-cols-6">
+            <div class="mt-2 justify-self-start col-span-6 pt-3">
               銀行コード
             </div>
             <div data-test="bank-code-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="bankAccount.bank_code" v-on:input="setBankCode" type="text" required minlength="4" maxlength="4" pattern="\d*" title="半角数字4桁でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+            <div class="mt-2 justify-self-start col-span-6 pt-3">
               支店コード
             </div>
             <div data-test="branch-code-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="bankAccount.branch_code" v-on:input="setBranchCode" type="text" required minlength="3" maxlength="3" pattern="\d*" title="半角数字3桁でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+            <div class="mt-2 justify-self-start col-span-6 pt-3">
               <p>預金種別</p>
-              <p class="text-lg">預金種別は普通のみサポートしております</p>
+              <p class="ml-1 text-lg">預金種別は普通のみサポートしております</p>
             </div>
             <div data-test="account-type-div" class="mt-2 min-w-full text-right justify-self-start col-span-6 pt-3">
               <label class="rounded w-full px-3 pb-3 mr-4">{{ bankAccount.account_type }}</label>
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+            <div class="mt-2 justify-self-start col-span-6 pt-3">
               口座番号
             </div>
             <div data-test="account-number-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="bankAccount.account_number" v-on:input="setAccountNumber" type="text" required minlength="7" maxlength="8" pattern="\d*" title="半角数字7桁または8桁でご入力下さい。" class="text-right bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-2 text-2xl justify-self-start col-span-6 pt-3">
+            <div class="mt-2 justify-self-start col-span-6 pt-3">
               <p>口座名義</p>
-              <p class="text-lg">全角カタカナと全角空白のみを使い、セイとメイの間に全角空白を入れて下さい</p>
+              <p class="ml-1 text-lg">全角カタカナと全角空白のみを使い、セイとメイの間に全角空白を入れて下さい</p>
             </div>
             <div data-test="account-holder-name-div" class="mt-2 min-w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <input v-bind:value="bankAccount.account_holder_name" v-on:input="setAccountHolderName" type="text" required minlength="3" maxlength="129" pattern="^[ァ-ヴー　]+$" title="全角カタカナと全角空白のみで、3文字以上129文字以内でご入力下さい。" class="bg-gray-200 rounded w-full text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500 px-3 pb-3">
             </div>
-            <div class="mt-6 text-2xl justify-self-start col-span-6 pt-3">
+            <div class="mt-6 justify-self-start col-span-6 pt-3">
               <p>確認事項</p>
-              <p class="text-lg">入金口座を設定、変更するためには、下記に記載の内容が正しいことを確認し、チェックをつけて下さい</p>
+              <p class="ml-1 text-lg">入金口座を設定、変更するためには、下記に記載の内容が正しいことを確認し、チェックをつけて下さい</p>
             </div>
             <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-              <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
+              <div class="m-4 text-lg grid grid-cols-6 justify-center items-center">
                 <div class="col-span-5">私は営利目的の事業者、または個人事業主ではありません</div>
                 <input data-test="no-profit-objective-check" v-model="noProfitObjective" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
               </div>
