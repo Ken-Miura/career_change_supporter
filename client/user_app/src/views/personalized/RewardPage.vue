@@ -14,12 +14,12 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-xl lg:text-2xl">報酬の入金口座</h3>
           <p class="mt-2 text-base lg:text-xl">受け取った報酬を入金するための口座で、相談受け付けを行うために必要となる情報です。他のユーザーに公開されることはありません。ユーザー情報で本人確認が完了した姓名と異なる名義の口座は設定できません。</p>
-          <div v-if="bankAccount !== null" data-test="bank-account-set" class="m-4 text-xl lg:text-2xl grid grid-cols-3">
-            <div class="mt-2 justify-self-start col-span-1">銀行コード</div><div class="justify-self-start col-span-2">{{ bankAccount.bank_code }}</div>
-            <div class="mt-2 justify-self-start col-span-1">支店コード</div><div class="justify-self-start col-span-2">{{ bankAccount.branch_code }}</div>
-            <div class="mt-2 justify-self-start col-span-1">預金種別</div><div class="justify-self-start col-span-2">{{ bankAccount.account_type }}</div>
-            <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
-            <div class="mt-2 justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
+          <div v-if="bankAccount !== null" data-test="bank-account-set" class="m-4 text-xl lg:text-2xl grid grid-cols-2">
+            <div class="justify-self-start col-span-1">銀行コード</div><div class="justify-self-start col-span-1">{{ bankAccount.bank_code }}</div>
+            <div class="justify-self-start col-span-1">支店コード</div><div class="justify-self-start col-span-1">{{ bankAccount.branch_code }}</div>
+            <div class="justify-self-start col-span-1">預金種別</div><div class="justify-self-start col-span-1">{{ bankAccount.account_type }}</div>
+            <div class="justify-self-start col-span-1">口座番号</div><div class="justify-self-start col-span-1">{{ bankAccount.account_number }}</div>
+            <div class="justify-self-start col-span-1">口座名義</div><div class="justify-self-start col-span-1">{{ bankAccount.account_holder_name }}</div>
           </div>
           <p v-else data-test="no-bank-account-set" class="m-4 text-base lg:text-xl">報酬の入金口座が設定されていません。</p>
           <button v-on:click="moveToBankAccountPage" data-test="move-to-bank-account-page-button" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬の入金口座を編集する</button>
@@ -28,7 +28,7 @@
           <h3 class="font-bold text-xl lg:text-2xl">今月の報酬の合計</h3>
           <p class="mt-2 text-base lg:text-xl">今月行った相談の報酬の合計です。他のユーザーに公開されることはありません。</p>
           <div v-if="rewardsOfTheMonth !== null" data-test="rewards-of-the-month-set" class="flex justify-end">
-            <p class="m-4 text-2xl">{{ rewardsOfTheMonth }}円</p>
+            <p class="m-4 text-2xl lg:text-3xl">{{ rewardsOfTheMonth }}円</p>
           </div>
           <p v-else data-test="no-rewards-of-the-month-set" class="m-4 text-base lg:text-xl">まだ相談を受け付けていません。</p>
         </div>
@@ -36,7 +36,7 @@
           <h3 class="font-bold text-xl lg:text-2xl">今年（1月〜12月）の報酬の合計</h3>
           <p class="mt-2 text-base lg:text-xl">今年（1月〜12月）行った相談の報酬の合計です。他のユーザーに公開されることはありません。入金の際にかかった振込手数料は考慮されていないため、今年入金された額を正確に把握したい場合、設定した入金口座の明細をご確認下さい。今年の報酬の合計が{{ MAX_REWARDS_PER_YEAR_IN_MAN_YEN }}万円を超えるような新規の相談の受け付けはできません。次の年の１月１日に今年の報酬の合計はリセットされます。</p>
           <div v-if="rewardsOfTheYear !== null" data-test="rewards-of-the-year-set" class="flex justify-end">
-            <p class="m-4 text-2xl">{{ rewardsOfTheYear }}円</p>
+            <p class="m-4 text-2xl lg:text-3xl">{{ rewardsOfTheYear }}円</p>
           </div>
           <p v-else data-test="no-rewards-of-the-year-set" class="m-4 text-base lg:text-xl">まだ相談を受け付けていません。</p>
         </div>
