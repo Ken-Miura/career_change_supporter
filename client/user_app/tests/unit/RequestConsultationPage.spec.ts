@@ -89,12 +89,14 @@ const createPayJpMockObject = {
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       create: (type: string, options?: object): any => {
-        expect(type).toBe('card')
+        if (type !== 'cardNumber' && type !== 'cardExpiry' && type !== 'cardCvc') {
+          throw new Error(`No type (${type}) allowed`)
+        }
         expect(options).toStrictEqual({
           style: {
             base: {
               color: 'black',
-              fontSize: (fontSize * 1.5) + 'px'
+              fontSize: (fontSize * 1.25) + 'px'
             },
             invalid: {
               color: 'red'
@@ -103,7 +105,9 @@ const createPayJpMockObject = {
         })
         return {
           mount: (domElement: string) => {
-            expect(domElement).toBe('#payjp-card-area')
+            if (domElement !== '#payjp-card-number-area' && domElement !== '#payjp-card-expiry-area' && domElement !== '#payjp-card-cvc-area') {
+              throw new Error(`No domElement (${domElement}) allowed`)
+            }
           }
         }
       }

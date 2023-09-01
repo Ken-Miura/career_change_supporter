@@ -126,8 +126,10 @@
             <div data-test="fee-per-hour-in-yen" class="mt-2 justify-self-start col-span-3">相談一回（１時間）の相談料</div><div data-test="fee-per-hour-in-yen-value" class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
           </div>
           <h3 data-test="card-label" class="mt-4 font-bold text-xl lg:text-2xl">クレジットカード</h3>
-          <div data-test="card-area" class="m-4 text-2xl flex flex-col">
-            <div class="mt-2 w-5/6" id="payjp-card-area"></div>
+          <div data-test="card-area" class="m-2 flex flex-col">
+            <div class="mt-3" id="payjp-card-number-area"></div>
+            <div class="mt-3" id="payjp-card-expiry-area"></div>
+            <div class="mt-3" id="payjp-card-cvc-area"></div>
           </div>
           <h3 data-test="notice" class="mt-6 ml-2 text-red-500 text-base lg:text-xl">相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。</h3>
           <button data-test="apply-for-consultation-btn" v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
@@ -199,9 +201,13 @@ export default defineComponent({
     const minDurationInDays = getMinDurationBeforeConsultationInDays()
     const maxDurationInDays = getMaxDurationBeforeConsultationInDays()
     const { candidates, allCandidatesAreNotEmpty, sameCandidatesExist } = useCandidate()
-    // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
+    // PAY.JPから型定義が提供されていないため、カード情報に関してはanyでの扱いを許容する
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let cardElement = null as any
+    let cardNumberElement = null as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cardExpiryElement = null as any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let cardCvcElement = null as any
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
@@ -252,8 +258,8 @@ export default defineComponent({
           error.message = `${Message.UNEXPECTED_ERR}: elements is null`
           return
         }
-        const px = convertRemToPx(1.5)
-        cardElement = elements.create('card', {
+        const px = convertRemToPx(1.25)
+        const styleObj = {
           style: {
             base: {
               color: 'black',
@@ -263,13 +269,32 @@ export default defineComponent({
               color: 'red'
             }
           }
-        })
-        if (cardElement === null) {
+        }
+
+        cardNumberElement = elements.create('cardNumber', styleObj)
+        if (cardNumberElement === null) {
           error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: cardElement is null`
+          error.message = `${Message.UNEXPECTED_ERR}: cardNumberElement is null`
           return
         }
-        cardElement.mount('#payjp-card-area')
+
+        cardExpiryElement = elements.create('cardExpiry', styleObj)
+        if (cardExpiryElement === null) {
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: cardExpiryElement is null`
+          return
+        }
+
+        cardCvcElement = elements.create('cardCvc', styleObj)
+        if (cardCvcElement === null) {
+          error.exists = true
+          error.message = `${Message.UNEXPECTED_ERR}: cardCvcElement is null`
+          return
+        }
+
+        cardNumberElement.mount('#payjp-card-number-area')
+        cardExpiryElement.mount('#payjp-card-expiry-area')
+        cardCvcElement.mount('#payjp-card-cvc-area')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
@@ -277,8 +302,12 @@ export default defineComponent({
     })
 
     onUnmounted(async () => {
-      cardElement.unmount()
-      cardElement = null
+      cardNumberElement.unmount()
+      cardNumberElement = null
+      cardExpiryElement.unmount()
+      cardExpiryElement = null
+      cardCvcElement.unmount()
+      cardCvcElement = null
     })
 
     const requestConsultation = async () => {
@@ -312,8 +341,10 @@ export default defineComponent({
 
         let token: string
         try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const createTokenResp: any = await payjp.createToken(cardElement)
+          // 公式ドキュメントによると、createTokenにはcardNumber、cardExpiry、cardCvcのいずれか一つは渡せばいい
+          // ここではcardNumberを渡すように実装する
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const createTokenResp: any = await payjp.createToken(cardNumberElement)
           if (createTokenResp.error) {
             errorBelowBtn.exists = true
             errorBelowBtn.message = createTokenResp.error.message
