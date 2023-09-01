@@ -1,17 +1,17 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getFeePerHourInYenForApplicationDone || !requestConsultationDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="error.exists">
-        <div data-test="outer-alert-message" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="outer-alert-message" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="error.message"/>
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <p data-test="description" class="text-2xl">相談開始日時に関して、第一希望、第二希望、第三希望を入力して下さい。申し込み可能な相談開始日時は、申し込み日時から{{ minDurationInDays*24 }}時間（{{ minDurationInDays }}日）以降、{{ maxDurationInDays*24 }}時間（{{ maxDurationInDays }}日）以前までとなります。</p>
           <h3 data-test="first-candidate-lablel" class="mt-4 font-bold text-2xl">相談開始日時（第一希望）</h3>
           <div class="m-4 text-2xl grid grid-cols-6">
@@ -119,7 +119,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="consultation-detail" class="font-bold text-2xl">相談申し込み詳細</h3>
           <div class="m-4 text-2xl grid grid-cols-3">
             <div data-test="consultant-id" class="mt-2 justify-self-start col-span-2">コンサルタントID</div><div data-test="consultant-id-value" class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
