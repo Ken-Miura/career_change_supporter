@@ -1,20 +1,20 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!postConsultantsSearchDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="error.exists" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="error.exists" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <AlertMessage v-bind:message="error.message"/>
       </div>
       <div v-else class="flex flex-col justify-center max-w-4xl mx-auto">
-        <div class="grid grid-cols-2 max-w-4xl">
-          <div data-test="total" class="justify-self-start ml-2 col-span-1">
-            <div class="bg-white text-xl px-6 py-4 rounded-lg shadow-2xl">{{ consultantsSearchResult.total }} 件</div>
+        <div class="flex justify-between max-w-4xl">
+          <div data-test="total" class="mt-4 ml-2">
+            <div class="bg-white text-lg lg:text-xl px-6 py-4 rounded-lg shadow-2xl">{{ consultantsSearchResult.total }} 件</div>
           </div>
-          <div class="justify-self-end mr-2 col-span-1">
-            <div class="grid grid-cols-3 items-center bg-white text-xl px-4 py-2 rounded-lg shadow-2xl">
+          <div class="mt-4 mr-2">
+            <div class="grid grid-cols-3 items-center bg-white text-lg lg:text-xl px-4 py-2 rounded-lg shadow-2xl">
               <div data-test="sort-label" class="col-span-1">ソート：</div>
               <select data-test="sort-value" v-model="sortParam" v-on:change="onSortParamChanged" class="col-span-2 block p-3 w-full rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
                 <option value="none">指定なし</option>
@@ -28,7 +28,7 @@
         </div>
         <div data-test="consultants-area">
           <div v-if="consultantsSearchResult.consultants.length !== 0" class="flex flex-col justify-center my-5">
-            <div v-bind:data-test="'consultant-id-' + consultant.consultant_id" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant.consultant_id" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl">
+            <div v-bind:data-test="'consultant-id-' + consultant.consultant_id" v-for="consultant in consultantsSearchResult.consultants" v-bind:key="consultant.consultant_id" class="bg-white p-8 lg:p-12 my-5 rounded-lg shadow-2xl">
               <h3 class="font-bold text-xl">コンサルタントID: {{ consultant.consultant_id }}</h3>
               <p class="mt-3 text-xl">相談一回（１時間）の相談料：{{ consultant.fee_per_hour_in_yen }} 円</p>
               <div class="mt-3 text-xl">評価：<span v-if="consultant.rating"> {{ consultant.rating }}</span><span v-else>0</span>/5（評価件数：{{ consultant.num_of_rated }} 件）</div>
@@ -50,7 +50,7 @@
               </div>
             </div>
           </div>
-          <div v-else data-test="no-consultants-found" class="bg-white p-8 md:p-12 my-5 rounded-lg shadow-2xl text-xl">
+          <div v-else data-test="no-consultants-found" class="bg-white p-8 lg:p-12 my-5 rounded-lg shadow-2xl text-lg lg:text-2xl">
             条件に該当するコンサルタントは見つかりませんでした。
           </div>
         </div>
