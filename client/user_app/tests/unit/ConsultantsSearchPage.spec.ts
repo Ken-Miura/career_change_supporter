@@ -69,7 +69,7 @@ describe('ConsultantsSearchPage.vue', () => {
 
     const companyNameLabel = wrapper.find('[data-test="company-name-label"]')
     expect(companyNameLabel.exists()).toBe(true)
-    expect(companyNameLabel.text()).toContain('勤務先名称（例 xxx株式会社）')
+    expect(companyNameLabel.text()).toContain('勤務先名称')
     const companyNameInput = wrapper.find('[data-test="company-name-input"]').find('input')
     expect(companyNameInput.exists()).toBe(true)
 
@@ -81,7 +81,7 @@ describe('ConsultantsSearchPage.vue', () => {
 
     const officeLabel = wrapper.find('[data-test="office-label"]')
     expect(officeLabel.exists()).toBe(true)
-    expect(officeLabel.text()).toContain('勤務地（例 xxx事業所）')
+    expect(officeLabel.text()).toContain('勤務地')
     const officeInput = wrapper.find('[data-test="office-input"]').find('input')
     expect(officeInput.exists()).toBe(true)
 
@@ -105,7 +105,7 @@ describe('ConsultantsSearchPage.vue', () => {
 
     const professionLabel = wrapper.find('[data-test="profession-label"]')
     expect(professionLabel.exists()).toBe(true)
-    expect(professionLabel.text()).toContain('職種（例 ITエンジニア）')
+    expect(professionLabel.text()).toContain('職種')
     const professionInput = wrapper.find('[data-test="profession-input"]').find('input')
     expect(professionInput.exists()).toBe(true)
 
@@ -131,7 +131,7 @@ describe('ConsultantsSearchPage.vue', () => {
 
     const positionNameLabel = wrapper.find('[data-test="position-name-label"]')
     expect(positionNameLabel.exists()).toBe(true)
-    expect(positionNameLabel.text()).toContain('職位（例 係長）')
+    expect(positionNameLabel.text()).toContain('職位')
     const positionNameInput = wrapper.find('[data-test="position-name-input"]').find('input')
     expect(positionNameInput.exists()).toBe(true)
 
