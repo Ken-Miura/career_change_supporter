@@ -26,7 +26,6 @@ export class SkyWayAudioMeetingRoom {
     if (this.closed) {
       throw new SkyWayOriginatedError(`${Message.SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_CLOSED}`)
     }
-    // TODO: SkyWayに関する適切なエラーハンドリング、エラーメッセージを定義する
     try {
       this.context = await SkyWayContext.Create(token)
     } catch (e) {
