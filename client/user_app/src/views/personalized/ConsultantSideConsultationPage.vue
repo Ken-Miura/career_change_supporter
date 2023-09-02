@@ -29,14 +29,14 @@
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
               <img class="w-full lg:w-3/5" src="/consultant-side-consultation/user-silhouette.png" />
               <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
-                <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
+                <p class="mt-4 font-bold text-base lg:text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
               </audio>
-              <p class="mt-2 text-xl text-center">相手側の音声が聞き取りづらいとき、一度退室し、再度入室するよう相手に促して下さい。再入室後、相手音声の高さ（低さ）が変化します。</p>
+              <p class="mt-2 text-base lg:text-xl">相手側の音声が聞き取りづらいとき、一度退室し、再度入室するよう相手に促して下さい。再入室後、相手音声の高さ（低さ）が変化します。</p>
             </div>
             <div v-else>
-              <h3 class="font-bold text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
+              <h3 class="font-bold text-xl lg:text-2xl text-center">相手が入室するまでお待ち下さい。</h3>
             </div>
-            <p class="mt-6 text-xl text-center">相談時間（１時間）が過ぎたタイミングで会議室は自動的に閉じられません（相談時間が過ぎてから、一定時間後に自動的に閉じられます）相談してから１時間が経過したとき、あなたの判断で退出し、相談を終了させて下さい</p>
+            <p class="mt-6 text-base lg:text-xl">相談時間（１時間）が過ぎたタイミングで会議室は自動的に閉じられません（相談時間が過ぎてから、一定時間後に自動的に閉じられます）相談してから１時間が経過したとき、あなたの判断で退出し、相談を終了させて下さい</p>
           </div>
         </div>
       </div>
