@@ -1,20 +1,20 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!postConsultantRatingDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 data-test="consultant-rating-label" class="font-bold text-2xl">相談を行ったコンサルタントの評価</h3>
-        <p data-test="consultant-rating-description" class="mt-4 ml-2 text-xl">相談を行ったコンサルタントを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。コンサルタントが相談を欠席した場合、返金となる場合があります。その場合、評価を行わずに<a href="/transaction-law" class="hover:underline">お問い合わせ先</a>のメールアドレス宛に「あなたのメールアドレスまたはユーザーID」「コンサルタントID」「相談開始日時」を含めてご連絡下さい。</p>
-        <div class="mt-2 ml-4 grid grid-cols-3">
-          <p data-test="consultant-id-label" class="mt-4 justify-self-start text-xl col-span-2">コンサルタントID</p>
-          <p data-test="consultant-id-value" class="mt-4 justify-self-center text-xl col-span-1">{{ consultantId }}</p>
-          <p data-test="consultation-date-time-label" class="mt-4 justify-self-start text-xl col-span-2">相談実施日時</p>
-          <p data-test="consultation-date-time-value" class="mt-4 justify-self-center text-xl col-span-1">{{ year }}年{{ month }}月{{ day }}日{{ hour }}時</p>
-          <p data-test="rating-label" class="mt-4 justify-self-start text-xl col-span-2">評価</p>
-          <p data-test="rating-value" class="mt-4 justify-self-center text-xl w-full col-span-1">
+      <div class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 data-test="consultant-rating-label" class="font-bold text-xl lg:text-2xl">相談を行ったコンサルタントの評価</h3>
+        <p data-test="consultant-rating-description" class="mt-4 ml-2 text-base lg:text-xl">相談を行ったコンサルタントを評価して下さい。{{ MIN_RATING }}が最も低い（悪い）評価で、{{ MAX_RATING }}が最も高い（良い）評価となります。コンサルタントが相談を欠席した場合、返金となる場合があります。その場合、評価を行わずに<a href="/transaction-law" class="hover:underline">お問い合わせ先</a>のメールアドレス宛に「あなたのメールアドレスまたはユーザーID」「コンサルタントID」「相談開始日時」を含めてご連絡下さい。</p>
+        <div class="mt-2 ml-4 text-base lg:text-xl grid grid-cols-2">
+          <p data-test="consultant-id-label" class="mt-4 justify-self-start col-span-1">コンサルタントID</p>
+          <p data-test="consultant-id-value" class="mt-4 justify-self-center col-span-1">{{ consultantId }}</p>
+          <p data-test="consultation-date-time-label" class="mt-4 justify-self-start col-span-1">相談実施日時</p>
+          <p data-test="consultation-date-time-value" class="mt-4 justify-self-center col-span-1">{{ year }}年{{ month }}月{{ day }}日{{ hour }}時</p>
+          <p data-test="rating-label" class="mt-4 justify-self-start col-span-1">評価</p>
+          <p data-test="rating-value" class="mt-4 justify-self-center w-full col-span-1">
             <select v-model="rating" class="block w-full p-3 text-center rounded-md shadow-sm focus:border-gray-700 focus:ring focus:ring-gray-300 focus:ring-opacity-50">
               <option value=""></option>
               <option value="5">5</option>
