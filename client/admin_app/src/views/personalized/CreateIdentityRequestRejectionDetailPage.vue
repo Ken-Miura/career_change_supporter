@@ -1,11 +1,11 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="waitingRequestDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 data-test="title" class="font-bold text-2xl">本人確認依頼（新規）拒否理由</h3>
         <p data-test="description" class="mt-2 text-lg">拒否理由を選択して依頼を拒否して下さい。適切な拒否理由がない場合、管理者にご連絡下さい。</p>
         <form @submit.prevent="submitRejectionReason">

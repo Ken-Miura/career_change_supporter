@@ -1,11 +1,11 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!requestsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">相談</h3>
         <div v-if="!consultationErrMessage">
           <div v-if="consultation" class="m-4 text-2xl grid grid-cols-7">
@@ -25,7 +25,7 @@
           <AlertMessage class="mt-4" v-bind:message="consultationErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">コンサルタントからのユーザーに対する評価</h3>
         <div v-if="!userRatingErrMessage">
           <div v-if="userRating" class="m-4 text-2xl grid grid-cols-7">
@@ -42,7 +42,7 @@
           <AlertMessage class="mt-4" v-bind:message="userRatingErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">ユーザーからのコンサルタントに対する評価</h3>
         <div v-if="!consultantRatingErrMessage">
           <div v-if="consultantRating" class="m-4 text-2xl grid grid-cols-7">
@@ -59,7 +59,7 @@
           <AlertMessage class="mt-4" v-bind:message="consultantRatingErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">決済情報（確保した与信枠の情報）</h3>
         <div v-if="!settlementErrMessage">
           <div v-if="settlement" class="m-4 text-2xl grid grid-cols-7">
@@ -112,7 +112,7 @@
           <AlertMessage class="mt-4" v-bind:message="settlementErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">停止中の決済情報</h3>
         <div v-if="!stoppedSettlementErrMessage">
           <div v-if="stoppedSettlement" class="m-4 text-2xl grid grid-cols-7">
@@ -149,7 +149,7 @@
           <AlertMessage class="mt-4" v-bind:message="stoppedSettlementErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">領収書情報</h3>
         <div v-if="!receiptErrMessage">
           <div v-if="receipt" class="m-4 text-2xl grid grid-cols-7">
@@ -185,7 +185,7 @@
           <AlertMessage class="mt-4" v-bind:message="receiptErrMessage"/>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">返金情報</h3>
         <div v-if="!refundErrMessage">
           <div v-if="refund" class="m-4 text-2xl grid grid-cols-7">

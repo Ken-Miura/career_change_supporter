@@ -1,11 +1,11 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!(getLatestNewsDone && postSetNewsReqDone && postDeleteNewsReqDone)" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">お知らせの作成</h3>
         <form @submit.prevent="setNews">
           <div class="m-4 text-2xl grid grid-cols-6">
@@ -49,7 +49,7 @@
           </div>
         </form>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">お知らせ一覧</h3>
         <div v-if="!latestNewsErrMessage">
             <div v-if="latestNews.length !== 0">

@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
-    <main class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
+    <main class="flex flex-col justify-center bg-white max-w-2xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
       <h3 data-test="label" class="font-bold text-2xl">アカウント検索</h3>
       <p data-test="description" class="ml-2 mt-4 mb-6 text-lg">アカウントID、またはメールアドレスを入力して検索を押して下さい。既に削除されたアカウントは、メールアドレスではなくアカウントIDで検索して下さい。削除されたアカウントは、そうでないアカウントと比較し、確認できる情報が限定されています。</p>
       <form class="flex flex-col" @submit.prevent="searchUserAccountHandler">

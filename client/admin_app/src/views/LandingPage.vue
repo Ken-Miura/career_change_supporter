@@ -28,9 +28,9 @@
     </nav>
     <!--Hero-->
     <div class="pt-24">
-      <div class="container px-3 mx-auto flex flex-wrap flex-col md:flex-row items-center">
+      <div class="container px-3 mx-auto flex flex-wrap flex-col lg:flex-row items-center">
         <!--Left Col-->
-        <div class="flex flex-col w-full md:w-2/5 justify-center items-start text-center md:text-left">
+        <div class="flex flex-col w-full lg:w-2/5 justify-center items-start text-center lg:text-left">
           <h1 class="my-4 text-3xl font-bold leading-tight">
             就職先・転職先を選ぶ手助けに
           </h1>
@@ -48,8 +48,8 @@
           </p>
         </div>
         <!--Right Col-->
-        <div class="flex justify-center items-center w-full md:w-3/5 px-2 py-6 text-center">
-          <img class="w-full md:w-4/5 z-50" src="consultation.png" />
+        <div class="flex justify-center items-center w-full lg:w-3/5 px-2 py-6 text-center">
+          <img class="w-full lg:w-4/5 z-50" src="consultation.png" />
         </div>
       </div>
     </div>
@@ -70,9 +70,9 @@
     <!--Footer-->
     <footer class="bg-white">
       <div class="text-center mx-auto px-8 py-6">
-        <p class="text-gray-500 text-xl font-bold md:mb-6">お問い合わせ</p>
+        <p class="text-gray-500 text-xl font-bold lg:mb-6">お問い合わせ</p>
         <ul class="list-reset mb-6">
-          <li class="mt-2 inline-block mr-2 md:block md:mr-0">
+          <li class="mt-2 inline-block mr-2 lg:block lg:mr-0">
             <p class="text-gray-800">お問い合わせの際は、管理者に直接ご連絡下さい。</p>
           </li>
         </ul>

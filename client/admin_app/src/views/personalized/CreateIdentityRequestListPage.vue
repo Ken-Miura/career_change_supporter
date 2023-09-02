@@ -1,17 +1,17 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="waitingRequestDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="errorExists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="errorMessage"/>
         </div>
       </div>
       <div v-else>
-        <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
             <div class="mt-2 justify-self-start col-span-2">依頼時刻</div>
             <div class="mt-2 justify-self-start col-span-1">氏名</div>

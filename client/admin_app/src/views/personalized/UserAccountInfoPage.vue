@@ -1,21 +1,21 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!requestsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
-      <div v-if="outerErrorMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div v-if="outerErrorMessage" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <AlertMessage v-bind:message="outerErrorMessage"/>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="search-condition-label" class="font-bold text-2xl">検索条件</h3>
           <p data-test="search-condition-account-id" v-if="accountId" class="mt-4 ml-4 text-xl">アカウントID: {{ accountId }}</p>
           <p data-test="search-condition-email-address" v-else-if="emailAddress" class="mt-4 ml-4 text-xl">メールアドレス: {{ emailAddress }}</p>
           <p v-else class="mt-4 ml-4 text-xl">意図しない動作です。管理者に連絡して下さい</p>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="account-info-label" class="font-bold text-2xl">アカウント情報</h3>
           <div class="mt-4 ml-2">
             <div v-if="userAccount">
@@ -68,7 +68,7 @@
             </div>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">利用規約同意履歴</h3>
           <div v-if="!agreementsErrMessage">
             <div v-if="agreements.length !== 0">
@@ -90,7 +90,7 @@
             <AlertMessage class="mt-4" v-bind:message="agreementsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">身分情報</h3>
           <div v-if="!identityErrMessage">
             <div v-if="identity" class="m-4 text-2xl grid grid-cols-3">
@@ -112,7 +112,7 @@
             <AlertMessage class="mt-4" v-bind:message="identityErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴</h3>
           <div v-if="!careersErrMessage">
             <div v-if="careers.length !== 0">
@@ -152,7 +152,7 @@
             <AlertMessage class="mt-4" v-bind:message="careersErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談一回（１時間）の相談料</h3>
           <div v-if="!feePerHourInYenErrMessage">
             <div v-if="feePerHourInYen" class="mt-6 ml-8 text-2xl">
@@ -166,7 +166,7 @@
             <AlertMessage class="mt-4" v-bind:message="feePerHourInYenErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">テナント情報（報酬の入金口座、売上関連情報が紐づく識別子の情報）</h3>
           <div v-if="!tenantIdErrMessage">
             <div v-if="tenantId" class="mt-6 ml-8 text-2xl">
@@ -180,7 +180,7 @@
             <AlertMessage class="mt-4" v-bind:message="tenantIdErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談申し込み</h3>
           <div v-if="!consultationReqsErrMessage">
             <div v-if="consultationReqs.length !== 0">
@@ -209,7 +209,7 @@
             <AlertMessage class="mt-4" v-bind:message="consultationReqsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">相談受け付け</h3>
           <div v-if="!consultationOffersErrMessage">
             <div v-if="consultationOffers.length !== 0">
@@ -238,7 +238,7 @@
             <AlertMessage class="mt-4" v-bind:message="consultationOffersErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">ユーザーとしての相談一覧</h3>
           <div v-if="!consultationsAsUserErrMessage">
             <div v-if="consultationsAsUser.length !== 0">
@@ -266,7 +266,7 @@
             <AlertMessage class="mt-4" v-bind:message="consultationsAsUserErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">コンサルタントとしての相談一覧</h3>
           <div v-if="!consultationsAsConsultantErrMessage">
             <div v-if="consultationsAsConsultant.length !== 0">
@@ -294,7 +294,7 @@
             <AlertMessage class="mt-4" v-bind:message="consultationsAsConsultantErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">ユーザーとしての評価</h3>
           <div v-if="!ratingInfoAsUserErrMessage">
             <div v-if="ratingInfoAsUser.average_rating" class="mt-6 ml-8 text-2xl">
@@ -308,7 +308,7 @@
             <AlertMessage class="mt-4" v-bind:message="ratingInfoAsUserErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">コンサルタントとしての評価</h3>
           <div v-if="!ratingInfoAsConsultantErrMessage">
             <div v-if="ratingInfoAsConsultant.average_rating" class="mt-6 ml-8 text-2xl">
@@ -322,7 +322,7 @@
             <AlertMessage class="mt-4" v-bind:message="ratingInfoAsConsultantErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人確認申請承認履歴（初回）</h3>
           <div v-if="!identityCreationApprovalRecordErrMessage">
             <div v-if="identityCreationApprovalRecord" class="mt-6 ml-8 text-2xl">
@@ -356,7 +356,7 @@
             <AlertMessage class="mt-4" v-bind:message="identityCreationApprovalRecordErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人確認申請拒否履歴（初回）</h3>
           <div v-if="!identityCreationRejectionRecordsErrMessage">
             <div v-if="identityCreationRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
@@ -388,7 +388,7 @@
             <AlertMessage class="mt-4" v-bind:message="identityCreationRejectionRecordsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人確認申請承認履歴（更新）</h3>
           <div v-if="!identityUpdateApprovalRecordsErrMessage">
             <div v-if="identityUpdateApprovalRecords.length !== 0" class="mt-6 ml-8 text-2xl">
@@ -427,7 +427,7 @@
             <AlertMessage class="mt-4" v-bind:message="identityUpdateApprovalRecordsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">本人確認申請拒否履歴（更新）</h3>
           <div v-if="!identityUpdateRejectionRecordsErrMessage">
             <div v-if="identityUpdateRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
@@ -459,7 +459,7 @@
             <AlertMessage class="mt-4" v-bind:message="identityUpdateRejectionRecordsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴確認申請承認履歴</h3>
           <div v-if="!careerCreationApprovalRecordsErrMessage">
             <div v-if="careerCreationApprovalRecords.length !== 0" class="mt-6 ml-8 text-2xl">
@@ -509,7 +509,7 @@
             <AlertMessage class="mt-4" v-bind:message="careerCreationApprovalRecordsErrMessage"/>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 class="font-bold text-2xl">職務経歴確認申請拒否履歴</h3>
           <div v-if="!careerCreationRejectionRecordsErrMessage">
             <div v-if="careerCreationRejectionRecords.length !== 0" class="mt-6 ml-8 text-2xl">
