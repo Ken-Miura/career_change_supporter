@@ -1,18 +1,18 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getConsultationsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="error.exists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="error.message"/>
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="user-side-consultation-label" class="font-bold text-2xl">あなたが申し込んだ相談</h3>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="user-side-consultation-label" class="font-bold text-xl lg:text-2xl">あなたが申し込んだ相談</h3>
           <div v-if="consultationsResult.user_side_consultations.length !== 0" class="m-4 text-2xl">
             <ul>
               <li v-for="user_side_consultation in consultationsResult.user_side_consultations" v-bind:key="user_side_consultation.consultation_id">
@@ -26,20 +26,20 @@
               </li>
             </ul>
           </div>
-          <div v-else class="m-6 text-2xl">
-            <p data-test="no-user-side-consultation-label" class="text-xl">あなたが申し込んだ相談はありません</p>
+          <div v-else class="m-6">
+            <p data-test="no-user-side-consultation-label" class="text-base lg:text-xl">あなたが申し込んだ相談はありません</p>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="consultant-side-consultation-label" class="font-bold text-2xl">あなたが受け付けた相談</h3>
-          <div v-if="consultationsResult.consultant_side_consultations.length !== 0" class="m-4 text-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="consultant-side-consultation-label" class="font-bold text-xl lg:text-2xl">あなたが受け付けた相談</h3>
+          <div v-if="consultationsResult.consultant_side_consultations.length !== 0" class="m-2 text-base lg:text-xl">
             <ul>
               <li v-for="consultant_side_consultation in consultationsResult.consultant_side_consultations" v-bind:key="consultant_side_consultation.consultation_id">
                 <div v-bind:data-test="'consultant-side-consultation-id-' + consultant_side_consultation.consultation_id" class="mt-4">
                   <div data-test="user-account-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ consultant_side_consultation.user_account_id }}）からの相談</div>
-                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div data-test="consultant-side-consultation-date-time" class="mt-4 justify-self-start col-span-2">相談開始日時：{{ consultant_side_consultation.meeting_date_time_in_jst.year }}年{{ consultant_side_consultation.meeting_date_time_in_jst.month }}月{{ consultant_side_consultation.meeting_date_time_in_jst.day }}日{{ consultant_side_consultation.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-consultant-side-consultation-page" v-on:click="moveToConsultantSideConsultationPage(consultant_side_consultation.consultation_id, consultant_side_consultation.user_account_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black flex flex-col lg:flex-row justify-between">
+                    <div data-test="consultant-side-consultation-date-time" class="mt-0 lg:mt-4">相談開始日時：{{ consultant_side_consultation.meeting_date_time_in_jst.year }}年{{ consultant_side_consultation.meeting_date_time_in_jst.month }}月{{ consultant_side_consultation.meeting_date_time_in_jst.day }}日{{ consultant_side_consultation.meeting_date_time_in_jst.hour }}時</div>
+                    <button data-test="move-to-consultant-side-consultation-page" v-on:click="moveToConsultantSideConsultationPage(consultant_side_consultation.consultation_id, consultant_side_consultation.user_account_id)" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">相談室へ入室する</button>
                   </div>
                 </div>
               </li>
