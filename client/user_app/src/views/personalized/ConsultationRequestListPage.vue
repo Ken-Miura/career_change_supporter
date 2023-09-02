@@ -1,19 +1,19 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getConsultationRequestsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="error.exists">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="error.message"/>
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="consultation-request-list-label" class="font-bold text-2xl">相談申し込み一覧</h3>
-          <p data-test="consultation-request-list-description" class="mt-2 text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="consultation-request-list-label" class="font-bold text-xl lg:text-2xl">相談申し込み一覧</h3>
+          <p data-test="consultation-request-list-description" class="mt-2 text-base lg:text-lg">相談申し込みの内容を確認し、申し込みの了承または拒否をして下さい。相談申し込みは、最大で{{ MAX_NUM_OF_CONSULTATION_REQUESTS }}件表示されます。</p>
           <div class="mt-4 ml-4">
             <div v-if="consultationRequests.length === 0">
               <p data-test="no-consultation-request-found" class="mt-2 text-lg">相談申し込みはありません。</p>
@@ -23,9 +23,9 @@
                 <li v-for="consultationReq in consultationRequests" v-bind:key="consultationReq.consultation_req_id">
                   <div v-bind:data-test="'consultation-req-id-' + consultationReq.consultation_req_id" class="mt-4">
                     <div data-test="consultation-req-id" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談申し込み番号: {{ consultationReq.consultation_req_id }}</div>
-                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                      <div data-test="user-id" class="mt-4 justify-self-start col-span-2">ユーザーID（{{ consultationReq.user_account_id }}）からの相談申し込み</div>
-                      <button data-test="move-to-consultation-req-detail-page-btn" v-on:click="moveToConsultationRequestDetailPage(consultationReq.consultation_req_id)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
+                    <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-base lg:text-xl flex flex-col lg:flex-row justify-between">
+                      <div data-test="user-id" class="lg:mt-4">ユーザーID（{{ consultationReq.user_account_id }}）からの相談申し込み</div>
+                      <button data-test="move-to-consultation-req-detail-page-btn" v-on:click="moveToConsultationRequestDetailPage(consultationReq.consultation_req_id)" class="mt-2 lg:mt-0 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">詳細を確認する</button>
                     </div>
                   </div>
                 </li>
