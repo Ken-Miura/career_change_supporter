@@ -42,7 +42,7 @@ export class SkyWayAudioMeetingRoom {
         name: roomName
       })
     } catch (e) {
-      throw new SkyWayOriginatedError(`${Message.SKY_WAY_FAILED_TO_CREATE_ROOM}: ${e}`)
+      throw new SkyWayOriginatedError(`${Message.SKY_WAY_FAILED_TO_FIND_OR_CREATE_ROOM}: ${e}`)
     }
     if (!this.room) {
       throw new SkyWayOriginatedError(`${Message.SKY_WAY_NO_ROOM_FOUND}`)
