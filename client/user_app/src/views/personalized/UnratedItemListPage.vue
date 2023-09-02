@@ -14,14 +14,14 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="unrated-consultants-label" class="font-bold text-xl lg:text-2xl">相談を行ったコンサルタント</h3>
           <p data-test="unrated-consultants-description" class="mt-2 ml-2 text-base lg:text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。</p>
-          <div v-if="unratedItemsResult.unrated_consultants.length !== 0" class="m-2 text-2xl">
+          <div v-if="unratedItemsResult.unrated_consultants.length !== 0" class="m-2 text-base lg:text-xl">
             <ul>
               <li v-for="unrated_consultant in unratedItemsResult.unrated_consultants" v-bind:key="unrated_consultant.consultant_rating_id">
                 <div v-bind:data-test="'consultant-rating-id-' + unrated_consultant.consultant_rating_id" class="mt-4">
                   <div data-test="consultant-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">コンサルタントID（{{ unrated_consultant.consultant_id }}）</div>
-                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div data-test="consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ unrated_consultant.meeting_date_time_in_jst.year }}年{{ unrated_consultant.meeting_date_time_in_jst.month }}月{{ unrated_consultant.meeting_date_time_in_jst.day }}日{{ unrated_consultant.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(unrated_consultant.consultant_rating_id, unrated_consultant.consultant_id, unrated_consultant.meeting_date_time_in_jst)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black flex flex-col lg:flex-row justify-between">
+                    <div data-test="consultation-date-time" class="mt-0 lg:mt-4">相談日時：{{ unrated_consultant.meeting_date_time_in_jst.year }}年{{ unrated_consultant.meeting_date_time_in_jst.month }}月{{ unrated_consultant.meeting_date_time_in_jst.day }}日{{ unrated_consultant.meeting_date_time_in_jst.hour }}時</div>
+                    <button data-test="move-to-rate-consultant-page" v-on:click="moveToRateConsultantPage(unrated_consultant.consultant_rating_id, unrated_consultant.consultant_id, unrated_consultant.meeting_date_time_in_jst)" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
                   </div>
                 </div>
               </li>
@@ -34,14 +34,14 @@
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <h3 data-test="unrated-users-label" class="font-bold text-xl lg:text-2xl">相談を受け付けたユーザー</h3>
           <p data-test="unrated-users-description" class="mt-2 ml-2 text-base lg:text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_USERS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_USERS }}件を超えた分は表示されているユーザーの評価を終えると表示されます。</p>
-          <div v-if="unratedItemsResult.unrated_users.length !== 0" class="m-4 text-2xl">
+          <div v-if="unratedItemsResult.unrated_users.length !== 0" class="m-2 text-base lg:text-xl">
             <ul>
               <li v-for="unrated_user in unratedItemsResult.unrated_users" v-bind:key="unrated_user.user_rating_id">
                 <div v-bind:data-test="'user-rating-id-' + unrated_user.user_rating_id" class="mt-4">
                   <div data-test="user-account-id-label" class="bg-gray-600 text-white font-bold rounded-t px-4 py-2">ユーザーID（{{ unrated_user.user_account_id }}）からの相談</div>
-                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
-                    <div data-test="consultation-date-time" class="mt-4 justify-self-start col-span-2">相談日時：{{ unrated_user.meeting_date_time_in_jst.year }}年{{ unrated_user.meeting_date_time_in_jst.month }}月{{ unrated_user.meeting_date_time_in_jst.day }}日{{ unrated_user.meeting_date_time_in_jst.hour }}時</div>
-                    <button data-test="move-to-rate-user-page" v-on:click="moveToRateUserPage(unrated_user.user_rating_id, unrated_user.user_account_id, unrated_user.meeting_date_time_in_jst)" class="mt-2 col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black flex flex-col lg:flex-row justify-between">
+                    <div data-test="consultation-date-time" class="mt-0 lg:mt-4">相談日時：{{ unrated_user.meeting_date_time_in_jst.year }}年{{ unrated_user.meeting_date_time_in_jst.month }}月{{ unrated_user.meeting_date_time_in_jst.day }}日{{ unrated_user.meeting_date_time_in_jst.hour }}時</div>
+                    <button data-test="move-to-rate-user-page" v-on:click="moveToRateUserPage(unrated_user.user_rating_id, unrated_user.user_account_id, unrated_user.meeting_date_time_in_jst)" class="mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">評価する</button>
                   </div>
                 </div>
               </li>
