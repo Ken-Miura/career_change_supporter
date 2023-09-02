@@ -1,14 +1,14 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getConsultantSideInfoDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div>
-        <div v-if="!consultantSideInfo" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div v-if="!consultantSideInfo" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-            <div class="m-4 text-xl grid grid-cols-6 justify-center items-center">
+            <div class="m-4 text-lg lg:text-xl grid grid-cols-6 justify-center items-center">
               <div class="col-span-5">私は音声入出力テストで使用中の環境に問題がないことを確認しました</div>
               <input v-model="audioTestDone" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
             </div>
@@ -18,7 +18,7 @@
             <AlertMessage class="mt-2" v-bind:message="getConsultantSideInfoErrMessage"/>
           </div>
         </div>
-        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div v-else class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <div v-if="audioErrorMessage">
             <AlertMessage class="mt-2" v-bind:message="audioErrorMessage"/>
           </div>
@@ -27,7 +27,7 @@
           </div>
           <div v-else>
             <div v-if="remoteMediaStream" class="flex flex-col items-center w-full">
-              <img class="w-full md:w-3/5" src="/consultant-side-consultation/user-silhouette.png" />
+              <img class="w-full lg:w-3/5" src="/consultant-side-consultation/user-silhouette.png" />
               <audio v-bind:srcObject.prop="remoteMediaStream" autoplay>
                 <p class="mt-4 font-bold text-xl">使われているブラウザではサービスを利用できません。他のブラウザをお使い下さい。</p>
               </audio>
@@ -40,13 +40,13 @@
           </div>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">相談相手の情報</h3>
-        <div class="m-4 text-2xl grid grid-cols-3">
-          <div class="mt-2 justify-self-start col-span-2">ユーザーID</div><div class="mt-2 justify-self-start col-span-1">{{ userAccountId }}</div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-xl lg:text-2xl">相談相手の情報</h3>
+        <div class="m-4 text-xl lg:text-2xl grid grid-cols-2">
+          <div class="mt-2 justify-self-start col-span-1">ユーザーID</div><div class="mt-2 justify-self-start col-span-1">{{ userAccountId }}</div>
         </div>
       </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <button v-on:click="leaveConsultationRoom" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">退出する</button>
       </div>
     </main>
