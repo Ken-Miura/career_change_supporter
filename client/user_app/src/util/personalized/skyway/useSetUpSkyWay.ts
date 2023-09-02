@@ -44,11 +44,11 @@ export function useSetupSkyWay () {
       }
 
       audioMeetingRoom.getContext().onFatalError.add(args => {
-        skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${args}` // TODO: Add error handling
+        skyWayErrorMessage.value = `${Message.SKY_WAY_ROOM_ON_FATAL_ERROR}: ${args}`
       })
 
       member.onFatalError.add(args => {
-        skyWayErrorMessage.value = `${Message.UNEXPECTED_ERR}: ${args}` // TODO: Add error handling
+        skyWayErrorMessage.value = `${Message.SKY_WAY_MEMBER_ON_FATAL_ERROR}: ${args}`
       })
     })
   }

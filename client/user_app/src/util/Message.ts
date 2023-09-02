@@ -210,8 +210,8 @@ export namespace Message {
     export const NO_ENOUGH_SPARE_TIME_BEFORE_MEETING_MESSAGE = '相談開始日時までに十分な余裕がないため、その日時は選択出来ません'
     export const CONSULTATION_HAS_NOT_BEEN_FINISHED_MESSAGE = 'コンサルタントとして受け付けた相談をすべて完了していないため、アカウントの削除は出来ません'
 
-    const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。お使いの端末がインターネットに接続できていることを確認後、再度相談を開始して下さい。インターネットに接続出来ている状況でも問題が解決しない場合、お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と次に表示されたメッセージをお問い合わせ先からご連絡下さい'
-    const SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE = '相談の開始に失敗しました。一度ブラウザを閉じて再度相談を開始して下さい。問題が解決しない場合、別の端末、OS、またはブラウザでお試し下さい。それでも問題が解決しない場合、お問い合わせ先に次に表示されているメッセージとともにご連絡下さい'
+    const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。一度ブラウザを閉じ、お使いの端末がインターネットに接続できていることを確認後に再度相談を開始して下さい。それでも問題が解決しない場合、お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と次に表示されたメッセージをお問い合わせ先にご連絡下さい'
+    const SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE = '相談の開始に失敗しました。一度ブラウザを閉じて再度相談を開始して下さい。問題が解決しない場合、別の端末、OS、またはブラウザでお試し下さい。それでも問題が解決しない場合、次に表示されているメッセージとともにお問い合わせ先にご連絡下さい'
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED = `${SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_INITILIZED`
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_NOT_BEEN_INITILIZED_YET = `${SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_NOT_BEEN_INITILIZED_YET`
     export const SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_CLOSED = `${SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE}: SKY_WAY_AUDIO_MEETING_ROOM_HAS_ALREADY_BEEN_CLOSED`
@@ -223,4 +223,6 @@ export namespace Message {
     export const SKY_WAY_NO_MEMBER_FOUND = `${SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE}: SKY_WAY_NO_MEMBER_FOUND`
     export const SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_FAILED_TO_CREATE_LOCAL_AUDIO_STREAM`
     export const SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND = `${SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE}: SKY_WAY_NO_LOCAL_AUDIO_STREAM_FOUND`
+    export const SKY_WAY_ROOM_ON_FATAL_ERROR = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_ROOM_ON_FATAL_ERROR`
+    export const SKY_WAY_MEMBER_ON_FATAL_ERROR = `${SKY_WAY_UNEXPECTED_ERROR}: SKY_WAY_MEMBER_ON_FATAL_ERROR`
 }

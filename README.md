@@ -25,8 +25,6 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
 
-SkyWayクライアントサイドのエラーハンドリング
-
 s3とsesへのアクセスをユーザーからロールに切り替えできれば変更（ローカルと本番の両方）
 
 client/admin_app以下の一部用意していない単体テストコード
