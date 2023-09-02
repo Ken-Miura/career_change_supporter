@@ -1,19 +1,19 @@
 <template>
   <TheHeader/>
-  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 md:pt-20 pb-6 px-2 md:px-0" style="font-family:'Lato',sans-serif;">
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
     <div v-if="!getUnratedItemsDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
       <div v-if="errMessage">
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
           <AlertMessage class="mt-2" v-bind:message="errMessage"/>
         </div>
       </div>
       <div v-else>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="unrated-consultants-label" class="font-bold text-2xl">相談を行ったコンサルタント</h3>
-          <p data-test="unrated-consultants-description" class="mt-2 ml-2 text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="unrated-consultants-label" class="font-bold text-xl lg:text-2xl">相談を行ったコンサルタント</h3>
+          <p data-test="unrated-consultants-description" class="mt-2 ml-2 text-base lg:text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_CONSULTANTS }}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。</p>
           <div v-if="unratedItemsResult.unrated_consultants.length !== 0" class="m-2 text-2xl">
             <ul>
               <li v-for="unrated_consultant in unratedItemsResult.unrated_consultants" v-bind:key="unrated_consultant.consultant_rating_id">
@@ -27,13 +27,13 @@
               </li>
             </ul>
           </div>
-          <div v-else class="m-6 text-2xl">
-            <p data-test="no-unrated-consultants-label" class="text-xl">未評価のコンサルタントはいません</p>
+          <div v-else class="m-6">
+            <p data-test="no-unrated-consultants-label" class="text-base lg:text-xl">未評価のコンサルタントはいません</p>
           </div>
         </div>
-        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 md:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 data-test="unrated-users-label" class="font-bold text-2xl">相談を受け付けたユーザー</h3>
-          <p data-test="unrated-users-description" class="mt-2 ml-2 text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_USERS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_USERS }}件を超えた分は表示されているユーザーの評価を終えると表示されます。</p>
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 data-test="unrated-users-label" class="font-bold text-xl lg:text-2xl">相談を受け付けたユーザー</h3>
+          <p data-test="unrated-users-description" class="mt-2 ml-2 text-base lg:text-xl">相談日時が古い方から最大{{ MAX_NUM_OF_UNRATED_USERS }}件分表示されます。{{ MAX_NUM_OF_UNRATED_USERS }}件を超えた分は表示されているユーザーの評価を終えると表示されます。</p>
           <div v-if="unratedItemsResult.unrated_users.length !== 0" class="m-4 text-2xl">
             <ul>
               <li v-for="unrated_user in unratedItemsResult.unrated_users" v-bind:key="unrated_user.user_rating_id">
@@ -47,8 +47,8 @@
               </li>
             </ul>
           </div>
-          <div v-else class="m-6 text-2xl">
-            <p data-test="no-unrated-users-label" class="text-xl">未評価のユーザーはいません</p>
+          <div v-else class="m-6">
+            <p data-test="no-unrated-users-label" class="text-base lg:text-xl">未評価のユーザーはいません</p>
           </div>
         </div>
       </div>
