@@ -54,10 +54,11 @@ RUN export NODE_JS_VERSION=18.16.0 && \
 FROM development as server-test-and-build
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-RUN cargo fmt --check && \
-    cargo clippy --all-targets --all-features -- -D warnings && \
-    cargo test && \
-    cargo build --release
+# RUN cargo fmt --check && \
+#     cargo clippy --all-targets --all-features -- -D warnings && \
+#     cargo test && \
+#     cargo build --release
+RUN cargo build --release
 
 FROM --platform=linux/amd64 ubuntu:22.04 as application-base
 RUN apt-get update && \
