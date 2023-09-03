@@ -29,16 +29,16 @@ const APPLICATION_ERR: i32 = 3;
 fn main() {
     let _ = dotenv().ok();
     let result = check_env_vars(vec![
-        KEY_TO_DB_HOST.to_string(),
-        KEY_TO_DB_PORT.to_string(),
-        KEY_TO_DB_NAME.to_string(),
-        KEY_TO_DB_ADMIN_NAME.to_string(),
-        KEY_TO_DB_ADMIN_PASSWORD.to_string(),
+        // KEY_TO_DB_HOST.to_string(),
+        // KEY_TO_DB_PORT.to_string(),
+        // KEY_TO_DB_NAME.to_string(),
+        // KEY_TO_DB_ADMIN_NAME.to_string(),
+        // KEY_TO_DB_ADMIN_PASSWORD.to_string(),
         KEY_TO_ADMIN_EMAIL_ADDRESS.to_string(),
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
-        KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
-        KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
+        // KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
+        // KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
     ]);
     if result.is_err() {
@@ -58,20 +58,20 @@ fn main() {
 async fn main_internal() {
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
-    let database_url = construct_db_url(
-        KEY_TO_DB_HOST,
-        KEY_TO_DB_PORT,
-        KEY_TO_DB_NAME,
-        KEY_TO_DB_ADMIN_NAME,
-        KEY_TO_DB_ADMIN_PASSWORD,
-    );
-    let mut opt = ConnectOptions::new(database_url.clone());
-    opt.max_connections(1).min_connections(1).sqlx_logging(true);
-    let pool = Database::connect(opt).await.unwrap_or_else(|e| {
-        println!("failed to connect database: {}", e);
-        exit(CONNECTION_ERROR)
-    });
-    let op = DeleteExpiredTempAccountsOperationImpl { pool };
+    // let database_url = construct_db_url(
+    //     KEY_TO_DB_HOST,
+    //     KEY_TO_DB_PORT,
+    //     KEY_TO_DB_NAME,
+    //     KEY_TO_DB_ADMIN_NAME,
+    //     KEY_TO_DB_ADMIN_PASSWORD,
+    // );
+    // let mut opt = ConnectOptions::new(database_url.clone());
+    // opt.max_connections(1).min_connections(1).sqlx_logging(true);
+    // let pool = Database::connect(opt).await.unwrap_or_else(|e| {
+    //     println!("failed to connect database: {}", e);
+    //     exit(CONNECTION_ERROR)
+    // });
+    // let op = DeleteExpiredTempAccountsOperationImpl { pool };
 
     let smtp_client = SmtpClient::new(
         AWS_SES_REGION.as_str(),
@@ -81,24 +81,35 @@ async fn main_internal() {
     )
     .await;
 
-    let result = delete_expired_temp_accounts(
-        current_date_time,
-        *NUM_OF_MAX_TARGET_RECORDS,
-        &op,
-        &smtp_client,
-    )
-    .await;
+    let result = smtp_client
+        .send_mail(
+            ADMIN_EMAIL_ADDRESS.as_str(),
+            SYSTEM_EMAIL_ADDRESS.as_str(),
+            "subject",
+            format!("{}", current_date_time).as_str(),
+        )
+        .await;
 
-    let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delete expired temp accounts: {}", e);
-        exit(APPLICATION_ERR)
-    });
+    println!("{:?}", result);
 
-    println!(
-        "{} temp account(s) were (was) deleted successfully",
-        deleted_num
-    );
-    exit(SUCCESS)
+    // let result = delete_expired_temp_accounts(
+    //     current_date_time,
+    //     *NUM_OF_MAX_TARGET_RECORDS,
+    //     &op,
+    //     &smtp_client,
+    // )
+    // .await;
+
+    // let deleted_num = result.unwrap_or_else(|e| {
+    //     println!("failed to delete expired temp accounts: {}", e);
+    //     exit(APPLICATION_ERR)
+    // });
+
+    // println!(
+    //     "{} temp account(s) were (was) deleted successfully",
+    //     deleted_num
+    // );
+    // exit(SUCCESS)
 }
 
 async fn delete_expired_temp_accounts(
