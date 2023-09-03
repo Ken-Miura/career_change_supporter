@@ -15,13 +15,79 @@ jobs:
           docker build --target server-test-and-build -t server-test-and-build -f .devcontainer/Dockerfile server/
       - name: Create images
         run: |
+          docker build --target user-service -t ccs-user-service:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target admin-service -t ccs-admin-service:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target admin-account -t ccs-admin-account:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target delete-expired-consultation-reqs -t ccs-delete-expired-consultation-reqs:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target delete-expired-deleted-user-accounts -t ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target delete-expired-pwd-change-reqs -t ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target delete-expired-stopped-settlements -t ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target delete-expired-temp-accounts -t ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target delete-expired-temp-mfa-secrets -t ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target make-payment-of-unhandled-settlement -t ccs-make-payment-of-unhandled-settlement:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target db-initializer -t ccs-db-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target migration-tool -t ccs-migration-tool:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+          docker build --target index-initializer -t ccs-index-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
+      - name: Test and build client side code
+        run: >
+          docker run -v "$(pwd)/client":/home/developer/workspace
+          -e VUE_APP_PAYJP_PUBLIC_KEY=${PAYJP_PUBLIC_KEY}
+          -e VUE_APP_BUSINESS_OPERATOR_NAME=${BUSINESS_OPERATOR_NAME}
+          -e VUE_APP_BUSINESS_OPERATOR_ZIP_CODE=${BUSINESS_OPERATOR_ZIP_CODE}
+          -e VUE_APP_BUSINESS_OPERATOR_ADDRESS=${BUSINESS_OPERATOR_ADDRESS}
+          -e VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS=${BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS}
+          development bash -c 'source ${NVM_DIR}/nvm.sh
+          && pushd user_app && npm i && npm run lint && npm run test:unit && npm run build && popd
+          && pushd admin_app && npm i && npm run lint && npm run test:unit && npm run build'
+        env:
+          PAYJP_PUBLIC_KEY: ${{ vars.PAYJP_PUBLIC_KEY }}
+          BUSINESS_OPERATOR_NAME: ${{ vars.BUSINESS_OPERATOR_NAME }}
+          BUSINESS_OPERATOR_ZIP_CODE: ${{ vars.BUSINESS_OPERATOR_ZIP_CODE }}
+          BUSINESS_OPERATOR_ADDRESS: ${{ vars.BUSINESS_OPERATOR_ADDRESS }}
+          BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS: ${{ vars.BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS }}
       - name: Upload images
         run: |
+          aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ECR_ACCOUNT}
+          docker tag ccs-user-service:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-user-service:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-user-service:"$(git rev-parse HEAD)"
+          docker tag ccs-admin-service:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-admin-service:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-admin-service:"$(git rev-parse HEAD)"
+          docker tag ccs-admin-account:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-admin-account:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-admin-account:"$(git rev-parse HEAD)"
+          docker tag ccs-delete-expired-consultation-reqs:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-consultation-reqs:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-consultation-reqs:"$(git rev-parse HEAD)"
+          docker tag ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)"
+          docker tag ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)"
+          docker tag ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)"
           docker tag ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)"
           docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)"
+          docker tag ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)"
+          docker tag ccs-make-payment-of-unhandled-settlement:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-make-payment-of-unhandled-settlement:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-make-payment-of-unhandled-settlement:"$(git rev-parse HEAD)"
+          docker tag ccs-db-initializer:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-db-initializer:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-db-initializer:"$(git rev-parse HEAD)"
+          docker tag ccs-migration-tool:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-migration-tool:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-migration-tool:"$(git rev-parse HEAD)"
+          docker tag ccs-index-initializer:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-index-initializer:"$(git rev-parse HEAD)"
+          docker push ${AWS_ECR_ACCOUNT}/ccs-index-initializer:"$(git rev-parse HEAD)"
         env:
           AWS_ECR_ACCOUNT: ${{ vars.AWS_ECR_ACCOUNT }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          AWS_DEFAULT_OUTPUT: json
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARTIFACTS_UPLOADER_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARTIFACTS_UPLOADER_AWS_SECRET_ACCESS_KEY }}
+      # (意図しないリリースを避けるため、) ユーザーからアクセスされるS3バケットへ直接アップロードするのではなく、まず別のバケットへアップロードする
+      - name: Upload static files
+        run: |
+          aws s3 sync client/user_app/dist s3://${CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
+          aws s3 sync client/admin_app/dist s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET} --delete --exclude '*.js.map'
+        env:
+          CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET }}
+          CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
           AWS_DEFAULT_OUTPUT: json
           AWS_ACCESS_KEY_ID: ${{ secrets.ARTIFACTS_UPLOADER_AWS_ACCESS_KEY_ID }}

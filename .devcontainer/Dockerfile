@@ -54,11 +54,10 @@ RUN export NODE_JS_VERSION=18.16.0 && \
 FROM development as server-test-and-build
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-# RUN cargo fmt --check && \
-#     cargo clippy --all-targets --all-features -- -D warnings && \
-#     cargo test && \
-#     cargo build --release
-RUN cargo build -p delete_expired_temp_accounts --release
+RUN cargo fmt --check && \
+    cargo clippy --all-targets --all-features -- -D warnings && \
+    cargo test && \
+    cargo build --release
 
 FROM --platform=linux/amd64 ubuntu:22.04 as application-base
 RUN apt-get update && \
@@ -68,32 +67,32 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 ENV LANG="en_US.UTF-8"
 
-# FROM application-base as user-service
-# RUN useradd -m -s /bin/bash -U user-service-operator
-# USER user-service-operator
-# RUN mkdir -p /home/user-service-operator/workspace
-# WORKDIR /home/user-service-operator/workspace
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/user_service ./
-# EXPOSE 3000
-# CMD [ "./user_service" ]
+FROM application-base as user-service
+RUN useradd -m -s /bin/bash -U user-service-operator
+USER user-service-operator
+RUN mkdir -p /home/user-service-operator/workspace
+WORKDIR /home/user-service-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/user_service ./
+EXPOSE 3000
+CMD [ "./user_service" ]
 
-# FROM application-base as admin-service
-# RUN useradd -m -s /bin/bash -U admin-service-operator
-# USER admin-service-operator
-# RUN mkdir -p /home/admin-service-operator/workspace
-# WORKDIR /home/admin-service-operator/workspace
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_service ./
-# EXPOSE 3001
-# CMD [ "./admin_service" ]
+FROM application-base as admin-service
+RUN useradd -m -s /bin/bash -U admin-service-operator
+USER admin-service-operator
+RUN mkdir -p /home/admin-service-operator/workspace
+WORKDIR /home/admin-service-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_service ./
+EXPOSE 3001
+CMD [ "./admin_service" ]
 
-# FROM application-base as admin-account
-# RUN useradd -m -s /bin/bash -U admin-account-operator
-# USER admin-account-operator
-# RUN mkdir -p /home/admin-account-operator/workspace
-# WORKDIR /home/admin-account-operator/workspace
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
-# ENV PATH="${PATH}:/home/admin-account-operator/workspace"
-# ENTRYPOINT [ "admin_account" ]
+FROM application-base as admin-account
+RUN useradd -m -s /bin/bash -U admin-account-operator
+USER admin-account-operator
+RUN mkdir -p /home/admin-account-operator/workspace
+WORKDIR /home/admin-account-operator/workspace
+COPY --from=server-test-and-build /home/developer/workspace/target/release/admin_account ./
+ENV PATH="${PATH}:/home/admin-account-operator/workspace"
+ENTRYPOINT [ "admin_account" ]
 
 FROM application-base as batch-processor-base
 RUN useradd -m -s /bin/bash -U batch-processor
@@ -102,59 +101,59 @@ RUN mkdir -p /home/batch-processor/workspace
 WORKDIR /home/batch-processor/workspace
 ENV PATH="${PATH}:/home/batch-processor/workspace"
 
-# FROM batch-processor-base as delete-expired-consultation-reqs
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_consultation_reqs ./
-# ENTRYPOINT [ "delete_expired_consultation_reqs" ]
+FROM batch-processor-base as delete-expired-consultation-reqs
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_consultation_reqs ./
+ENTRYPOINT [ "delete_expired_consultation_reqs" ]
 
-# FROM batch-processor-base as delete-expired-deleted-user-accounts
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_deleted_user_accounts ./
-# ENTRYPOINT [ "delete_expired_deleted_user_accounts" ]
+FROM batch-processor-base as delete-expired-deleted-user-accounts
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_deleted_user_accounts ./
+ENTRYPOINT [ "delete_expired_deleted_user_accounts" ]
 
-# FROM batch-processor-base as delete-expired-pwd-change-reqs
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_pwd_change_reqs ./
-# ENTRYPOINT [ "delete_expired_pwd_change_reqs" ]
+FROM batch-processor-base as delete-expired-pwd-change-reqs
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_pwd_change_reqs ./
+ENTRYPOINT [ "delete_expired_pwd_change_reqs" ]
 
-# FROM batch-processor-base as delete-expired-stopped-settlements
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_stopped_settlements ./
-# ENTRYPOINT [ "delete_expired_stopped_settlements" ]
+FROM batch-processor-base as delete-expired-stopped-settlements
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_stopped_settlements ./
+ENTRYPOINT [ "delete_expired_stopped_settlements" ]
 
 FROM batch-processor-base as delete-expired-temp-accounts
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_accounts ./
 ENTRYPOINT [ "delete_expired_temp_accounts" ]
 
-# FROM batch-processor-base as delete-expired-temp-mfa-secrets
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_mfa_secrets ./
-# ENTRYPOINT [ "delete_expired_temp_mfa_secrets" ]
+FROM batch-processor-base as delete-expired-temp-mfa-secrets
+COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_mfa_secrets ./
+ENTRYPOINT [ "delete_expired_temp_mfa_secrets" ]
 
-# FROM batch-processor-base as make-payment-of-unhandled-settlement
-# COPY --from=server-test-and-build /home/developer/workspace/target/release/make_payment_of_unhandled_settlement ./
-# ENTRYPOINT [ "make_payment_of_unhandled_settlement" ]
+FROM batch-processor-base as make-payment-of-unhandled-settlement
+COPY --from=server-test-and-build /home/developer/workspace/target/release/make_payment_of_unhandled_settlement ./
+ENTRYPOINT [ "make_payment_of_unhandled_settlement" ]
 
-# # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
-# # 利用頻度により随時必要なイメージとして切り出すか検討する
-# FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
-# RUN apk add --update bash postgresql14-client && \
-#         rm -rf /var/cache/apk/*
-# CMD [ "psql", "--help" ]
+# DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
+# 利用頻度により随時必要なイメージとして切り出すか検討する
+FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
+RUN apk add --update bash postgresql14-client && \
+        rm -rf /var/cache/apk/*
+CMD [ "psql", "--help" ]
 
-# FROM psql-client as db-initializer
-# # ビルドコンテキストはserverディレクトリ直下であると仮定
-# COPY data_store_setup_files/initdb/init.sh .
-# CMD [ "./init.sh" ]
+FROM psql-client as db-initializer
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY data_store_setup_files/initdb/init.sh .
+CMD [ "./init.sh" ]
 
-# FROM --platform=linux/amd64 rust:1.70.0-alpine as migration-tool
-# RUN apk add --update build-base pkgconfig openssl-dev && \
-#         rm -rf /var/cache/apk/*
-# WORKDIR /workspace
-# RUN export SEA_ORM_CLI_VERSION=0.12.2 && \
-#     cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
-# # ビルドコンテキストはserverディレクトリ直下であると仮定
-# COPY . .
-# ENTRYPOINT [ "sea-orm-cli" ]
+FROM --platform=linux/amd64 rust:1.70.0-alpine as migration-tool
+RUN apk add --update build-base pkgconfig openssl-dev && \
+        rm -rf /var/cache/apk/*
+WORKDIR /workspace
+RUN export SEA_ORM_CLI_VERSION=0.12.2 && \
+    cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY . .
+ENTRYPOINT [ "sea-orm-cli" ]
 
-# # インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
-# # 利用頻度により随時必要なイメージとして切り出すか検討する
-# FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
-# # ビルドコンテキストはserverディレクトリ直下であると仮定
-# COPY data_store_setup_files/opensearch/index_definition/index.json .
-# CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json -u ${USER_NAME}:${PASSWORD} ${ENDPOINT_URI}/users" ]
+# インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
+# 利用頻度により随時必要なイメージとして切り出すか検討する
+FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
+# ビルドコンテキストはserverディレクトリ直下であると仮定
+COPY data_store_setup_files/opensearch/index_definition/index.json .
+CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json -u ${USER_NAME}:${PASSWORD} ${ENDPOINT_URI}/users" ]
