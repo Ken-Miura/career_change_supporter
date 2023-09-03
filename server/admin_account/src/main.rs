@@ -50,6 +50,9 @@ fn main() {
 }
 
 async fn main_internal() {
+    // 標準出力に出力される内容を見やすくしたい＋管理者向けのアカウント操作しかしないのでログで見る必要のある重要な箇所もない
+    // 従ってログの初期化は行わない
+
     let database_url = construct_db_url(
         KEY_TO_DB_HOST,
         KEY_TO_DB_PORT,
