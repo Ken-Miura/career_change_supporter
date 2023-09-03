@@ -72,7 +72,7 @@ use axum::routing::{get, post};
 use axum::Router;
 use common::admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, KEY_TO_ADMIN_TOTP_ISSUER};
 use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
-use common::log::LOG_LEVEL;
+use common::log::{LOG_LEVEL, init_log};
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME, KEY_TO_OPENSEARCH_AUTH,
@@ -89,7 +89,7 @@ use common::storage::{
     KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
     KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI, StorageClient,
 };
-use common::util::{check_env_vars, init_log};
+use common::util::{check_env_vars};
 use common::{AppState, RequestLogElements, create_key_for_singed_cookie};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};

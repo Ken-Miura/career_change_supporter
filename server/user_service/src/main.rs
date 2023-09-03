@@ -54,7 +54,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
 use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
-use common::log::LOG_LEVEL;
+use common::log::{LOG_LEVEL, init_log};
 use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME, KEY_TO_OPENSEARCH_AUTH,
@@ -70,7 +70,7 @@ use common::smtp::{
 use common::storage::{
     KEY_TO_AWS_S3_ENDPOINT_URI, KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_AWS_S3_REGION, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, StorageClient, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI,
 };
-use common::util::{check_env_vars, init_log};
+use common::util::{check_env_vars};
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END, create_key_for_singed_cookie};
 use handlers::session::authentication::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
