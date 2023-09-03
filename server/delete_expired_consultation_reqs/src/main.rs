@@ -6,7 +6,8 @@ use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
 };
-use std::{error::Error, process::exit};
+use std::{env::set_var, error::Error, process::exit};
+use tracing::{error, info};
 
 use common::{
     admin::{
@@ -15,6 +16,7 @@ use common::{
         KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    log::{init_log, LOG_LEVEL},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
         construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
@@ -68,6 +70,15 @@ fn main() {
 }
 
 async fn main_internal() {
+    let log_conf = format!(
+        "delete_expired_consultation_reqs={},common={},sea_orm={}",
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str()
+    );
+    set_var("RUST_LOG", log_conf);
+    init_log();
+
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
     let database_url = construct_db_url(
@@ -80,7 +91,7 @@ async fn main_internal() {
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(1).min_connections(1).sqlx_logging(true);
     let pool = Database::connect(opt).await.unwrap_or_else(|e| {
-        println!("failed to connect database: {}", e);
+        error!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
 
@@ -91,7 +102,7 @@ async fn main_internal() {
     ) {
         Ok(ai) => ai,
         Err(e) => {
-            println!("invalid PAYJP access info: {}", e);
+            error!("invalid PAYJP access info: {}", e);
             exit(ENV_VAR_CAPTURE_FAILURE);
         }
     };
@@ -120,11 +131,11 @@ async fn main_internal() {
     .await;
 
     let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delete expired consultation reqs: {}", e);
+        error!("failed to delete expired consultation reqs: {}", e);
         exit(APPLICATION_ERR)
     });
 
-    println!(
+    info!(
         "{} consultation req(s) were (was) deleted and its credit facility was released successfully",
         deleted_num
     );
@@ -155,7 +166,7 @@ async fn delete_expired_consultation_reqs(
         let charge_id = expired_consultation_req.charge_id.as_str();
         let result = op.delete_consultation_req(req_id, charge_id).await;
         if result.is_err() {
-            println!("failed delete_consultation_req: {:?}", result);
+            error!("failed delete_consultation_req: {:?}", result);
             delete_failed.push(expired_consultation_req);
         }
         op.wait_for_dependent_service_rate_limit().await;
