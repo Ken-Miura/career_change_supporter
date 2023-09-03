@@ -1561,6 +1561,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1572,6 +1573,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1583,6 +1585,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1594,6 +1597,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1605,6 +1609,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2597,6 +2602,7 @@ dependencies = [
  "dotenv",
  "entity",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

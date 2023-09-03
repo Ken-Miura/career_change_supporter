@@ -6,11 +6,13 @@ use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
     EntityTrait, QueryFilter, QuerySelect,
 };
-use std::{error::Error, process::exit};
+use std::{env::set_var, error::Error, process::exit};
+use tracing::{error, info};
 
 use common::{
     admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS},
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    log::{init_log, LOG_LEVEL},
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
@@ -56,6 +58,15 @@ fn main() {
 }
 
 async fn main_internal() {
+    let log_conf = format!(
+        "delete_expired_pwd_change_reqs={},common={},sea_orm={}",
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str()
+    );
+    set_var("RUST_LOG", log_conf);
+    init_log();
+
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
     let database_url = construct_db_url(
@@ -68,7 +79,7 @@ async fn main_internal() {
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(1).min_connections(1).sqlx_logging(true);
     let pool = Database::connect(opt).await.unwrap_or_else(|e| {
-        println!("failed to connect database: {}", e);
+        error!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
     let op = DeleteExpiredPwdChangeReqsOperationImpl { pool };
@@ -90,11 +101,11 @@ async fn main_internal() {
     .await;
 
     let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delete expired pwd change reqs: {}", e);
+        error!("failed to delete expired pwd change reqs: {}", e);
         exit(APPLICATION_ERR)
     });
 
-    println!(
+    info!(
         "{} pwd change req(s) were (was) deleted successfully",
         deleted_num
     );
@@ -124,7 +135,7 @@ async fn delete_expired_pwd_change_reqs(
             .delete_pwd_change_req(&expired_pwd_change_req.pwd_change_req_id)
             .await;
         if result.is_err() {
-            println!("failed delete_pwd_change_req: {:?}", result);
+            error!("failed delete_pwd_change_req: {:?}", result);
             delete_failed.push(expired_pwd_change_req);
         }
     }

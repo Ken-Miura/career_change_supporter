@@ -7,7 +7,8 @@ use entity::sea_orm::{
     DatabaseTransaction, EntityTrait, ModelTrait, QueryFilter, QuerySelect, TransactionError,
     TransactionTrait,
 };
-use std::{error::Error, process::exit};
+use std::{env::set_var, error::Error, process::exit};
+use tracing::{error, info};
 
 use common::{
     admin::{
@@ -16,6 +17,7 @@ use common::{
         KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    log::{init_log, LOG_LEVEL},
     payment_platform::{
         construct_access_info,
         tenant::{TenantOperation, TenantOperationImpl},
@@ -72,6 +74,15 @@ fn main() {
 }
 
 async fn main_internal() {
+    let log_conf = format!(
+        "delete_expired_deleted_user_accounts={},common={},sea_orm={}",
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str()
+    );
+    set_var("RUST_LOG", log_conf);
+    init_log();
+
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
     let database_url = construct_db_url(
@@ -84,7 +95,7 @@ async fn main_internal() {
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(1).min_connections(1).sqlx_logging(true);
     let pool = Database::connect(opt).await.unwrap_or_else(|e| {
-        println!("failed to connect database: {}", e);
+        error!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
 
@@ -95,7 +106,7 @@ async fn main_internal() {
     ) {
         Ok(ai) => ai,
         Err(e) => {
-            println!("invalid PAYJP access info: {}", e);
+            error!("invalid PAYJP access info: {}", e);
             exit(ENV_VAR_CAPTURE_FAILURE);
         }
     };
@@ -124,11 +135,11 @@ async fn main_internal() {
     .await;
 
     let deleted_num = result.unwrap_or_else(|e| {
-        println!("failed to delete expired deleted user accounts: {}", e);
+        error!("failed to delete expired deleted user accounts: {}", e);
         exit(APPLICATION_ERR)
     });
 
-    println!("{} deleted user account(s) were (was) deleted", deleted_num);
+    info!("{} deleted user account(s) were (was) deleted", deleted_num);
     exit(SUCCESS)
 }
 
@@ -157,7 +168,7 @@ async fn delete_expired_deleted_user_accounts(
             .delete_deleted_user_account(expired_deleted_user_account.user_account_id)
             .await;
         if result.is_err() {
-            println!("failed delete_deleted_user_account: {:?}", result);
+            error!("failed delete_deleted_user_account: {:?}", result);
             delete_failed.push(expired_deleted_user_account);
         }
         op.wait_for_dependent_service_rate_limit().await;
@@ -333,7 +344,7 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
                     format!("transaction error: {}", transaction_err)
                 }
             })?;
-        println!("identity deleted: {}, num of careers deleted: {}, consulting fee deleted: {}, mfa info deleted: {}, deleted tenant id: {:?}",
+        info!("identity deleted: {}, num of careers deleted: {}, consulting fee deleted: {}, mfa info deleted: {}, deleted tenant id: {:?}",
             result.0, result.1, result.2, result.3, result.4);
         Ok(())
     }

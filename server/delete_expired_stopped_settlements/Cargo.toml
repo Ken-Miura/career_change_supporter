@@ -11,3 +11,4 @@ common = { path = "../common" }
 dotenv = "0.15.0"
 entity = { path = "../entity" }
 tokio = { version = "1.29.1", features = ["full"] }
+tracing = "0.1.37"

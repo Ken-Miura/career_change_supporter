@@ -7,7 +7,8 @@ use entity::sea_orm::{
     ConnectOptions, Database, DatabaseConnection, DatabaseTransaction, EntityTrait, ModelTrait,
     QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use std::{error::Error, process::exit};
+use std::{env::set_var, error::Error, process::exit};
+use tracing::{error, info, warn};
 
 use common::{
     admin::{
@@ -16,6 +17,7 @@ use common::{
         KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
+    log::{init_log, LOG_LEVEL},
     payment_platform::{
         charge::{ChargeOperation, ChargeOperationImpl},
         construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
@@ -71,6 +73,15 @@ fn main() {
 }
 
 async fn main_internal() {
+    let log_conf = format!(
+        "make_payment_of_unhandled_settlement={},common={},sea_orm={}",
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str(),
+        LOG_LEVEL.as_str()
+    );
+    set_var("RUST_LOG", log_conf);
+    init_log();
+
     let current_date_time = chrono::Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
 
     let database_url = construct_db_url(
@@ -83,7 +94,7 @@ async fn main_internal() {
     let mut opt = ConnectOptions::new(database_url.clone());
     opt.max_connections(1).min_connections(1).sqlx_logging(true);
     let pool = Database::connect(opt).await.unwrap_or_else(|e| {
-        println!("failed to connect database: {}", e);
+        error!("failed to connect database: {}", e);
         exit(CONNECTION_ERROR)
     });
 
@@ -94,7 +105,7 @@ async fn main_internal() {
     ) {
         Ok(ai) => ai,
         Err(e) => {
-            println!("invalid PAYJP access info: {}", e);
+            error!("invalid PAYJP access info: {}", e);
             exit(ENV_VAR_CAPTURE_FAILURE);
         }
     };
@@ -123,11 +134,11 @@ async fn main_internal() {
     .await;
 
     let num_of_handled = result.unwrap_or_else(|e| {
-        println!("failed to make payment of unhandled settlement: {}", e);
+        error!("failed to make payment of unhandled settlement: {}", e);
         exit(APPLICATION_ERR)
     });
 
-    println!("{} payment(s) were (was) made successfully", num_of_handled);
+    info!("{} payment(s) were (was) made successfully", num_of_handled);
     exit(SUCCESS)
 }
 
@@ -154,7 +165,7 @@ async fn make_payment_of_unhandled_settlement(
         let settlement_id = unhandled_settlement.settlement_id;
         let result = op.make_payment(settlement_id, current_date_time).await;
         if result.is_err() {
-            println!("failed make_payment: {:?}", result);
+            error!("failed make_payment: {:?}", result);
             make_payment_failed.push(unhandled_settlement);
         }
         op.wait_for_dependent_service_rate_limit().await;
@@ -278,7 +289,7 @@ impl MakePaymentOfUnhandledSettlementOperation for MakePaymentOfUnhandledSettlem
                     let settlement_model = match settlement_model {
                         Some(m) => m,
                         None => {
-                            println!("no settlement (settlement_id: {}) found (maybe it has been already handled)", settlement_id);
+                            warn!("no settlement (settlement_id: {}) found (maybe it has been already handled)", settlement_id);
                             return Ok(());
                         }
                     };
@@ -970,8 +981,6 @@ mod tests {
         assert!(err_message.contains("5000"));
         assert!(err_message.contains("30.0"));
         assert!(err_message.contains("2023-10-19T15:00:00+09:00"));
-
-        println!("{}", err_message);
     }
 
     fn create_dummy_1_failed_unhandled_settlement(
