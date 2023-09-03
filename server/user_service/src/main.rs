@@ -70,7 +70,7 @@ use common::smtp::{
 use common::storage::{
     KEY_TO_AWS_S3_ENDPOINT_URI, KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_AWS_S3_REGION, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, StorageClient, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI,
 };
-use common::util::check_env_vars;
+use common::util::{check_env_vars, init_log};
 use common::{AppState, RequestLogElements, KEY_TO_URL_FOR_FRONT_END, create_key_for_singed_cookie};
 use handlers::session::authentication::authenticated_handlers::consultation::consultation_room::{KEY_TO_SKY_WAY_APPLICATION_ID, KEY_TO_SKY_WAY_SECRET_KEY};
 use dotenv::dotenv;
@@ -159,14 +159,7 @@ async fn main_internal(num_of_cpus: u32) {
         LOG_LEVEL.as_str()
     );
     set_var("RUST_LOG", log_conf);
-    // ログの出力、保管先にAWS CloudWatch Logsを仮定している。
-    // AWS CloudWatch Logsでは色を示す制御文字は正しく扱えないため文字化けとなる。
-    // 従って、色を示す制御文字を抑制するためにANSIを明示的に不使用にしている。
-    let format = tracing_subscriber::fmt::format().with_ansi(false);
-    tracing_subscriber::fmt()
-        .event_format(format)
-        .with_ansi(false)
-        .init();
+    init_log();
 
     let database_url = construct_db_url(
         KEY_TO_DB_HOST,

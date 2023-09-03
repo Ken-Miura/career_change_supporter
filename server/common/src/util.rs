@@ -26,6 +26,20 @@ pub fn check_env_vars(env_vars: Vec<String>) -> Result<(), Vec<String>> {
     Ok(())
 }
 
+/// ログ設定の初期化を行う
+///
+/// ログのフォーマットや制御文字利用の抑止を行っている。ログ出力の前（典型的にはプロジェクト実行の初めの方）で一度だけ呼び出しておく。
+pub fn init_log() {
+    // ログの出力、保管先にAWS CloudWatch Logsを仮定している。
+    // AWS CloudWatch Logsでは色を示す制御文字は正しく扱えないため文字化けとなる。
+    // 従って、色を示す制御文字を抑制するためにANSIを明示的に不使用にしている。
+    let format = tracing_subscriber::fmt::format().with_ansi(false);
+    tracing_subscriber::fmt()
+        .event_format(format)
+        .with_ansi(false)
+        .init();
+}
+
 /// SameSiteがStrict、Secure、HttpOnlyのセッションCookie（ブラウザが閉じられたら消えるCookie）を返す。
 pub fn create_session_cookie<'a>(name: String, value: String, path: String) -> Cookie<'a> {
     Cookie::build(name, value)
