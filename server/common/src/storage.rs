@@ -2,7 +2,7 @@
 
 use std::{env::var, error::Error};
 
-use aws_config::meta::region::RegionProviderChain;
+use aws_config::{ecs::EcsCredentialsProvider, meta::region::RegionProviderChain};
 use aws_sdk_s3::{
     config::{Credentials, Region},
     primitives::ByteStream,
@@ -94,6 +94,30 @@ impl StorageClient {
             None,
             "aws_s3_credential_provider",
         );
+
+        let config = aws_config::from_env()
+            .region(region_provider)
+            .credentials_provider(credentials)
+            .load()
+            .await;
+
+        let s3_conf = aws_sdk_s3::config::Builder::from(&config)
+            .endpoint_url(endpoint_uri)
+            .build();
+
+        Self {
+            client: Client::from_conf(s3_conf),
+        }
+    }
+
+    /// 引数を用いてAWS S3クライアントを生成する。
+    ///
+    /// この関数で生成したインスタンスは、AWS S3へのアクセス権に関してECSタスクロールを参照する。
+    /// 従って、この関数はAWS ECS上でECSタスクロールがアタッチされたコンテナ内で利用されることを前提としている。
+    pub async fn new_with_ecs_task_role(region: &str, endpoint_uri: &str) -> Self {
+        let cloned_region = region.to_string();
+        let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
+        let credentials = EcsCredentialsProvider::builder().build();
 
         let config = aws_config::from_env()
             .region(region_provider)
