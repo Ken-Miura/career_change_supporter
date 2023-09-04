@@ -25,8 +25,6 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
 
-s3とsesへのアクセスをユーザーからロールに切り替える実装の調査、変更（ローカルと本番の両方で動くように注意する）
-
 client/admin_app以下の一部用意していない単体テストコード
 
 # NOTE
