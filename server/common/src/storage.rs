@@ -10,12 +10,12 @@ use aws_sdk_s3::{
 };
 use once_cell::sync::Lazy;
 
-pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
-pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_AWS_S3_ENDPOINT_URI).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
+pub static AWS_S3_REGION: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_REGION).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"http://storage:9000\") must be set",
-            KEY_TO_AWS_S3_ENDPOINT_URI
+            "Not environment variable found: environment variable \"{}\" (example value: \"ap-northeast-1\") must be set",
+            KEY_TO_AWS_S3_REGION
         );
     })
 });
@@ -40,12 +40,12 @@ pub static AWS_S3_SECRET_ACCESS_KEY: Lazy<String> = Lazy::new(|| {
     })
 });
 
-pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
-pub static AWS_S3_REGION: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_AWS_S3_REGION).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
+pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"ap-northeast-1\") must be set",
-            KEY_TO_AWS_S3_REGION
+            "Not environment variable found: environment variable \"{}\" (example value: \"http://storage:9000\") must be set",
+            KEY_TO_AWS_S3_ENDPOINT_URI
         );
     })
 });
