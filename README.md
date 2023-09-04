@@ -27,6 +27,9 @@ AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサー�
 
 client/admin_app以下の一部用意していない単体テストコード
 
+特定商取引法に基づく表記内容を再確認し、必要に応じて修正する
+https://help.pay.jp/ja/articles/5143455-%E7%89%B9%E5%AE%9A%E5%95%86%E5%8F%96%E5%BC%95%E6%B3%95%E3%81%AB%E5%9F%BA%E3%81%A5%E3%81%8F%E8%A1%A8%E8%A8%98-ctoc%E3%82%B9%E3%82%AD%E3%83%AB%E3%82%B7%E3%82%A7%E3%82%A2%E3%82%B5%E3%83%BC%E3%83%93%E3%82%B9%E3%81%AE%E8%A8%98%E8%BC%89%E4%BE%8B
+
 # NOTE
 
 ## 開発環境
