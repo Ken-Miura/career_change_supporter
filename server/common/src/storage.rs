@@ -2,7 +2,7 @@
 
 use std::{env::var, error::Error};
 
-use aws_config::meta::region::RegionProviderChain;
+use aws_config::{ecs::EcsCredentialsProvider, meta::region::RegionProviderChain};
 use aws_sdk_s3::{
     config::{Credentials, Region},
     primitives::ByteStream,
@@ -10,12 +10,12 @@ use aws_sdk_s3::{
 };
 use once_cell::sync::Lazy;
 
-pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
-pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_AWS_S3_ENDPOINT_URI).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
+pub static AWS_S3_REGION: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_REGION).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"http://storage:9000\") must be set",
-            KEY_TO_AWS_S3_ENDPOINT_URI
+            "Not environment variable found: environment variable \"{}\" (example value: \"ap-northeast-1\") must be set",
+            KEY_TO_AWS_S3_REGION
         );
     })
 });
@@ -40,12 +40,12 @@ pub static AWS_S3_SECRET_ACCESS_KEY: Lazy<String> = Lazy::new(|| {
     })
 });
 
-pub const KEY_TO_AWS_S3_REGION: &str = "AWS_S3_REGION";
-pub static AWS_S3_REGION: Lazy<String> = Lazy::new(|| {
-    var(KEY_TO_AWS_S3_REGION).unwrap_or_else(|_| {
+pub const KEY_TO_AWS_S3_ENDPOINT_URI: &str = "AWS_S3_ENDPOINT_URI";
+pub static AWS_S3_ENDPOINT_URI: Lazy<String> = Lazy::new(|| {
+    var(KEY_TO_AWS_S3_ENDPOINT_URI).unwrap_or_else(|_| {
         panic!(
-            "Not environment variable found: environment variable \"{}\" (example value: \"ap-northeast-1\") must be set",
-            KEY_TO_AWS_S3_REGION
+            "Not environment variable found: environment variable \"{}\" (example value: \"http://storage:9000\") must be set",
+            KEY_TO_AWS_S3_ENDPOINT_URI
         );
     })
 });
@@ -94,6 +94,30 @@ impl StorageClient {
             None,
             "aws_s3_credential_provider",
         );
+
+        let config = aws_config::from_env()
+            .region(region_provider)
+            .credentials_provider(credentials)
+            .load()
+            .await;
+
+        let s3_conf = aws_sdk_s3::config::Builder::from(&config)
+            .endpoint_url(endpoint_uri)
+            .build();
+
+        Self {
+            client: Client::from_conf(s3_conf),
+        }
+    }
+
+    /// 引数を用いてAWS S3クライアントを生成する。
+    ///
+    /// この関数で生成したインスタンスは、AWS S3へのアクセス権に関してECSタスクロールを参照する。
+    /// 従って、この関数はAWS ECS上でECSタスクロールがアタッチされたコンテナ内で利用されることを前提としている。
+    pub async fn new_with_ecs_task_role(region: &str, endpoint_uri: &str) -> Self {
+        let cloned_region = region.to_string();
+        let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
+        let credentials = EcsCredentialsProvider::builder().build();
 
         let config = aws_config::from_env()
             .region(region_provider)

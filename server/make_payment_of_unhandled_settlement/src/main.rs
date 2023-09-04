@@ -26,11 +26,12 @@ use common::{
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
-        KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_ENDPOINT_URI, KEY_TO_AWS_SES_REGION,
-        KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_SYSTEM_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS,
+        KEY_TO_AWS_SES_ENDPOINT_URI, KEY_TO_AWS_SES_REGION, KEY_TO_SYSTEM_EMAIL_ADDRESS,
+        SYSTEM_EMAIL_ADDRESS,
     },
     util::check_env_vars,
-    JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE, WEB_SITE_NAME,
+    JAPANESE_TIME_ZONE, KEY_TO_USE_ECS_TASK_ROLE, LENGTH_OF_MEETING_IN_MINUTE, USE_ECS_TASK_ROLE,
+    WEB_SITE_NAME,
 };
 
 const SUCCESS: i32 = 0;
@@ -51,12 +52,11 @@ fn main() {
         KEY_TO_ADMIN_EMAIL_ADDRESS.to_string(),
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
-        KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
-        KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
+        KEY_TO_USE_ECS_TASK_ROLE.to_string(),
     ]);
     if result.is_err() {
         println!("failed to resolve mandatory env vars (following env vars are needed)");
@@ -117,13 +117,18 @@ async fn main_internal() {
             *DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
     };
 
-    let smtp_client = SmtpClient::new(
-        AWS_SES_REGION.as_str(),
-        AWS_SES_ACCESS_KEY_ID.as_str(),
-        AWS_SES_SECRET_ACCESS_KEY.as_str(),
-        AWS_SES_ENDPOINT_URI.as_str(),
-    )
-    .await;
+    let smtp_client = if *USE_ECS_TASK_ROLE {
+        SmtpClient::new_with_ecs_task_role(AWS_SES_REGION.as_str(), AWS_SES_ENDPOINT_URI.as_str())
+            .await
+    } else {
+        SmtpClient::new(
+            AWS_SES_REGION.as_str(),
+            AWS_SES_ACCESS_KEY_ID.as_str(),
+            AWS_SES_SECRET_ACCESS_KEY.as_str(),
+            AWS_SES_ENDPOINT_URI.as_str(),
+        )
+        .await
+    };
 
     let result = make_payment_of_unhandled_settlement(
         current_date_time,

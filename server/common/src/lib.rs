@@ -158,6 +158,20 @@ pub static URL_FOR_FRONT_END: Lazy<String> = Lazy::new(|| {
     })
 });
 
+/// AWSのリソースへのアクセス権付与にECSタスクロールを使うかどうかを示す環境変数
+pub const KEY_TO_USE_ECS_TASK_ROLE: &str = "USE_ECS_TASK_ROLE";
+/// AWSのリソースへのアクセス権付与にECSタスクロールを使うかどうかを示す値
+///
+/// ECSタスクロールを使わない場合、AWSのリソースへのアクセス権付与はIAMユーザーのアクセスキーとシークレットキーを使う。
+pub static USE_ECS_TASK_ROLE: Lazy<bool> = Lazy::new(|| {
+    var(KEY_TO_USE_ECS_TASK_ROLE).unwrap_or_else(|_| {
+        panic!(
+            "Not environment variable found: environment variable \"{}\" (example value: \"true\") must be set",
+            KEY_TO_USE_ECS_TASK_ROLE
+        );
+    }).parse().expect("failed to parse")
+});
+
 /// シークレットへの環境変数からCookie署名用のキーを作成する
 ///
 /// # panics

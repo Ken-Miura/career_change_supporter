@@ -83,14 +83,14 @@ use common::payment_platform::{
 };
 use common::redis::{KEY_TO_REDIS_HOST, KEY_TO_REDIS_PORT, construct_redis_url};
 use common::smtp::{
-    KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ACCESS_KEY_ID, KEY_TO_AWS_SES_SECRET_ACCESS_KEY, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
+    KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
 };
 use common::storage::{
-    KEY_TO_AWS_S3_ACCESS_KEY_ID, KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
-    KEY_TO_AWS_S3_SECRET_ACCESS_KEY, KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI, StorageClient,
+     KEY_TO_AWS_S3_REGION, KEY_TO_AWS_S3_ENDPOINT_URI,
+     KEY_TO_IDENTITY_IMAGES_BUCKET_NAME, KEY_TO_CAREER_IMAGES_BUCKET_NAME, AWS_S3_REGION, AWS_S3_ACCESS_KEY_ID, AWS_S3_SECRET_ACCESS_KEY, AWS_S3_ENDPOINT_URI, StorageClient,
 };
 use common::util::{check_env_vars};
-use common::{AppState, RequestLogElements, create_key_for_singed_cookie};
+use common::{AppState, RequestLogElements, create_key_for_singed_cookie, KEY_TO_USE_ECS_TASK_ROLE, USE_ECS_TASK_ROLE};
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use once_cell::sync::Lazy;
@@ -120,10 +120,8 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
         KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
-        KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
-        KEY_TO_AWS_S3_ACCESS_KEY_ID.to_string(),
-        KEY_TO_AWS_S3_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_S3_REGION.to_string(),
+        KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
         KEY_TO_IDENTITY_IMAGES_BUCKET_NAME.to_string(),
         KEY_TO_CAREER_IMAGES_BUCKET_NAME.to_string(),
         KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP.to_string(),
@@ -135,9 +133,8 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_INQUIRY_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
-        KEY_TO_AWS_SES_ACCESS_KEY_ID.to_string(),
-        KEY_TO_AWS_SES_SECRET_ACCESS_KEY.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
+        KEY_TO_USE_ECS_TASK_ROLE.to_string(),
     ]
 });
 
@@ -233,21 +230,31 @@ async fn main_internal(num_of_cpus: u32) {
     let key_for_signed_cookie =
         create_key_for_singed_cookie(KEY_TO_KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP);
 
-    let smtp_client = SmtpClient::new(
-        AWS_SES_REGION.as_str(),
-        AWS_SES_ACCESS_KEY_ID.as_str(),
-        AWS_SES_SECRET_ACCESS_KEY.as_str(),
-        AWS_SES_ENDPOINT_URI.as_str(),
-    )
-    .await;
+    let smtp_client = if *USE_ECS_TASK_ROLE {
+        SmtpClient::new_with_ecs_task_role(AWS_SES_REGION.as_str(), AWS_SES_ENDPOINT_URI.as_str())
+            .await
+    } else {
+        SmtpClient::new(
+            AWS_SES_REGION.as_str(),
+            AWS_SES_ACCESS_KEY_ID.as_str(),
+            AWS_SES_SECRET_ACCESS_KEY.as_str(),
+            AWS_SES_ENDPOINT_URI.as_str(),
+        )
+        .await
+    };
 
-    let storage_client = StorageClient::new(
-        AWS_S3_REGION.as_str(),
-        AWS_S3_ACCESS_KEY_ID.as_str(),
-        AWS_S3_SECRET_ACCESS_KEY.as_str(),
-        AWS_S3_ENDPOINT_URI.as_str(),
-    )
-    .await;
+    let storage_client = if *USE_ECS_TASK_ROLE {
+        StorageClient::new_with_ecs_task_role(AWS_S3_REGION.as_str(), AWS_S3_ENDPOINT_URI.as_str())
+            .await
+    } else {
+        StorageClient::new(
+            AWS_S3_REGION.as_str(),
+            AWS_S3_ACCESS_KEY_ID.as_str(),
+            AWS_S3_SECRET_ACCESS_KEY.as_str(),
+            AWS_S3_ENDPOINT_URI.as_str(),
+        )
+        .await
+    };
 
     let state = AppState {
         store,
