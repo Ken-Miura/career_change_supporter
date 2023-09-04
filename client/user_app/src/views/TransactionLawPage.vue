@@ -15,7 +15,7 @@
         <h2 class="font-bold text-lg lg:text-xl">事業者の所在</h2>
         <p class="ml-2 text-base lg:text-lg">〒{{ businessOperatorZipCode }}</p>
         <p class="ml-2 text-base lg:text-lg">{{ businessOperatorAddress }}</p>
-        <p class="ml-2 text-base lg:text-lg">電話番号については「お問い合わせ先」にてご請求をいただければ、遅滞なく開示いたします。</p>
+        <p class="ml-2 text-base lg:text-lg">電話番号: {{ businessOperatorPhoneNumber }}</p>
         <p class="ml-2 text-base lg:text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
       </div>
       <div class="mt-4 ml-2">
@@ -64,12 +64,14 @@ export default defineComponent({
     const businessOperatorName = process.env.VUE_APP_BUSINESS_OPERATOR_NAME
     const businessOperatorZipCode = process.env.VUE_APP_BUSINESS_OPERATOR_ZIP_CODE
     const businessOperatorAddress = process.env.VUE_APP_BUSINESS_OPERATOR_ADDRESS
+    const businessOperatorPhoneNumber = process.env.VUE_APP_BUSINESS_OPERATOR_PHONE_NUMBER
     const businessOperatorInquiryEmailAddress = process.env.VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS
 
     return {
       businessOperatorName,
       businessOperatorZipCode,
       businessOperatorAddress,
+      businessOperatorPhoneNumber,
       businessOperatorInquiryEmailAddress,
       PLATFORM_FEE_IN_PERCENTAGE,
       TRANSFER_FEE_IN_YEN
