@@ -11,7 +11,7 @@ const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
 /// 年間で稼ぐことが可能な最大報酬額（単位：円）
 pub(super) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
     let max_annual_rewards =
-        env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "470000".to_string());
+        env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "200000".to_string());
     let max_annual_rewards = max_annual_rewards
         .parse()
         .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN");
