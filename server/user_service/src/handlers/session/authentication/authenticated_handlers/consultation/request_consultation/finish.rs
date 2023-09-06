@@ -187,7 +187,7 @@ fn confirm_three_d_secure_status_is_ok(charge: &Charge) -> Result<(), ErrResp> {
             return Err(unexpected_err_resp());
         }
     };
-    if !(three_d_secure_status == "attempted" || three_d_secure_status == "verified") {
+    if three_d_secure_status != "verified" {
         error!(
             "3D secure is not finished correctly (three_d_secure_status: {}, charge.id: {})",
             three_d_secure_status,
@@ -755,7 +755,7 @@ mod tests {
                 expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
             },
             TestCase {
-                name: "success case 2 (3D secure status attempted)".to_string(),
+                name: "fail ThreeDSecureError (3D secure status attempted)".to_string(),
                 input: Input {
                     user_account_id: 1,
                     user_email_address: user_email_address.to_string(),
@@ -788,7 +788,12 @@ mod tests {
                     },
                     smtp_client: SendMailMock {},
                 },
-                expected: Ok((StatusCode::OK, Json(FinishRequestConsultationResult {}))),
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::ThreeDSecureError as u32,
+                    }),
+                )),
             },
             TestCase {
                 name: "fail ConsultantIsNotAvailable".to_string(),
