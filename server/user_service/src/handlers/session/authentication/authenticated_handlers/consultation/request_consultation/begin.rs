@@ -28,7 +28,7 @@ use super::{
     KEY_TO_SECOND_CANDIDATE_IN_JST_ON_CHARGE_OBJ, KEY_TO_THIRD_CANDIDATE_IN_JST_ON_CHARGE_OBJ,
 };
 use crate::err::Code;
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
+use crate::handlers::session::authentication::authenticated_handlers::payment_platform::{ACCESS_INFO, PLATFORM_FEE_RATE_IN_PERCENTAGE};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime;
@@ -472,13 +472,14 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
     fee_per_hour_in_yen: i32,
     op: &impl RequestConsultationOperation,
 ) -> Result<(), ErrResp> {
+    let reward_of_this_consultation = get_reward_of_this_consultation(fee_per_hour_in_yen)?;
     let expected_rewards = get_expected_rewards(consultant_id, current_date_time, op).await?;
     let rewards = get_rewards(consultant_id, current_date_time, op).await?;
 
-    let expected_annual_rewards = fee_per_hour_in_yen + expected_rewards + rewards;
+    let expected_annual_rewards = reward_of_this_consultation + expected_rewards + rewards;
     if expected_annual_rewards > *MAX_ANNUAL_REWARDS_IN_YEN {
-        error!("consultant (consultant_id: {}) exceeds max annual rewards (expected_annual_rewards ({} = fee_per_hour_in_yen ({}) + expected_rewards ({}) + rewards({})) > MAX_ANNUAL_REWARDS_IN_YEN ({}))", 
-          consultant_id, expected_annual_rewards, fee_per_hour_in_yen, expected_rewards, rewards, *MAX_ANNUAL_REWARDS_IN_YEN);
+        error!("consultant (consultant_id: {}, fee_per_hour_in_yen: {}) exceeds max annual rewards (expected_annual_rewards ({} = reward_of_this_consultation ({}) + expected_rewards ({}) + rewards({})) > MAX_ANNUAL_REWARDS_IN_YEN ({}))", 
+          consultant_id, fee_per_hour_in_yen, expected_annual_rewards, reward_of_this_consultation, expected_rewards, rewards, *MAX_ANNUAL_REWARDS_IN_YEN);
         return Err((
             StatusCode::BAD_REQUEST,
             Json(ApiError {
@@ -487,6 +488,15 @@ async fn ensure_expected_annual_rewards_does_not_exceed_max_annual_rewards(
         ));
     }
     Ok(())
+}
+
+fn get_reward_of_this_consultation(fee_per_hour_in_yen: i32) -> Result<i32, ErrResp> {
+    let p = PaymentInfo {
+        fee_per_hour_in_yen,
+        platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+    };
+    let reward_of_this_consultation = calculate_rewards(&[p])?;
+    Ok(reward_of_this_consultation)
 }
 
 async fn get_expected_rewards(
