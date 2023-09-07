@@ -26,7 +26,7 @@ services:
 
   db-management-client:
     # データベース操作が可能なWeb UIを提供するimage
-    image: dpage/pgadmin4:7.4
+    image: dpage/pgadmin4:7.6
     restart: always
     ports:
       - "8082:80"
