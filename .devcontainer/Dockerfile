@@ -16,7 +16,7 @@ RUN apt-get update && \
         libssl-dev \
         lldb \
         pkg-config \
-        postgresql-client-14 \
+        postgresql-client-15 \
         vim && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -132,7 +132,7 @@ ENTRYPOINT [ "make_payment_of_unhandled_settlement" ]
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
 FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
-RUN apk add --update bash postgresql14-client && \
+RUN apk add --update bash postgresql15-client && \
         rm -rf /var/cache/apk/*
 CMD [ "psql", "--help" ]
 
