@@ -17,7 +17,7 @@ services:
       - development_network
   
   cache:
-    image: redis:7.0.12
+    image: redis:7.2.1
     restart: always
     ports:
       - "6379:6379"
