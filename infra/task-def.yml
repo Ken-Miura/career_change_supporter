@@ -1,0 +1,238 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+    Generator: "former2"
+Description: ""
+Resources:
+    ECSTaskDefinition:
+        Type: "AWS::ECS::TaskDefinition"
+        Properties:
+            ContainerDefinitions: 
+              - 
+                Environment: 
+                  - 
+                    Name: "SYSTEM_EMAIL_ADDRESS"
+                    Value: "no-reply@career-change-supporter.com"
+                  - 
+                    Name: "REDIS_HOST"
+                    Value: "master.ccs-redis-cluster.ppvswp.apne1.cache.amazonaws.com"
+                  - 
+                    Name: "AWS_S3_ENDPOINT_URI"
+                    Value: !Sub "https://s3.${AWS::Region}.amazonaws.com"
+                  - 
+                    Name: "DB_PORT"
+                    Value: "5432"
+                  - 
+                    Name: "DB_USER_NAME"
+                    Value: "user_app"
+                  - 
+                    Name: "AWS_SES_REGION"
+                    Value: "us-east-1"
+                  - 
+                    Name: "DB_NAME"
+                    Value: "ccs_db"
+                  - 
+                    Name: "OPENSEARCH_AUTH"
+                    Value: "true"
+                  - 
+                    Name: "SOCKET_FOR_USER_APP"
+                    Value: "0.0.0.0:3000"
+                  - 
+                    Name: "AWS_SES_ENDPOINT_URI"
+                    Value: "https://email.us-east-1.amazonaws.com"
+                  - 
+                    Name: "DB_HOST"
+                    Value: !Sub "ccs-db-cluster-1.cluster-cm0p7cp5jzll.${AWS::Region}.rds.amazonaws.com"
+                  - 
+                    Name: "AWS_S3_REGION"
+                    Value: !Ref AWS::Region
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_URL"
+                    Value: "https://api.pay.jp"
+                  - 
+                    Name: "INQUIRY_EMAIL_ADDRESS"
+                    Value: "inquiry-desk@career-change-supporter.com"
+                  - 
+                    Name: "TERMS_OF_USE_VERSION"
+                    Value: "1"
+                  - 
+                    Name: "USER_TOTP_ISSUER"
+                    Value: "career-change-supporter.com"
+                  - 
+                    Name: "IDENTITY_IMAGES_BUCKET_NAME"
+                    Value: "ccs-identity-images"
+                  - 
+                    Name: "REDIS_PORT"
+                    Value: "6582"
+                  - 
+                    Name: "USE_ECS_TASK_ROLE"
+                    Value: "true"
+                  - 
+                    Name: "OPENSEARCH_ENDPOINT_URI"
+                    Value: !Sub "https://vpc-ccs-opensearch-domain-5pt7jcwjcun2jtjgjxnb5cwi2u.${AWS::Region}.es.amazonaws.com "
+                  - 
+                    Name: "URL_FOR_FRONT_END"
+                    Value: "https://career-change-supporter.com"
+                  - 
+                    Name: "CAREER_IMAGES_BUCKET_NAME"
+                    Value: "ccs-career-images"
+                Essential: true
+                Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-user-service:1b087bad827e53026159522731c6f62e72f5b904"
+                LogConfiguration: 
+                    LogDriver: "awslogs"
+                    Options: 
+                        awslogs-create-group: "true"
+                        awslogs-group: "/ecs/user-service"
+                        awslogs-region: !Ref AWS::Region
+                        awslogs-stream-prefix: "ecs"
+                Name: "user-service"
+                PortMappings: 
+                  - 
+                    ContainerPort: 3000
+                    HostPort: 3000
+                    Protocol: "tcp"
+                Secrets: 
+                  - 
+                    Name: "ADMIN_EMAIL_ADDRESS"
+                    ValueFrom: "admin-email-address"
+                  - 
+                    Name: "DB_USER_PASSWORD"
+                    ValueFrom: "db-user-app-password"
+                  - 
+                    Name: "KEY_OF_SIGNED_COOKIE_FOR_USER_APP"
+                    ValueFrom: "key-of-signed-cookie-for-user-app"
+                  - 
+                    Name: "OPENSEARCH_PASSWORD"
+                    ValueFrom: "index-master-password"
+                  - 
+                    Name: "OPENSEARCH_USERNAME"
+                    ValueFrom: "index-master-user"
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_PASSWORD"
+                    ValueFrom: "payjp-api-password"
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_USERNAME"
+                    ValueFrom: "payjp-api-username"
+                  - 
+                    Name: "SKY_WAY_APPLICATION_ID"
+                    ValueFrom: "skyway-application-id"
+                  - 
+                    Name: "SKY_WAY_SECRET_KEY"
+                    ValueFrom: "skyway-secret-key"
+            Family: "user-service"
+            TaskRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskRoleForCCS"
+            ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskExecutionRole"
+            NetworkMode: "awsvpc"
+            RequiresCompatibilities: 
+              - "FARGATE"
+            Cpu: "1024"
+            Memory: "3072"
+
+    ECSTaskDefinition2:
+        Type: "AWS::ECS::TaskDefinition"
+        Properties:
+            ContainerDefinitions: 
+              - 
+                Environment: 
+                  - 
+                    Name: "SYSTEM_EMAIL_ADDRESS"
+                    Value: "no-reply@career-change-supporter.com"
+                  - 
+                    Name: "REDIS_HOST"
+                    Value: "master.ccs-redis-cluster.ppvswp.apne1.cache.amazonaws.com"
+                  - 
+                    Name: "AWS_S3_ENDPOINT_URI"
+                    Value: !Sub "https://s3.${AWS::Region}.amazonaws.com"
+                  - 
+                    Name: "DB_PORT"
+                    Value: "5432"
+                  - 
+                    Name: "ADMIN_TOTP_ISSUER"
+                    Value: "admin.career-change-supporter.com"
+                  - 
+                    Name: "AWS_SES_REGION"
+                    Value: "us-east-1"
+                  - 
+                    Name: "DB_NAME"
+                    Value: "ccs_db"
+                  - 
+                    Name: "OPENSEARCH_AUTH"
+                    Value: "true"
+                  - 
+                    Name: "AWS_SES_ENDPOINT_URI"
+                    Value: "https://email.us-east-1.amazonaws.com"
+                  - 
+                    Name: "DB_HOST"
+                    Value: !Sub "ccs-db-cluster-1.cluster-cm0p7cp5jzll.${AWS::Region}.rds.amazonaws.com"
+                  - 
+                    Name: "AWS_S3_REGION"
+                    Value: !Ref AWS::Region
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_URL"
+                    Value: "https://api.pay.jp"
+                  - 
+                    Name: "INQUIRY_EMAIL_ADDRESS"
+                    Value: "inquiry-desk@career-change-supporter.com"
+                  - 
+                    Name: "SOCKET_FOR_ADMIN_APP"
+                    Value: "0.0.0.0:3001"
+                  - 
+                    Name: "IDENTITY_IMAGES_BUCKET_NAME"
+                    Value: "ccs-identity-images"
+                  - 
+                    Name: "REDIS_PORT"
+                    Value: "6582"
+                  - 
+                    Name: "USE_ECS_TASK_ROLE"
+                    Value: "true"
+                  - 
+                    Name: "OPENSEARCH_ENDPOINT_URI"
+                    Value: !Sub "https://vpc-ccs-opensearch-domain-5pt7jcwjcun2jtjgjxnb5cwi2u.${AWS::Region}.es.amazonaws.com "
+                  - 
+                    Name: "DB_ADMIN_NAME"
+                    Value: "admin_app"
+                  - 
+                    Name: "CAREER_IMAGES_BUCKET_NAME"
+                    Value: "ccs-career-images"
+                Essential: true
+                Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:1b087bad827e53026159522731c6f62e72f5b904"
+                LogConfiguration: 
+                    LogDriver: "awslogs"
+                    Options: 
+                        awslogs-create-group: "true"
+                        awslogs-group: "/ecs/admin-service"
+                        awslogs-region: !Ref AWS::Region
+                        awslogs-stream-prefix: "ecs"
+                Name: "admin-service"
+                PortMappings: 
+                  - 
+                    ContainerPort: 3001
+                    HostPort: 3001
+                    Protocol: "tcp"
+                Secrets: 
+                  - 
+                    Name: "DB_ADMIN_PASSWORD"
+                    ValueFrom: "db-admin-app-password"
+                  - 
+                    Name: "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP"
+                    ValueFrom: "key-of-signed-cookie-for-admin-app"
+                  - 
+                    Name: "OPENSEARCH_PASSWORD"
+                    ValueFrom: "index-master-password"
+                  - 
+                    Name: "OPENSEARCH_USERNAME"
+                    ValueFrom: "index-master-user"
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_PASSWORD"
+                    ValueFrom: "payjp-api-password"
+                  - 
+                    Name: "PAYMENT_PLATFORM_API_USERNAME"
+                    ValueFrom: "payjp-api-username"
+            Family: "admin-service"
+            TaskRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskRoleForCCS"
+            ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskExecutionRole"
+            NetworkMode: "awsvpc"
+            RequiresCompatibilities: 
+              - "FARGATE"
+            Cpu: "1024"
+            Memory: "3072"
+
