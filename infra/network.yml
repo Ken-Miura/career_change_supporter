@@ -3,15 +3,7 @@ Metadata:
     Generator: "former2"
 Description: ""
 Resources:
-    EC2InternetGateway:
-        Type: "AWS::EC2::InternetGateway"
-        Properties:
-            Tags: 
-              - 
-                Key: "Name"
-                Value: "ccs-igw"
-
-    EC2VPC:
+    CCSVPC:
         Type: "AWS::EC2::VPC"
         Properties:
             CidrBlock: "10.0.0.0/16"
@@ -23,81 +15,103 @@ Resources:
                 Key: "Name"
                 Value: "ccs-vpc"
 
-    EC2Subnet:
-        Type: "AWS::EC2::Subnet"
+    CCSInternetGateway:
+        Type: "AWS::EC2::InternetGateway"
         Properties:
-            AvailabilityZone: !Sub "${AWS::Region}c"
-            CidrBlock: "10.0.16.0/20"
-            VpcId: !Ref EC2VPC
-            MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
+                Value: "ccs-igw"
 
-    EC2Subnet2:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !GetAtt EC2Subnet3.AvailabilityZone
-            CidrBlock: "10.0.128.0/20"
-            VpcId: !Ref EC2VPC
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Sub "ccs-subnet-private1-${EC2Subnet3.AvailabilityZone}"
-
-    EC2Subnet3:
+    CCSPublicSubnet1:
         Type: "AWS::EC2::Subnet"
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}a"
             CidrBlock: "10.0.0.0/20"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
                 Value: !Sub "ccs-subnet-public1-${AWS::Region}a"
 
-    EC2RouteTable:
-        Type: "AWS::EC2::RouteTable"
+    CCSPublicSubnet2:
+        Type: "AWS::EC2::Subnet"
         Properties:
-            VpcId: !Ref EC2VPC
+            AvailabilityZone: !Sub "${AWS::Region}c"
+            CidrBlock: "10.0.16.0/20"
+            VpcId: !Ref CCSVPC
+            MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-rtb-private1-${EC2Subnet2.AvailabilityZone}"
+                Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
 
-    EC2RouteTable2:
+    CCSPrivateSubnet1:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !GetAtt CCSPublicSubnet1.AvailabilityZone
+            CidrBlock: "10.0.128.0/20"
+            VpcId: !Ref CCSVPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Sub "ccs-subnet-private1-${CCSPublicSubnet1.AvailabilityZone}"
+
+    CCSPrivateSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Sub "ccs-rtb-private1-${CCSPrivateSubnet1.AvailabilityZone}"
+
+    CCSPublicSubnetRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+            VpcId: !Ref CCSVPC
             Tags: 
               - 
                 Key: "Name"
                 Value: "ccs-rtb-public"
 
-    EC2RouteTable3:
+    # TODO: 不要かどうかチェック
+    DefaultRoute:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
 
-    EC2VPCEndpoint:
+    EC2Route:
+        Type: "AWS::EC2::Route"
+        Properties:
+            DestinationCidrBlock: "0.0.0.0/0"
+            GatewayId: !Ref CCSInternetGateway
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
+
+    EC2Route2:
+        Type: "AWS::EC2::Route"
+        Properties:
+            GatewayId: "vpce-0aa890163c42ffaa3"
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
+
+    CCSVPCS3Endpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Gateway"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
             PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
             RouteTableIds: 
-              - !Ref EC2RouteTable2
+              - !Ref CCSPublicSubnetRouteTable
             PrivateDnsEnabled: false
 
-    EC2VPCEndpoint2:
+    CCSVPCSSMEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Interface"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
             PolicyDocument: |
                 {
@@ -111,8 +125,8 @@ Resources:
                   ]
                 }
             SubnetIds: 
-              - !Ref EC2Subnet
-              - !Ref EC2Subnet3
+              - !Ref CCSPublicSubnet2
+              - !Ref CCSPublicSubnet1
             PrivateDnsEnabled: true
             SecurityGroupIds: 
               - !Ref EC2SecurityGroup6
@@ -122,7 +136,7 @@ Resources:
         Properties:
             GroupDescription: "security group for redis on elastic cache"
             GroupName: "CcsRedisSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup2
@@ -146,7 +160,7 @@ Resources:
         Properties:
             GroupDescription: "security group for admin service on ecs"
             GroupName: "CcsAdminServiceSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup7
@@ -164,7 +178,7 @@ Resources:
         Properties:
             GroupDescription: "security group for tools"
             GroupName: "NoInboundAllowedSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
@@ -175,7 +189,7 @@ Resources:
         Properties:
             GroupDescription: "security group for OpenSearch"
             GroupName: "CcsOpenSearchSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup5
@@ -205,7 +219,7 @@ Resources:
         Properties:
             GroupDescription: "security group for user service on ecs"
             GroupName: "CcsUserServiceSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup7
@@ -223,7 +237,7 @@ Resources:
         Properties:
             GroupDescription: "security group for ssm endpoint"
             GroupName: "CcsSsmEndpointSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup2
@@ -242,12 +256,13 @@ Resources:
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
+    # TODO: Ingressに pl-58a04531 - com.amazonaws.global.cloudfront.origin-facing をアタッチするように修正
     EC2SecurityGroup7:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "Security Group for ALB"
             GroupName: "CcsAlbSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
@@ -258,7 +273,7 @@ Resources:
         Properties:
             GroupDescription: "security group for database"
             GroupName: "CcsDbSecurityGroup"
-            VpcId: !Ref EC2VPC
+            VpcId: !Ref CCSVPC
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref EC2SecurityGroup2
