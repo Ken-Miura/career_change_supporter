@@ -272,6 +272,7 @@ Resources:
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
+    # TODO: マネージドプリフィックスリストのCFnが入っていないので入れる
     EC2SecurityGroup7:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
