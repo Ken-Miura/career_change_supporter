@@ -14,31 +14,7 @@ Resources:
                 Key: "Name"
                 Value: "ccs-vpc"
 
-    EC2Subnet:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !Sub "${AWS::Region}c"
-            CidrBlock: "10.0.16.0/20"
-            VpcId: !Ref CCSVPC
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
-
-    EC2Subnet2:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !GetAtt EC2Subnet3.AvailabilityZone
-            CidrBlock: "10.0.128.0/20"
-            VpcId: !Ref CCSVPC
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Sub "ccs-subnet-private1-${EC2Subnet3.AvailabilityZone}"
-
-    EC2Subnet3:
+    CCSPublicSubnet1:
         Type: "AWS::EC2::Subnet"
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}a"
@@ -50,7 +26,31 @@ Resources:
                 Key: "Name"
                 Value: !Sub "ccs-subnet-public1-${AWS::Region}a"
 
-    EC2InternetGateway:
+    CCSPublicSubnet2:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !Sub "${AWS::Region}c"
+            CidrBlock: "10.0.16.0/20"
+            VpcId: !Ref CCSVPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
+
+    CCSPrivateSubnet1:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !GetAtt CCSPublicSubnet1.AvailabilityZone
+            CidrBlock: "10.0.128.0/20"
+            VpcId: !Ref CCSVPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Sub "ccs-subnet-private1-${CCSPublicSubnet1.AvailabilityZone}"
+
+    CCSInternetGateway:
         Type: "AWS::EC2::InternetGateway"
         Properties:
             Tags: 
@@ -58,16 +58,7 @@ Resources:
                 Key: "Name"
                 Value: "ccs-igw"
 
-    EC2RouteTable:
-        Type: "AWS::EC2::RouteTable"
-        Properties:
-            VpcId: !Ref CCSVPC
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Sub "ccs-rtb-private1-${EC2Subnet2.AvailabilityZone}"
-
-    EC2RouteTable2:
+    CCSPublicSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
             VpcId: !Ref CCSVPC
@@ -76,23 +67,33 @@ Resources:
                 Key: "Name"
                 Value: "ccs-rtb-public"
 
+    CCSPrivateSubnetRouteTable:
+        Type: "AWS::EC2::RouteTable"
+        Properties:
+            VpcId: !Ref CCSVPC
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Sub "ccs-rtb-private1-${CCSPrivateSubnet1.AvailabilityZone}"
+
+    # TODO: デフォルトルート？これが必要か確認する
     EC2RouteTable3:
         Type: "AWS::EC2::RouteTable"
         Properties:
             VpcId: !Ref CCSVPC
 
-    EC2Route:
+    CCSRouteToIGW:
         Type: "AWS::EC2::Route"
         Properties:
             DestinationCidrBlock: "0.0.0.0/0"
-            GatewayId: !Ref EC2InternetGateway
-            RouteTableId: !Ref EC2RouteTable2
+            GatewayId: !Ref CCSInternetGateway
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
 
     EC2Route2:
         Type: "AWS::EC2::Route"
         Properties:
             GatewayId: "vpce-0aa890163c42ffaa3"
-            RouteTableId: !Ref EC2RouteTable2
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
 
     EC2VPCEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
@@ -102,7 +103,7 @@ Resources:
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
             PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
             RouteTableIds: 
-              - !Ref EC2RouteTable2
+              - !Ref CCSPublicSubnetRouteTable
             PrivateDnsEnabled: false
 
     EC2VPCEndpoint2:
@@ -123,8 +124,8 @@ Resources:
                   ]
                 }
             SubnetIds: 
-              - !Ref EC2Subnet
-              - !Ref EC2Subnet3
+              - !Ref CCSPublicSubnet2
+              - !Ref CCSPublicSubnet1
             PrivateDnsEnabled: true
             SecurityGroupIds: 
               - !Ref EC2SecurityGroup6
@@ -132,20 +133,20 @@ Resources:
     EC2SubnetRouteTableAssociation:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref EC2RouteTable
-            SubnetId: !Ref EC2Subnet2
+            RouteTableId: !Ref CCSPrivateSubnetRouteTable
+            SubnetId: !Ref CCSPrivateSubnet1
 
     EC2SubnetRouteTableAssociation2:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref EC2RouteTable2
-            SubnetId: !Ref EC2Subnet
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
+            SubnetId: !Ref CCSPublicSubnet2
 
     EC2SubnetRouteTableAssociation3:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref EC2RouteTable2
-            SubnetId: !Ref EC2Subnet3
+            RouteTableId: !Ref CCSPublicSubnetRouteTable
+            SubnetId: !Ref CCSPublicSubnet1
 
     EC2SecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
