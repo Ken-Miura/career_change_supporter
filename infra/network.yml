@@ -67,6 +67,12 @@ Resources:
                 Key: "Name"
                 Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-igw"] ]
 
+    CcsVPCGatewayAttachment: 
+        Type: "AWS::EC2::VPCGatewayAttachment"
+        Properties: 
+            InternetGatewayId: !Ref CcsInternetGateway
+            VpcId: !Ref CcsVPC 
+
     CcsPublicSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
