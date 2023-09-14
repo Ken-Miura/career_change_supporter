@@ -74,7 +74,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: "ccs-rtb-public"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-public-subnet-rtb"] ]
 
     CcsPrivateSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
@@ -83,7 +83,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-rtb-private1-${CcsPrivateSubnet1.AvailabilityZone}"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-private-subnet-rtb"] ]
 
     # TODO: デフォルトルート？これが必要か確認する
     # EC2RouteTable3:
@@ -161,7 +161,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for ALB"
-            GroupName: "CcsAlbSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAlbSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -178,7 +178,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for user service on ecs"
-            GroupName: "CcsUserServiceSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsUserServiceSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -196,7 +196,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for admin service on ecs"
-            GroupName: "CcsAdminServiceSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAdminServiceSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -214,7 +214,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for tool"
-            GroupName: "CcsToolSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsToolSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupEgress: 
               - 
@@ -225,7 +225,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for database"
-            GroupName: "CcsDbSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsDbSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -255,7 +255,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for redis on elastic cache"
-            GroupName: "CcsRedisSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsRedisSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -279,7 +279,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for OpenSearch"
-            GroupName: "CcsOpenSearchSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsOpenSearchSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
@@ -309,7 +309,7 @@ Resources:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for ssm endpoint"
-            GroupName: "CcsSsmEndpointSecurityGroup"
+            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsSsmEndpointSecurityGroup"] ]
             VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
