@@ -33,7 +33,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-subnet-public1-${AWS::Region}a"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-public-subnet1-${AWS::Region}a"] ]
 
     CcsPublicSubnet2:
         Type: "AWS::EC2::Subnet"
@@ -45,7 +45,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-public-subnet2-${AWS::Region}c"] ]
 
     CcsPrivateSubnet1:
         Type: "AWS::EC2::Subnet"
@@ -57,7 +57,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-subnet-private1-${CcsPublicSubnet1.AvailabilityZone}"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-private-subnet1-${CcsPublicSubnet1.AvailabilityZone}"] ]
 
     CcsInternetGateway:
         Type: "AWS::EC2::InternetGateway"
@@ -65,7 +65,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: "ccs-igw"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-igw"] ]
 
     CcsPublicSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
