@@ -104,12 +104,6 @@ Resources:
             GatewayId: !Ref CcsInternetGateway
             RouteTableId: !Ref CcsPublicSubnetRouteTable
 
-    CcsRouteToS3:
-        Type: "AWS::EC2::Route"
-        Properties:
-            GatewayId: !Ref CcsS3VPCEndpoint
-            RouteTableId: !Ref CcsPublicSubnetRouteTable
-
     CcsS3VPCEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
