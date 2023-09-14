@@ -137,7 +137,7 @@ Resources:
               - !Ref CcsPublicSubnet2
             PrivateDnsEnabled: true
             SecurityGroupIds: 
-              - !Ref EC2SecurityGroup6
+              - !Ref CcsSsmEndpointSecurityGroup
 
     CcsPublicSubnet1RouteTableAssociation:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
