@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
     Generator: "former2"
 Resources:
-    CCSVPC:
+    CcsVPC:
         Type: "AWS::EC2::VPC"
         Properties:
             CidrBlock: "10.0.0.0/16"
@@ -14,43 +14,43 @@ Resources:
                 Key: "Name"
                 Value: "ccs-vpc"
 
-    CCSPublicSubnet1:
+    CcsPublicSubnet1:
         Type: "AWS::EC2::Subnet"
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}a"
             CidrBlock: "10.0.0.0/20"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
                 Value: !Sub "ccs-subnet-public1-${AWS::Region}a"
 
-    CCSPublicSubnet2:
+    CcsPublicSubnet2:
         Type: "AWS::EC2::Subnet"
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}c"
             CidrBlock: "10.0.16.0/20"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
                 Value: !Sub "ccs-subnet-public2-${AWS::Region}c"
 
-    CCSPrivateSubnet1:
+    CcsPrivateSubnet1:
         Type: "AWS::EC2::Subnet"
         Properties:
-            AvailabilityZone: !GetAtt CCSPublicSubnet1.AvailabilityZone
+            AvailabilityZone: !GetAtt CcsPublicSubnet1.AvailabilityZone
             CidrBlock: "10.0.128.0/20"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             MapPublicIpOnLaunch: false
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-subnet-private1-${CCSPublicSubnet1.AvailabilityZone}"
+                Value: !Sub "ccs-subnet-private1-${CcsPublicSubnet1.AvailabilityZone}"
 
-    CCSInternetGateway:
+    CcsInternetGateway:
         Type: "AWS::EC2::InternetGateway"
         Properties:
             Tags: 
@@ -58,59 +58,59 @@ Resources:
                 Key: "Name"
                 Value: "ccs-igw"
 
-    CCSPublicSubnetRouteTable:
+    CcsPublicSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             Tags: 
               - 
                 Key: "Name"
                 Value: "ccs-rtb-public"
 
-    CCSPrivateSubnetRouteTable:
+    CcsPrivateSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             Tags: 
               - 
                 Key: "Name"
-                Value: !Sub "ccs-rtb-private1-${CCSPrivateSubnet1.AvailabilityZone}"
+                Value: !Sub "ccs-rtb-private1-${CcsPrivateSubnet1.AvailabilityZone}"
 
     # TODO: デフォルトルート？これが必要か確認する
-    EC2RouteTable3:
-        Type: "AWS::EC2::RouteTable"
-        Properties:
-            VpcId: !Ref CCSVPC
+    # EC2RouteTable3:
+    #     Type: "AWS::EC2::RouteTable"
+    #     Properties:
+    #         VpcId: !Ref CcsVPC
 
-    CCSRouteToIGW:
+    CcsRouteToIGW:
         Type: "AWS::EC2::Route"
         Properties:
             DestinationCidrBlock: "0.0.0.0/0"
-            GatewayId: !Ref CCSInternetGateway
-            RouteTableId: !Ref CCSPublicSubnetRouteTable
+            GatewayId: !Ref CcsInternetGateway
+            RouteTableId: !Ref CcsPublicSubnetRouteTable
 
-    EC2Route2:
+    CcsRouteToS3:
         Type: "AWS::EC2::Route"
         Properties:
-            GatewayId: "vpce-0aa890163c42ffaa3"
-            RouteTableId: !Ref CCSPublicSubnetRouteTable
+            GatewayId: !Ref CcsS3VPCEndpoint
+            RouteTableId: !Ref CcsPublicSubnetRouteTable
 
-    EC2VPCEndpoint:
+    CcsS3VPCEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Gateway"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
             PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
             RouteTableIds: 
-              - !Ref CCSPublicSubnetRouteTable
+              - !Ref CcsPublicSubnetRouteTable
             PrivateDnsEnabled: false
 
-    EC2VPCEndpoint2:
+    CcsSsmVPCEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Interface"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
             PolicyDocument: |
                 {
@@ -124,122 +124,51 @@ Resources:
                   ]
                 }
             SubnetIds: 
-              - !Ref CCSPublicSubnet2
-              - !Ref CCSPublicSubnet1
+              - !Ref CcsPublicSubnet1
+              - !Ref CcsPublicSubnet2
             PrivateDnsEnabled: true
             SecurityGroupIds: 
               - !Ref EC2SecurityGroup6
 
-    EC2SubnetRouteTableAssociation:
+    CcsPublicSubnet1RouteTableAssociation:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref CCSPrivateSubnetRouteTable
-            SubnetId: !Ref CCSPrivateSubnet1
+            RouteTableId: !Ref CcsPublicSubnetRouteTable
+            SubnetId: !Ref CcsPublicSubnet1
 
-    EC2SubnetRouteTableAssociation2:
+    CcsPublicSubnet2RouteTableAssociation:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref CCSPublicSubnetRouteTable
-            SubnetId: !Ref CCSPublicSubnet2
+            RouteTableId: !Ref CcsPublicSubnetRouteTable
+            SubnetId: !Ref CcsPublicSubnet2
 
-    EC2SubnetRouteTableAssociation3:
+    CcsPrivateSubnet1RouteTableAssociation:
         Type: "AWS::EC2::SubnetRouteTableAssociation"
         Properties:
-            RouteTableId: !Ref CCSPublicSubnetRouteTable
-            SubnetId: !Ref CCSPublicSubnet1
+            RouteTableId: !Ref CcsPrivateSubnetRouteTable
+            SubnetId: !Ref CcsPrivateSubnet1
 
-    EC2SecurityGroup:
+    # TODO: マネージドプリフィックスリストのCFnが入っていないので入れる
+    CcsAlbSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
-            GroupDescription: "security group for redis on elastic cache"
-            GroupName: "CcsRedisSecurityGroup"
-            VpcId: !Ref CCSVPC
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
+            GroupDescription: "security group for ALB"
+            GroupName: "CcsAlbSecurityGroup"
+            VpcId: !Ref CcsVPC
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
-    EC2SecurityGroup2:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for admin service on ecs"
-            GroupName: "CcsAdminServiceSecurityGroup"
-            VpcId: !Ref CCSVPC
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup7
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 3001
-                IpProtocol: "tcp"
-                ToPort: 3001
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup3:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for tools"
-            GroupName: "NoInboundAllowedSecurityGroup"
-            VpcId: !Ref CCSVPC
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup4:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for OpenSearch"
-            GroupName: "CcsOpenSearchSecurityGroup"
-            VpcId: !Ref CCSVPC
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup5:
+    CcsUserServiceSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for user service on ecs"
             GroupName: "CcsUserServiceSecurityGroup"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup7
+                SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
                 SourceSecurityGroupOwnerId: !Ref AWS::AccountId
                 FromPort: 3000
                 IpProtocol: "tcp"
@@ -249,63 +178,56 @@ Resources:
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
-    EC2SecurityGroup6:
+    CcsAdminServiceSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
-            GroupDescription: "security group for ssm endpoint"
-            GroupName: "CcsSsmEndpointSecurityGroup"
-            VpcId: !Ref CCSVPC
+            GroupDescription: "security group for admin service on ecs"
+            GroupName: "CcsAdminServiceSecurityGroup"
+            VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
+                SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
                 SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
+                FromPort: 3001
+                IpProtocol: "tcp"
+                ToPort: 3001
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
-    # TODO: マネージドプリフィックスリストのCFnが入っていないので入れる
-    EC2SecurityGroup7:
+    CcsToolSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
-            GroupDescription: "Security Group for ALB"
-            GroupName: "CcsAlbSecurityGroup"
-            VpcId: !Ref CCSVPC
+            GroupDescription: "security group for tool"
+            GroupName: "CcsToolSecurityGroup"
+            VpcId: !Ref CcsVPC
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
-    EC2SecurityGroup8:
+    CcsDbSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "security group for database"
             GroupName: "CcsDbSecurityGroup"
-            VpcId: !Ref CCSVPC
+            VpcId: !Ref CcsVPC
             SecurityGroupIngress: 
               - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
+                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
                 SourceSecurityGroupOwnerId: !Ref AWS::AccountId
                 FromPort: 5432
                 IpProtocol: "tcp"
                 ToPort: 5432
               - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
+                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
                 SourceSecurityGroupOwnerId: !Ref AWS::AccountId
                 FromPort: 5432
                 IpProtocol: "tcp"
                 ToPort: 5432
               - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
+                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
                 SourceSecurityGroupOwnerId: !Ref AWS::AccountId
                 FromPort: 5432
                 IpProtocol: "tcp"
@@ -315,3 +237,80 @@ Resources:
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 
+    CcsRedisSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "security group for redis on elastic cache"
+            GroupName: "CcsRedisSecurityGroup"
+            VpcId: !Ref CcsVPC
+            SecurityGroupIngress: 
+              - 
+                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+              - 
+                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+              - 
+                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+            SecurityGroupEgress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                IpProtocol: "-1"
+
+    CcsOpenSearchSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "security group for OpenSearch"
+            GroupName: "CcsOpenSearchSecurityGroup"
+            VpcId: !Ref CcsVPC
+            SecurityGroupIngress: 
+              - 
+                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                FromPort: 443
+                IpProtocol: "tcp"
+                ToPort: 443
+              - 
+                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                FromPort: 443
+                IpProtocol: "tcp"
+                ToPort: 443
+              - 
+                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                FromPort: 443
+                IpProtocol: "tcp"
+                ToPort: 443
+            SecurityGroupEgress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                IpProtocol: "-1"
+
+    CcsSsmEndpointSecurityGroup:
+        Type: "AWS::EC2::SecurityGroup"
+        Properties:
+            GroupDescription: "security group for ssm endpoint"
+            GroupName: "CcsSsmEndpointSecurityGroup"
+            VpcId: !Ref CcsVPC
+            SecurityGroupIngress: 
+              - 
+                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+              - 
+                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+              - 
+                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+                IpProtocol: "-1"
+            SecurityGroupEgress: 
+              - 
+                CidrIp: "0.0.0.0/0"
+                IpProtocol: "-1"
