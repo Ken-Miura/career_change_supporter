@@ -328,3 +328,8 @@ Resources:
               - 
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
+Outputs:
+  StackVPC:
+    Value: !Ref CcsVPC
+    Export:
+      Name: !Sub "${AWS::StackName}-VPCID"
