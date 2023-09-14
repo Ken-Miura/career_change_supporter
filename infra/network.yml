@@ -1,6 +1,15 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Metadata:
-    Generator: "former2"
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+
+Conditions:
+  IsProd: !Equals [Environment, "prod"]
+
 Resources:
     CcsVPC:
         Type: "AWS::EC2::VPC"
@@ -12,7 +21,7 @@ Resources:
             Tags: 
               - 
                 Key: "Name"
-                Value: "ccs-vpc"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-vpc"] ]
 
     CcsPublicSubnet1:
         Type: "AWS::EC2::Subnet"
