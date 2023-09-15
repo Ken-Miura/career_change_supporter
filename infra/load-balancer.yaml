@@ -1,9 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Metadata:
-    Generator: "former2"
-Description: ""
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+
+Conditions:
+  IsProd: !Equals [Environment, "prod"]
+
 Resources:
-    ElasticLoadBalancingV2LoadBalancer:
+    CcsApplicationLoadBalancer:
         Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
         Properties:
             Name: "ccs-alb"
@@ -59,7 +67,7 @@ Resources:
     ElasticLoadBalancingV2Listener:
         Type: "AWS::ElasticLoadBalancingV2::Listener"
         Properties:
-            LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancer
+            LoadBalancerArn: !Ref CcsApplicationLoadBalancer
             Port: 443
             Protocol: "HTTPS"
             SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -79,7 +87,7 @@ Resources:
         Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
         Properties:
             Priority: "1"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
             Conditions: 
               - 
                 Field: "http-header"
@@ -101,7 +109,7 @@ Resources:
         Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
         Properties:
             Priority: "2"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
             Conditions: 
               - 
                 Field: "http-header"
@@ -251,7 +259,7 @@ Resources:
     EC2NetworkInterface:
         Type: "AWS::EC2::NetworkInterface"
         Properties:
-            Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+            Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
             PrivateIpAddress: "10.0.25.237"
             PrivateIpAddresses: 
               - 
@@ -260,12 +268,12 @@ Resources:
             SubnetId: "subnet-090373565e0ad5c52"
             SourceDestCheck: true
             GroupSet: 
-              - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+              - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
 
     EC2NetworkInterface2:
         Type: "AWS::EC2::NetworkInterface"
         Properties:
-            Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+            Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
             PrivateIpAddress: "10.0.14.19"
             PrivateIpAddresses: 
               - 
@@ -274,7 +282,7 @@ Resources:
             SubnetId: "subnet-061b6a216e31cb1f2"
             SourceDestCheck: true
             GroupSet: 
-              - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
+              - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
 
     S3Bucket:
         Type: "AWS::S3::Bucket"
