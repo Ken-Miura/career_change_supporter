@@ -13,7 +13,7 @@ Resources:
               - "subnet-061b6a216e31cb1f2"
               - "subnet-090373565e0ad5c52"
             SecurityGroups: 
-              - !Ref EC2SecurityGroup7
+              - !Ref EC2SecurityGroup
             IpAddressType: "ipv4"
             LoadBalancerAttributes: 
               - 
@@ -21,7 +21,7 @@ Resources:
                 Value: "true"
               - 
                 Key: "access_logs.s3.bucket"
-                Value: "ccs-application-load-balancer-logs"
+                Value: !Ref S3Bucket
               - 
                 Key: "idle_timeout.timeout_seconds"
                 Value: "60"
@@ -56,167 +56,75 @@ Resources:
                 Key: "routing.http.x_amzn_tls_version_and_cipher_suite.enabled"
                 Value: "false"
 
+    ElasticLoadBalancingV2Listener:
+        Type: "AWS::ElasticLoadBalancingV2::Listener"
+        Properties:
+            LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancer
+            Port: 443
+            Protocol: "HTTPS"
+            SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
+            Certificates: 
+              - 
+                CertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/26f12e55-a221-4b9f-ada9-dae487fc0f3e"
+            DefaultActions: 
+              - 
+                FixedResponseConfig: 
+                    MessageBody: "Access denied"
+                    StatusCode: "403"
+                    ContentType: "text/plain"
+                Order: 1
+                Type: "fixed-response"
+
+    ElasticLoadBalancingV2ListenerRule:
+        Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+        Properties:
+            Priority: "1"
+            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            Conditions: 
+              - 
+                Field: "http-header"
+            Actions: 
+              - 
+                Type: "forward"
+                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+                Order: 1
+                ForwardConfig: 
+                    TargetGroups: 
+                      - 
+                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+                        Weight: 1
+                    TargetGroupStickinessConfig: 
+                        Enabled: false
+                        DurationSeconds: 3600
+
+    ElasticLoadBalancingV2ListenerRule2:
+        Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+        Properties:
+            Priority: "2"
+            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            Conditions: 
+              - 
+                Field: "http-header"
+            Actions: 
+              - 
+                Type: "forward"
+                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
+                Order: 1
+                ForwardConfig: 
+                    TargetGroups: 
+                      - 
+                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
+                        Weight: 1
+                    TargetGroupStickinessConfig: 
+                        Enabled: false
+                        DurationSeconds: 3600
+
     EC2SecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for redis on elastic cache"
-            GroupName: "CcsRedisSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup2:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for admin service on ecs"
-            GroupName: "CcsAdminServiceSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 3001
-                IpProtocol: "tcp"
-                ToPort: 3001
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup3:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for tools"
-            GroupName: "NoInboundAllowedSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup4:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for OpenSearch"
-            GroupName: "CcsOpenSearchSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup5:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for user service on ecs"
-            GroupName: "CcsUserServiceSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 3000
-                IpProtocol: "tcp"
-                ToPort: 3000
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup6:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for ssm endpoint"
-            GroupName: "CcsSsmEndpointSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup7:
         Type: "AWS::EC2::SecurityGroup"
         Properties:
             GroupDescription: "Security Group for ALB"
             GroupName: "CcsAlbSecurityGroup"
             VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    EC2SecurityGroup8:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for database"
-            GroupName: "CcsDbSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup2
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup5
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
-              - 
-                SourceSecurityGroupId: !Ref EC2SecurityGroup3
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
@@ -340,67 +248,51 @@ Resources:
                 Key: "load_balancing.algorithm.type"
                 Value: "round_robin"
 
-    ElasticLoadBalancingV2Listener:
-        Type: "AWS::ElasticLoadBalancingV2::Listener"
+    EC2NetworkInterface:
+        Type: "AWS::EC2::NetworkInterface"
         Properties:
-            LoadBalancerArn: !Ref ElasticLoadBalancingV2LoadBalancer
-            Port: 443
-            Protocol: "HTTPS"
-            SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
-            Certificates: 
+            Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+            PrivateIpAddress: "10.0.25.237"
+            PrivateIpAddresses: 
               - 
-                CertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/26f12e55-a221-4b9f-ada9-dae487fc0f3e"
-            DefaultActions: 
-              - 
-                FixedResponseConfig: 
-                    MessageBody: "Access denied"
-                    StatusCode: "403"
-                    ContentType: "text/plain"
-                Order: 1
-                Type: "fixed-response"
+                PrivateIpAddress: "10.0.25.237"
+                Primary: true
+            SubnetId: "subnet-090373565e0ad5c52"
+            SourceDestCheck: true
+            GroupSet: 
+              - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
 
-    ElasticLoadBalancingV2ListenerRule:
-        Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    EC2NetworkInterface2:
+        Type: "AWS::EC2::NetworkInterface"
         Properties:
-            Priority: "1"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
-            Conditions: 
+            Description: !Sub "ELB app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+            PrivateIpAddress: "10.0.14.19"
+            PrivateIpAddresses: 
               - 
-                Field: "http-header"
-            Actions: 
-              - 
-                Type: "forward"
-                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
-                Order: 1
-                ForwardConfig: 
-                    TargetGroups: 
-                      - 
-                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
-                        Weight: 1
-                    TargetGroupStickinessConfig: 
-                        Enabled: false
-                        DurationSeconds: 3600
+                PrivateIpAddress: "10.0.14.19"
+                Primary: true
+            SubnetId: "subnet-061b6a216e31cb1f2"
+            SourceDestCheck: true
+            GroupSet: 
+              - !Sub "${ElasticLoadBalancingV2LoadBalancer.SecurityGroups}"
 
-    ElasticLoadBalancingV2ListenerRule2:
-        Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
+    S3Bucket:
+        Type: "AWS::S3::Bucket"
         Properties:
-            Priority: "2"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${ElasticLoadBalancingV2LoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
-            Conditions: 
-              - 
-                Field: "http-header"
-            Actions: 
-              - 
-                Type: "forward"
-                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
-                Order: 1
-                ForwardConfig: 
-                    TargetGroups: 
-                      - 
-                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
-                        Weight: 1
-                    TargetGroupStickinessConfig: 
-                        Enabled: false
-                        DurationSeconds: 3600
-
+            BucketName: "ccs-application-load-balancer-logs"
+            BucketEncryption: 
+                ServerSideEncryptionConfiguration: 
+                  - 
+                    ServerSideEncryptionByDefault: 
+                        SSEAlgorithm: "AES256"
+                    BucketKeyEnabled: true
+            OwnershipControls: 
+                Rules: 
+                  - 
+                    ObjectOwnership: "BucketOwnerEnforced"
+            PublicAccessBlockConfiguration: 
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
 
