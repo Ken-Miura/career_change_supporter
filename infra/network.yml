@@ -11,7 +11,7 @@ Conditions:
   IsProd: !Equals [Environment, "prod"]
 
 Resources:
-    CcsVPC:
+    CcsVpc:
         Type: "AWS::EC2::VPC"
         Properties:
             CidrBlock: "10.0.0.0/16"
@@ -28,7 +28,7 @@ Resources:
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}a"
             CidrBlock: "10.0.0.0/20"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             MapPublicIpOnLaunch: false
             Tags: 
               - 
@@ -40,7 +40,7 @@ Resources:
         Properties:
             AvailabilityZone: !Sub "${AWS::Region}c"
             CidrBlock: "10.0.16.0/20"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             MapPublicIpOnLaunch: false
             Tags: 
               - 
@@ -52,7 +52,7 @@ Resources:
         Properties:
             AvailabilityZone: !GetAtt CcsPublicSubnet1.AvailabilityZone
             CidrBlock: "10.0.128.0/20"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             MapPublicIpOnLaunch: false
             Tags: 
               - 
@@ -66,7 +66,7 @@ Resources:
         Properties:
             AvailabilityZone: !GetAtt CcsPublicSubnet2.AvailabilityZone
             CidrBlock: "10.0.144.0/20"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             MapPublicIpOnLaunch: false
             Tags: 
               - 
@@ -81,16 +81,16 @@ Resources:
                 Key: "Name"
                 Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-igw"] ]
 
-    CcsVPCGatewayAttachment: 
+    CcsVpcGatewayAttachment: 
         Type: "AWS::EC2::VPCGatewayAttachment"
         Properties: 
             InternetGatewayId: !Ref CcsInternetGateway
-            VpcId: !Ref CcsVPC 
+            VpcId: !Ref CcsVpc 
 
     CcsPublicSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             Tags: 
               - 
                 Key: "Name"
@@ -99,41 +99,35 @@ Resources:
     CcsPrivateSubnetRouteTable:
         Type: "AWS::EC2::RouteTable"
         Properties:
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             Tags: 
               - 
                 Key: "Name"
                 Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-private-subnet-rtb"] ]
 
-    # TODO: デフォルトルート？これが必要か確認する
-    # EC2RouteTable3:
-    #     Type: "AWS::EC2::RouteTable"
-    #     Properties:
-    #         VpcId: !Ref CcsVPC
-
-    CcsRouteToIGW:
+    CcsRouteToIgw:
         Type: "AWS::EC2::Route"
         Properties:
             DestinationCidrBlock: "0.0.0.0/0"
             GatewayId: !Ref CcsInternetGateway
             RouteTableId: !Ref CcsPublicSubnetRouteTable
 
-    CcsS3VPCEndpoint:
+    CcsS3VpcEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Gateway"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
             PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
             RouteTableIds: 
               - !Ref CcsPublicSubnetRouteTable
             PrivateDnsEnabled: false
 
-    CcsSsmVPCEndpoint:
+    CcsSsmVpcEndpoint:
         Type: "AWS::EC2::VPCEndpoint"
         Properties:
             VpcEndpointType: "Interface"
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
             PolicyDocument: |
                 {
@@ -182,7 +176,7 @@ Resources:
         Properties:
             GroupDescription: "security group for ALB"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAlbSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourcePrefixListId: "pl-58a04531" # CloudFrontのマネージドプリフィックスリストのID
@@ -199,7 +193,7 @@ Resources:
         Properties:
             GroupDescription: "security group for user service on ecs"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsUserServiceSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
@@ -217,7 +211,7 @@ Resources:
         Properties:
             GroupDescription: "security group for admin service on ecs"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAdminServiceSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
@@ -235,7 +229,7 @@ Resources:
         Properties:
             GroupDescription: "security group for tool"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsToolSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupEgress: 
               - 
                 CidrIp: "0.0.0.0/0"
@@ -246,7 +240,7 @@ Resources:
         Properties:
             GroupDescription: "security group for database"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsDbSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
@@ -276,7 +270,7 @@ Resources:
         Properties:
             GroupDescription: "security group for redis on elastic cache"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsRedisSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
@@ -300,7 +294,7 @@ Resources:
         Properties:
             GroupDescription: "security group for OpenSearch"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsOpenSearchSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
@@ -330,7 +324,7 @@ Resources:
         Properties:
             GroupDescription: "security group for ssm endpoint"
             GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsSsmEndpointSecurityGroup"] ]
-            VpcId: !Ref CcsVPC
+            VpcId: !Ref CcsVpc
             SecurityGroupIngress: 
               - 
                 SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
@@ -349,7 +343,7 @@ Resources:
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
 Outputs:
-  StackVPC:
-    Value: !Ref CcsVPC
+  VpcId:
+    Value: !Ref CcsVpc
     Export:
-      Name: !Sub "${AWS::StackName}-VPCID"
+      Name: !Sub "${AWS::StackName}-VpcId"
