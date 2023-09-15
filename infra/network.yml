@@ -59,6 +59,20 @@ Resources:
                 Key: "Name"
                 Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-private-subnet1-${CcsPublicSubnet1.AvailabilityZone}"] ]
 
+    # 2023年9月時点でプライベートサブネットに置くサービスはMultiAZ対応する予定がないので、2つ以上のプライベートサブネットを用意する必要はない
+    # しかし、今後可用性の向上が必要となり、MultiAZ対応する場合を考慮し、事前に作っておく
+    CcsPrivateSubnet2:
+        Type: "AWS::EC2::Subnet"
+        Properties:
+            AvailabilityZone: !GetAtt CcsPublicSubnet2.AvailabilityZone
+            CidrBlock: "10.0.144.0/20"
+            VpcId: !Ref CcsVPC
+            MapPublicIpOnLaunch: false
+            Tags: 
+              - 
+                Key: "Name"
+                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-private-subnet2-${CcsPublicSubnet2.AvailabilityZone}"] ]
+
     CcsInternetGateway:
         Type: "AWS::EC2::InternetGateway"
         Properties:
@@ -156,6 +170,12 @@ Resources:
         Properties:
             RouteTableId: !Ref CcsPrivateSubnetRouteTable
             SubnetId: !Ref CcsPrivateSubnet1
+
+    CcsPrivateSubnet2RouteTableAssociation:
+        Type: "AWS::EC2::SubnetRouteTableAssociation"
+        Properties:
+            RouteTableId: !Ref CcsPrivateSubnetRouteTable
+            SubnetId: !Ref CcsPrivateSubnet2
 
     CcsAlbSecurityGroup:
         Type: "AWS::EC2::SecurityGroup"
