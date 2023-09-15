@@ -73,7 +73,7 @@ Resources:
             SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
             Certificates: 
               - 
-                CertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/26f12e55-a221-4b9f-ada9-dae487fc0f3e"
+                CertificateArn: !Ref CertificateManagerCertificate
             DefaultActions: 
               - 
                 FixedResponseConfig: 
@@ -303,4 +303,16 @@ Resources:
                 BlockPublicPolicy: true
                 IgnorePublicAcls: true
                 RestrictPublicBuckets: true
+
+    CertificateManagerCertificate:
+        Type: "AWS::CertificateManager::Certificate"
+        Properties:
+            DomainName: "api.career-change-supporter.com"
+            SubjectAlternativeNames: 
+              - "api.career-change-supporter.com"
+            DomainValidationOptions: 
+              - 
+                DomainName: "api.career-change-supporter.com"
+                ValidationDomain: "api.career-change-supporter.com"
+            CertificateTransparencyLoggingPreference: "ENABLED"
 
