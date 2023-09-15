@@ -304,6 +304,20 @@ Resources:
                 IgnorePublicAcls: true
                 RestrictPublicBuckets: true
 
+    S3BucketPolicy:
+        Type: "AWS::S3::BucketPolicy"
+        Properties:
+            Bucket: !Ref S3Bucket
+            PolicyDocument: 
+                Version: "2012-10-17"
+                Statement: 
+                  - 
+                    Effect: "Allow"
+                    Principal: 
+                        AWS: "arn:aws:iam::582318560864:root"
+                    Action: "s3:PutObject"
+                    Resource: !Sub "arn:aws:s3:::${S3Bucket}/AWSLogs/${AWS::AccountId}/*"
+
     CertificateManagerCertificate:
         Type: "AWS::CertificateManager::Certificate"
         Properties:
