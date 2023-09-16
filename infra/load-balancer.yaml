@@ -73,7 +73,7 @@ Resources:
             SslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06"
             Certificates: 
               - 
-                CertificateArn: !Ref CertificateManagerCertificate
+                CertificateArn: !Ref CcsApplicationLoadBalancerCertificate
             DefaultActions: 
               - 
                 FixedResponseConfig: 
@@ -312,7 +312,7 @@ Resources:
                     Action: "s3:PutObject"
                     Resource: !Sub "arn:aws:s3:::${CcsApplicationLoadBalancerLogStorage}/AWSLogs/${AWS::AccountId}/*"
 
-    CertificateManagerCertificate:
+    CcsApplicationLoadBalancerCertificate:
         Type: "AWS::CertificateManager::Certificate"
         Properties:
             DomainName: "api.career-change-supporter.com"
@@ -323,4 +323,3 @@ Resources:
                 DomainName: "api.career-change-supporter.com"
                 ValidationDomain: "api.career-change-supporter.com"
             CertificateTransparencyLoggingPreference: "ENABLED"
-
