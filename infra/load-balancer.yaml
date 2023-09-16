@@ -1,5 +1,21 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups: 
+      - 
+        Label:
+          default: Required parameters
+        Parameters: 
+          - Environment
+          - UserServiceAccessRestrictionCustomHeaderValue
+          - AdminServiceAccessRestrictionCustomHeaderValue
+      - 
+        Label:
+          default: Optional parameter
+        Parameters: 
+          - DomainName
+
 Parameters:
   Environment:
     Type: String
