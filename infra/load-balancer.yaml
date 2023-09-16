@@ -14,7 +14,7 @@ Metadata:
         Label:
           default: Optional parameter
         Parameters: 
-          - DomainName
+          - ServiceDomainName
 
 Parameters:
   Environment:
@@ -23,10 +23,10 @@ Parameters:
       - prod
       - dev
 
-  DomainName:
+  ServiceDomainName:
     Type: String
     Default: career-change-supporter.com
-    Description: api.${DomainName} for prod or api.dev.${DomainName} for dev is used for load balancer domain name
+    Description: api.${ServiceDomainName} for prod or api.dev.${ServiceDomainName} for dev is used for load balancer domain name
     AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
 
   UserServiceAccessRestrictionCustomHeaderValue:
@@ -99,9 +99,9 @@ Resources:
     CcsApplicationLoadBalancerDnsRecord:
       Type: AWS::Route53::RecordSetGroup
       Properties:
-        HostedZoneName: !Sub "${DomainName}." # need trailing comma
+        HostedZoneName: !Sub "${ServiceDomainName}." # need trailing comma
         RecordSets:
-          - Name: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ] # you don't have to need trailing comma because AWS handle both as same
+          - Name: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], !Ref ServiceDomainName ] ] # you don't have to need trailing comma because AWS handle both as same
             Type: A
             AliasTarget:
               HostedZoneId: !GetAtt 'CcsApplicationLoadBalancer.CanonicalHostedZoneID'
@@ -129,12 +129,12 @@ Resources:
     CcsApplicationLoadBalancerCertificate:
         Type: "AWS::CertificateManager::Certificate"
         Properties:
-            DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+            DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], !Ref ServiceDomainName ] ]
             ValidationMethod: DNS
             DomainValidationOptions: 
               - 
-                DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
-                ValidationDomain: Ref! DomainName
+                DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], !Ref ServiceDomainName ] ]
+                ValidationDomain: !Ref ServiceDomainName
             CertificateTransparencyLoggingPreference: "ENABLED"
 
     CcsUserServiceListenerRule:
@@ -197,8 +197,7 @@ Resources:
             Protocol: "HTTP"
             ProtocolVersion: "HTTP1"
             VpcId:
-              -
-                Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
+              Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
             HealthCheckEnabled: true
             HealthCheckProtocol: "HTTP"
             UnhealthyThresholdCount: 2
@@ -248,8 +247,7 @@ Resources:
             Protocol: "HTTP"
             ProtocolVersion: "HTTP1"
             VpcId:
-              -
-                Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
+              Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
             HealthCheckEnabled: true
             HealthCheckProtocol: "HTTP"
             UnhealthyThresholdCount: 2
