@@ -130,6 +130,8 @@ Resources:
         Type: "AWS::CertificateManager::Certificate"
         Properties:
             DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], !Ref ServiceDomainName ] ]
+            # DNSレコード検証のため、初回は手動で検証用のレコードを作成する必要がある。二回目以降は作成済の検証用レコードがあればすべて自動で処理される。
+            # 参考: https://dev.classmethod.jp/articles/cfn-support-acm-dns-validation/
             ValidationMethod: DNS
             DomainValidationOptions: 
               - 
