@@ -323,3 +323,14 @@ Resources:
                         AWS: "arn:aws:iam::582318560864:root"
                     Action: "s3:PutObject"
                     Resource: !Sub "arn:aws:s3:::${CcsApplicationLoadBalancerLogStorage}/AWSLogs/${AWS::AccountId}/*"
+
+Outputs:
+  UserServiceTg:
+    Value: !Ref UserServiceTargetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-UserServiceTg"
+
+  AdminServiceTg:
+    Value: !Ref AdminServiceTargetGroup
+    Export:
+      Name: !Sub "${AWS::StackName}-AdminServiceTg"
