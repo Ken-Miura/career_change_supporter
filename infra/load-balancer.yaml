@@ -20,7 +20,7 @@ Resources:
     CcsApplicationLoadBalancer:
         Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
         Properties:
-            Name: "ccs-alb"
+            Name: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-alb"] ]
             Scheme: "internet-facing"
             Type: "application"
             Subnets: 
@@ -39,9 +39,6 @@ Resources:
               - 
                 Key: "idle_timeout.timeout_seconds"
                 Value: "60"
-              - 
-                Key: "deletion_protection.enabled"
-                Value: "true"
               - 
                 Key: "routing.http2.enabled"
                 Value: "true"
