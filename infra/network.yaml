@@ -9,7 +9,7 @@ Parameters:
       - dev
 
 Conditions:
-  IsProd: !Equals [Environment, "prod"]
+  IsProd: !Equals [ !Ref Environment, "prod" ]
 
 Resources:
     CcsVpc:
