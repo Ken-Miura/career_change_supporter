@@ -291,7 +291,7 @@ Resources:
 
     CcsApplicationLoadBalancerLogStorage:
         Type: "AWS::S3::Bucket"
-        DeletionPolicy: !If [ IsProd, Retain, Ref: AWS::NoValue ]
+        DeletionPolicy: !If [ IsProd, Retain, Delete ]
         Properties:
             BucketName: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-application-load-balancer-logs"] ]
             BucketEncryption: 
