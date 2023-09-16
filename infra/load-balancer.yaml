@@ -41,7 +41,7 @@ Parameters:
     AllowedPattern: ^[a-zA-Z0-9]{32}$
 
 Conditions:
-  IsProd: !Equals [Environment, "prod"]
+  IsProd: !Equals [ !Ref Environment, "prod" ]
 
 Resources:
     CcsApplicationLoadBalancer:
