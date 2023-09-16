@@ -150,7 +150,7 @@ Resources:
                 HttpHeaderConfig:
                   HttpHeaderName: X-Ccs-Alb-Access-Restriction
                   Values:
-                    - Sub! ${UserServiceAccessRestrictionCustomHeaderValue}
+                    - !Sub ${UserServiceAccessRestrictionCustomHeaderValue}
             Actions: 
               - 
                 Type: "forward"
@@ -175,7 +175,7 @@ Resources:
                 HttpHeaderConfig:
                   HttpHeaderName: X-Admin-Ccs-Alb-Access-Restriction
                   Values:
-                    - Sub! ${AdminServiceAccessRestrictionCustomHeaderValue}
+                    - !Sub ${AdminServiceAccessRestrictionCustomHeaderValue}
             Actions: 
               - 
                 Type: "forward"
