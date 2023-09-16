@@ -40,6 +40,9 @@ Resources:
                 Key: "idle_timeout.timeout_seconds"
                 Value: "60"
               - 
+                Key: "deletion_protection.enabled"
+                Value: "false"
+              - 
                 Key: "routing.http2.enabled"
                 Value: "true"
               - 
