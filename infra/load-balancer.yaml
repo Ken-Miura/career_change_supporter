@@ -18,10 +18,10 @@ Resources:
             Scheme: "internet-facing"
             Type: "application"
             Subnets: 
-              - "subnet-061b6a216e31cb1f2"
-              - "subnet-090373565e0ad5c52"
+              - Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "PublicSubnet1Id"] ]
+              - Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "PublicSubnet2Id"] ]
             SecurityGroups: 
-              - !Ref EC2SecurityGroup
+              - Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "AlbSecurityGroupId"] ]
             IpAddressType: "ipv4"
             LoadBalancerAttributes: 
               - 
@@ -29,7 +29,7 @@ Resources:
                 Value: "true"
               - 
                 Key: "access_logs.s3.bucket"
-                Value: !Ref S3Bucket
+                Value: !Ref CcsApplicationLoadBalancerLogStorage
               - 
                 Key: "idle_timeout.timeout_seconds"
                 Value: "60"
@@ -64,7 +64,7 @@ Resources:
                 Key: "routing.http.x_amzn_tls_version_and_cipher_suite.enabled"
                 Value: "false"
 
-    ElasticLoadBalancingV2Listener:
+    CcsApplicationLoadBalancerListener:
         Type: "AWS::ElasticLoadBalancingV2::Listener"
         Properties:
             LoadBalancerArn: !Ref CcsApplicationLoadBalancer
@@ -83,62 +83,51 @@ Resources:
                 Order: 1
                 Type: "fixed-response"
 
-    ElasticLoadBalancingV2ListenerRule:
+    CcsUserServiceListenerRule:
         Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
         Properties:
             Priority: "1"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            ListenerArn: !Ref CcsApplicationLoadBalancerListener
             Conditions: 
               - 
                 Field: "http-header"
             Actions: 
               - 
                 Type: "forward"
-                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+                TargetGroupArn: !Ref UserServiceTargetGroup
                 Order: 1
                 ForwardConfig: 
                     TargetGroups: 
                       - 
-                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup
+                        TargetGroupArn: !Ref UserServiceTargetGroup
                         Weight: 1
                     TargetGroupStickinessConfig: 
                         Enabled: false
                         DurationSeconds: 3600
 
-    ElasticLoadBalancingV2ListenerRule2:
+    CcsAdminServiceListenerRule:
         Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
         Properties:
             Priority: "2"
-            ListenerArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1/325a273d4eb59c61"
+            ListenerArn: !Ref CcsApplicationLoadBalancerListener
             Conditions: 
               - 
                 Field: "http-header"
             Actions: 
               - 
                 Type: "forward"
-                TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
+                TargetGroupArn: !Ref AdminServiceTargetGroup
                 Order: 1
                 ForwardConfig: 
                     TargetGroups: 
                       - 
-                        TargetGroupArn: !Ref ElasticLoadBalancingV2TargetGroup2
+                        TargetGroupArn: !Ref AdminServiceTargetGroup
                         Weight: 1
                     TargetGroupStickinessConfig: 
                         Enabled: false
                         DurationSeconds: 3600
 
-    EC2SecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "Security Group for ALB"
-            GroupName: "CcsAlbSecurityGroup"
-            VpcId: "vpc-0b23fe7dd45be9bd0"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    ElasticLoadBalancingV2TargetGroup:
+    UserServiceTargetGroup:
         Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
         Properties:
             HealthCheckIntervalSeconds: 30
@@ -153,7 +142,9 @@ Resources:
             Matcher: 
                 HttpCode: "200"
             HealthyThresholdCount: 5
-            VpcId: "vpc-0b23fe7dd45be9bd0"
+            VpcId:
+              -
+                Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
             Name: "user-service-target-group"
             HealthCheckEnabled: true
             TargetGroupAttributes: 
@@ -197,7 +188,7 @@ Resources:
                 Key: "load_balancing.algorithm.type"
                 Value: "round_robin"
 
-    ElasticLoadBalancingV2TargetGroup2:
+    AdminServiceTargetGroup:
         Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
         Properties:
             HealthCheckIntervalSeconds: 30
@@ -212,7 +203,9 @@ Resources:
             Matcher: 
                 HttpCode: "200"
             HealthyThresholdCount: 5
-            VpcId: "vpc-0b23fe7dd45be9bd0"
+            VpcId:
+              -
+                Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
             Name: "admin-service-target-group"
             HealthCheckEnabled: true
             TargetGroupAttributes: 
@@ -256,36 +249,37 @@ Resources:
                 Key: "load_balancing.algorithm.type"
                 Value: "round_robin"
 
-    EC2NetworkInterface:
-        Type: "AWS::EC2::NetworkInterface"
-        Properties:
-            Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
-            PrivateIpAddress: "10.0.25.237"
-            PrivateIpAddresses: 
-              - 
-                PrivateIpAddress: "10.0.25.237"
-                Primary: true
-            SubnetId: "subnet-090373565e0ad5c52"
-            SourceDestCheck: true
-            GroupSet: 
-              - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
+    # EC2NetworkInterface:
+    #     Type: "AWS::EC2::NetworkInterface"
+    #     Properties:
+    #         Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+    #         PrivateIpAddress: "10.0.25.237"
+    #         PrivateIpAddresses: 
+    #           - 
+    #             PrivateIpAddress: "10.0.25.237"
+    #             Primary: true
+    #         SubnetId: "subnet-090373565e0ad5c52"
+    #         SourceDestCheck: true
+    #         GroupSet: 
+    #           - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
 
-    EC2NetworkInterface2:
-        Type: "AWS::EC2::NetworkInterface"
-        Properties:
-            Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
-            PrivateIpAddress: "10.0.14.19"
-            PrivateIpAddresses: 
-              - 
-                PrivateIpAddress: "10.0.14.19"
-                Primary: true
-            SubnetId: "subnet-061b6a216e31cb1f2"
-            SourceDestCheck: true
-            GroupSet: 
-              - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
+    # EC2NetworkInterface2:
+    #     Type: "AWS::EC2::NetworkInterface"
+    #     Properties:
+    #         Description: !Sub "ELB app/${CcsApplicationLoadBalancer.LoadBalancerName}/23f3cf9684deeba1"
+    #         PrivateIpAddress: "10.0.14.19"
+    #         PrivateIpAddresses: 
+    #           - 
+    #             PrivateIpAddress: "10.0.14.19"
+    #             Primary: true
+    #         SubnetId: "subnet-061b6a216e31cb1f2"
+    #         SourceDestCheck: true
+    #         GroupSet: 
+    #           - !Sub "${CcsApplicationLoadBalancer.SecurityGroups}"
 
-    S3Bucket:
+    CcsApplicationLoadBalancerLogStorage:
         Type: "AWS::S3::Bucket"
+        DeletionPolicy: !If [ IsProd, Retain, Ref: AWS::NoValue ]
         Properties:
             BucketName: "ccs-application-load-balancer-logs"
             BucketEncryption: 
@@ -304,10 +298,10 @@ Resources:
                 IgnorePublicAcls: true
                 RestrictPublicBuckets: true
 
-    S3BucketPolicy:
+    CcsApplicationLoadBalancerLogStoragePolicy:
         Type: "AWS::S3::BucketPolicy"
         Properties:
-            Bucket: !Ref S3Bucket
+            Bucket: !Ref CcsApplicationLoadBalancerLogStorage
             PolicyDocument: 
                 Version: "2012-10-17"
                 Statement: 
@@ -316,7 +310,7 @@ Resources:
                     Principal: 
                         AWS: "arn:aws:iam::582318560864:root"
                     Action: "s3:PutObject"
-                    Resource: !Sub "arn:aws:s3:::${S3Bucket}/AWSLogs/${AWS::AccountId}/*"
+                    Resource: !Sub "arn:aws:s3:::${CcsApplicationLoadBalancerLogStorage}/AWSLogs/${AWS::AccountId}/*"
 
     CertificateManagerCertificate:
         Type: "AWS::CertificateManager::Certificate"
