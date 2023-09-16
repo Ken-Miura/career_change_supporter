@@ -346,59 +346,59 @@ Outputs:
   VpcId:
     Value: !Ref CcsVpc
     Export:
-      Name: !Sub "${AWS::StackName}VpcId"
+      Name: !Sub "${AWS::StackName}-VpcId"
 
   PublicSubnet1Id:
     Value: !Ref CcsPublicSubnet1
     Export:
-      Name: !Sub "${AWS::StackName}PublicSubnet1Id"
+      Name: !Sub "${AWS::StackName}-PublicSubnet1Id"
 
   PublicSubnet2Id:
     Value: !Ref CcsPublicSubnet2
     Export:
-      Name: !Sub "${AWS::StackName}PublicSubnet2Id"
+      Name: !Sub "${AWS::StackName}-PublicSubnet2Id"
 
   PrivateSubnet1Id:
     Value: !Ref CcsPrivateSubnet1
     Export:
-      Name: !Sub "${AWS::StackName}PrivateSubnet1Id"
+      Name: !Sub "${AWS::StackName}-PrivateSubnet1Id"
 
   PrivateSubnet2Id:
     Value: !Ref CcsPrivateSubnet2
     Export:
-      Name: !Sub "${AWS::StackName}PrivateSubnet2Id"
+      Name: !Sub "${AWS::StackName}-PrivateSubnet2Id"
 
   AlbSecurityGroupId:
     Value: !Ref CcsAlbSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}AlbSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-AlbSecurityGroupId"
 
   UserServiceSecurityGroupId:
     Value: !Ref CcsUserServiceSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}UserServiceSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-UserServiceSecurityGroupId"
 
   AdminServiceSecurityGroupId:
     Value: !Ref CcsAdminServiceSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}AdminServiceSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-AdminServiceSecurityGroupId"
 
   ToolSecurityGroupId:
     Value: !Ref CcsToolSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}ToolSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-ToolSecurityGroupId"
 
   DbSecurityGroupId:
     Value: !Ref CcsDbSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}DbSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-DbSecurityGroupId"
 
   RedisSecurityGroupId:
     Value: !Ref CcsRedisSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}RedisSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-RedisSecurityGroupId"
 
   OpenSearchSecurityGroupId:
     Value: !Ref CcsOpenSearchSecurityGroup
     Export:
-      Name: !Sub "${AWS::StackName}OpenSearchSecurityGroupId"
+      Name: !Sub "${AWS::StackName}-OpenSearchSecurityGroupId"
