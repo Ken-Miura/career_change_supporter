@@ -13,6 +13,16 @@ Parameters:
     Description: api.${DomainName} for prod or api.dev.${DomainName} for dev is used for load balancer domain name
     AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
 
+  UserServiceAccessRestrictionCustomHeaderValue:
+    Type: String
+    Description: Enter same value as the one you set on CloudFront for user service
+    AllowedPattern: ^[a-zA-Z0-9]{32}$
+
+  AdminServiceAccessRestrictionCustomHeaderValue:
+    Type: String
+    Description: Enter same value as the one you set on CloudFront for admin service
+    AllowedPattern: ^[a-zA-Z0-9]{32}$
+
 Conditions:
   IsProd: !Equals [Environment, "prod"]
 
@@ -104,12 +114,11 @@ Resources:
         Type: "AWS::CertificateManager::Certificate"
         Properties:
             DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
-            SubjectAlternativeNames: 
-              - !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+            ValidationMethod: DNS
             DomainValidationOptions: 
               - 
                 DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
-                ValidationDomain: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+                ValidationDomain: Ref! DomainName
             CertificateTransparencyLoggingPreference: "ENABLED"
 
     CcsUserServiceListenerRule:
@@ -120,11 +129,14 @@ Resources:
             Conditions: 
               - 
                 Field: "http-header"
+                HttpHeaderConfig:
+                  HttpHeaderName: X-Ccs-Alb-Access-Restriction
+                  Values:
+                    - Sub! ${UserServiceAccessRestrictionCustomHeaderValue}
             Actions: 
               - 
                 Type: "forward"
                 TargetGroupArn: !Ref UserServiceTargetGroup
-                Order: 1
                 ForwardConfig: 
                     TargetGroups: 
                       - 
@@ -142,11 +154,14 @@ Resources:
             Conditions: 
               - 
                 Field: "http-header"
+                HttpHeaderConfig:
+                  HttpHeaderName: X-Admin-Ccs-Alb-Access-Restriction
+                  Values:
+                    - Sub! ${AdminServiceAccessRestrictionCustomHeaderValue}
             Actions: 
               - 
                 Type: "forward"
                 TargetGroupArn: !Ref AdminServiceTargetGroup
-                Order: 1
                 ForwardConfig: 
                     TargetGroups: 
                       - 
