@@ -343,6 +343,7 @@ Resources:
               - 
                 CidrIp: "0.0.0.0/0"
                 IpProtocol: "-1"
+
 Outputs:
   VpcId:
     Value: !Ref CcsVpc
