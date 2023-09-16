@@ -7,6 +7,12 @@ Parameters:
       - prod
       - dev
 
+  DomainName:
+    Type: String
+    Default: career-change-supporter.com
+    Description: api.${DomainName} for prod or api.dev.${DomainName} for dev is used for load balancer domain name
+    AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
+
 Conditions:
   IsProd: !Equals [Environment, "prod"]
 
