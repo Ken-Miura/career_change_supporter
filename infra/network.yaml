@@ -1,6 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
+  # prodの場合はスタック名に"ProdNetwork"、devの場合はスタック名に"DevNetwork"を指定する
   Environment:
     Type: String
     AllowedValues:
