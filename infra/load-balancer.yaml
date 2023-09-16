@@ -70,6 +70,17 @@ Resources:
                 Key: "routing.http.x_amzn_tls_version_and_cipher_suite.enabled"
                 Value: "false"
 
+    CcsApplicationLoadBalancerDnsRecord:
+      Type: AWS::Route53::RecordSetGroup
+      Properties:
+        HostedZoneName: !Sub "${DomainName}." # need trailing comma
+        RecordSets:
+          - Name: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ] # you don't have to need trailing comma because AWS handle both as same
+            Type: A
+            AliasTarget:
+              HostedZoneId: !GetAtt 'CcsApplicationLoadBalancer.CanonicalHostedZoneID'
+              DNSName: !GetAtt 'CcsApplicationLoadBalancer.DNSName'
+
     CcsApplicationLoadBalancerListener:
         Type: "AWS::ElasticLoadBalancingV2::Listener"
         Properties:
@@ -88,6 +99,18 @@ Resources:
                     ContentType: "text/plain"
                 Order: 1
                 Type: "fixed-response"
+
+    CcsApplicationLoadBalancerCertificate:
+        Type: "AWS::CertificateManager::Certificate"
+        Properties:
+            DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+            SubjectAlternativeNames: 
+              - !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+            DomainValidationOptions: 
+              - 
+                DomainName: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+                ValidationDomain: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], Ref! DomainName ] ]
+            CertificateTransparencyLoggingPreference: "ENABLED"
 
     CcsUserServiceListenerRule:
         Type: "AWS::ElasticLoadBalancingV2::ListenerRule"
@@ -151,7 +174,7 @@ Resources:
             VpcId:
               -
                 Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
-            Name: "user-service-target-group"
+            Name: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "user-service-target-group"] ]
             HealthCheckEnabled: true
             TargetGroupAttributes: 
               - 
@@ -212,7 +235,7 @@ Resources:
             VpcId:
               -
                 Fn::ImportValue: !Join [ "-", [!If [ IsProd, "ProdNetwork", "DevNetwork" ], "VpcId"] ]
-            Name: "admin-service-target-group"
+            Name: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "admin-service-target-group"] ]
             HealthCheckEnabled: true
             TargetGroupAttributes: 
               - 
@@ -287,7 +310,7 @@ Resources:
         Type: "AWS::S3::Bucket"
         DeletionPolicy: !If [ IsProd, Retain, Ref: AWS::NoValue ]
         Properties:
-            BucketName: "ccs-application-load-balancer-logs"
+            BucketName: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-application-load-balancer-logs"] ]
             BucketEncryption: 
                 ServerSideEncryptionConfiguration: 
                   - 
@@ -317,15 +340,3 @@ Resources:
                         AWS: "arn:aws:iam::582318560864:root"
                     Action: "s3:PutObject"
                     Resource: !Sub "arn:aws:s3:::${CcsApplicationLoadBalancerLogStorage}/AWSLogs/${AWS::AccountId}/*"
-
-    CcsApplicationLoadBalancerCertificate:
-        Type: "AWS::CertificateManager::Certificate"
-        Properties:
-            DomainName: "api.career-change-supporter.com"
-            SubjectAlternativeNames: 
-              - "api.career-change-supporter.com"
-            DomainValidationOptions: 
-              - 
-                DomainName: "api.career-change-supporter.com"
-                ValidationDomain: "api.career-change-supporter.com"
-            CertificateTransparencyLoggingPreference: "ENABLED"
