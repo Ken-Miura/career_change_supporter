@@ -153,17 +153,17 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: "OnlyAllowFromMyIP"
-    CcsUserServiceCertificate:
-      Type: "AWS::CertificateManager::Certificate"
-      Properties:
-        DomainName: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
-        # DNSレコード検証のため、初回は手動で検証用のレコードを作成する必要がある。二回目以降は作成済の検証用レコードがあればすべて自動で処理される。
-        # 参考: https://dev.classmethod.jp/articles/cfn-support-acm-dns-validation/
-        ValidationMethod: DNS
-        DomainValidationOptions:
-          - DomainName: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
-            ValidationDomain: !Ref ServiceDomainName
-        CertificateTransparencyLoggingPreference: "ENABLED"
+  CcsUserServiceCertificate:
+    Type: "AWS::CertificateManager::Certificate"
+    Properties:
+      DomainName: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
+      # DNSレコード検証のため、初回は手動で検証用のレコードを作成する必要がある。二回目以降は作成済の検証用レコードがあればすべて自動で処理される。
+      # 参考: https://dev.classmethod.jp/articles/cfn-support-acm-dns-validation/
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
+          ValidationDomain: !Ref ServiceDomainName
+      CertificateTransparencyLoggingPreference: "ENABLED"
   CcsUserServiceLogStorage:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Retain
@@ -182,6 +182,36 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+  CcsUserServiceRequestControllerDnsARecord:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneName: !Sub "${ServiceDomainName}." # need trailing comma
+      RecordSets:
+        - Name: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"] # you don't have to need trailing comma because AWS handle both as same
+          Type: A
+          AliasTarget:
+            HostedZoneId: "Z027771334FILNAP83QUT"
+            DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
+  # Route53RecordSet:
+  #   Type: "AWS::Route53::RecordSet"
+  #   Properties:
+  #     Name: !Ref Route53RecordSet2
+  #     Type: "A"
+  #     AliasTarget:
+  #       HostedZoneId: "Z2FDTNDATAQYW2"
+  #       DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
+  #       EvaluateTargetHealth: false
+  #     HostedZoneId: "Z027771334FILNAP83QUT"
+  Route53RecordSet2:
+    Type: "AWS::Route53::RecordSet"
+    Properties:
+      Name: "career-change-supporter.com."
+      Type: "AAAA"
+      AliasTarget:
+        HostedZoneId: "Z2FDTNDATAQYW2"
+        DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
+        EvaluateTargetHealth: false
+      HostedZoneId: "Z027771334FILNAP83QUT"
   CloudFrontDistribution2:
     Type: "AWS::CloudFront::Distribution"
     Properties:
@@ -417,23 +447,6 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  S3Bucket4:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: "ccs-cloudfront-logs"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "AES256"
-            BucketKeyEnabled: true
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: "BucketOwnerPreferred"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
     CertificateManagerCertificate2:
       Type: "AWS::CertificateManager::Certificate"
       Properties:
@@ -444,26 +457,6 @@ Resources:
           - DomainName: "admin.career-change-supporter.com"
             ValidationDomain: "admin.career-change-supporter.com"
         CertificateTransparencyLoggingPreference: "ENABLED"
-    Route53RecordSet:
-      Type: "AWS::Route53::RecordSet"
-      Properties:
-        Name: !Ref Route53RecordSet2
-        Type: "A"
-        AliasTarget:
-          HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
-          EvaluateTargetHealth: false
-        HostedZoneId: "Z027771334FILNAP83QUT"
-    Route53RecordSet2:
-      Type: "AWS::Route53::RecordSet"
-      Properties:
-        Name: "career-change-supporter.com."
-        Type: "AAAA"
-        AliasTarget:
-          HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
-          EvaluateTargetHealth: false
-        HostedZoneId: "Z027771334FILNAP83QUT"
     Route53RecordSet3:
       Type: "AWS::Route53::RecordSet"
       Properties:
