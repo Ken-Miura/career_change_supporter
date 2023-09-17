@@ -365,3 +365,42 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+
+# S3の方から一時コピー
+# S3BucketPolicy:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#         Bucket: !Ref CcsUserAppStore
+#         PolicyDocument: 
+#             Version: "2008-10-17"
+#             Id: "PolicyForCloudFrontPrivateContent"
+#             Statement: 
+#               - 
+#                 Sid: "AllowCloudFrontServicePrincipal"
+#                 Effect: "Allow"
+#                 Principal: 
+#                     Service: "cloudfront.amazonaws.com"
+#                 Action: "s3:GetObject"
+#                 Resource: !Sub "arn:aws:s3:::${CcsUserAppStore}/*"
+#                 Condition: 
+#                     StringEquals: 
+#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1BL2NRJQYGUK9"
+
+# S3BucketPolicy2:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#         Bucket: !Ref CcsAdminAppStore
+#         PolicyDocument: 
+#             Version: "2008-10-17"
+#             Id: "PolicyForCloudFrontPrivateContent"
+#             Statement: 
+#               - 
+#                 Sid: "AllowCloudFrontServicePrincipal"
+#                 Effect: "Allow"
+#                 Principal: 
+#                     Service: "cloudfront.amazonaws.com"
+#                 Action: "s3:GetObject"
+#                 Resource: !Sub "arn:aws:s3:::${CcsAdminAppStore}/*"
+#                 Condition: 
+#                     StringEquals: 
+#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E3GETAQTKY7CA5"

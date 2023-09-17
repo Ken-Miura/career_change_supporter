@@ -9,7 +9,7 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  S3Bucket:
+  CcsUserApp:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
@@ -27,11 +27,11 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  S3Bucket2:
+  CcsUserAppStore:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub "${S3Bucket}-staging"
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app-store"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -45,11 +45,11 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  S3Bucket3:
+  CcsAdminApp:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Sub "${S3Bucket4}-staging"
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -63,11 +63,11 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  S3Bucket4:
+  CcsAdminAppStore:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: "ccs-admin-app"
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app-store"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -81,41 +81,13 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-
-# S3BucketPolicy:
-#     Type: "AWS::S3::BucketPolicy"
-#     Properties:
-#         Bucket: !Ref S3Bucket
-#         PolicyDocument: 
-#             Version: "2008-10-17"
-#             Id: "PolicyForCloudFrontPrivateContent"
-#             Statement: 
-#               - 
-#                 Sid: "AllowCloudFrontServicePrincipal"
-#                 Effect: "Allow"
-#                 Principal: 
-#                     Service: "cloudfront.amazonaws.com"
-#                 Action: "s3:GetObject"
-#                 Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-#                 Condition: 
-#                     StringEquals: 
-#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1BL2NRJQYGUK9"
-
-# S3BucketPolicy2:
-#     Type: "AWS::S3::BucketPolicy"
-#     Properties:
-#         Bucket: !Ref S3Bucket4
-#         PolicyDocument: 
-#             Version: "2008-10-17"
-#             Id: "PolicyForCloudFrontPrivateContent"
-#             Statement: 
-#               - 
-#                 Sid: "AllowCloudFrontServicePrincipal"
-#                 Effect: "Allow"
-#                 Principal: 
-#                     Service: "cloudfront.amazonaws.com"
-#                 Action: "s3:GetObject"
-#                 Resource: !Sub "arn:aws:s3:::${S3Bucket4}/*"
-#                 Condition: 
-#                     StringEquals: 
-#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E3GETAQTKY7CA5"
+# 他スタックに直接渡すことはないが、デバッグ用に実際に登録されたドメイン名は確認できるようにしておく
+Outputs:
+  CcsUserAppBucket:
+    Value: !Ref CcsUserApp
+  CcsUserAppStoreBucket:
+    Value: !Ref CcsUserAppStore
+  CcsAdminAppBucket:
+    Value: !Ref CcsAdminApp
+  CcsAdminAppStoreBucket:
+    Value: !Ref CcsAdminAppStore
