@@ -297,6 +297,10 @@ Outputs:
     Value: !Ref CcsPrivateSubnet2
     Export:
       Name: !Sub "${AWS::StackName}-PrivateSubnet2Id"
+  S3VpcEndpointId:
+    Value: !Ref CcsS3VpcEndpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-S3VpcEndpointId"
   AlbSecurityGroupId:
     Value: !Ref CcsAlbSecurityGroup
     Export:
