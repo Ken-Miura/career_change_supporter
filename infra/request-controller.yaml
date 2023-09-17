@@ -128,14 +128,14 @@ Resources:
   CcsUserServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
-      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
       Description: ""
       DefaultAction:
         Block: {}
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: !Join ["-", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
       Scope: "CLOUDFRONT"
       Rules:
         - Name: "OnlyAllowFromMyIP"
@@ -166,8 +166,9 @@ Resources:
         CertificateTransparencyLoggingPreference: "ENABLED"
   CcsUserServiceLogStorage:
     Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
     Properties:
-      BucketName: "ccs-cloudfront-logs"
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-cloudfront-logs"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -383,7 +384,7 @@ Resources:
   CcsIpV4Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
-      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
       Description: ""
       IPAddressVersion: "IPV4"
       Addresses:
@@ -392,7 +393,7 @@ Resources:
   CcsIpV6Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
-      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
       Description: ""
       IPAddressVersion: "IPV6"
       Addresses:
