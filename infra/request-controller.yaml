@@ -45,6 +45,7 @@ Resources:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
+        Enabled: true
         PriceClass: "PriceClass_All"
         HttpVersion: "http2"
         WebACLId: !GetAtt CcsUserServiceWaf.Arn
@@ -59,6 +60,7 @@ Resources:
           Bucket: !Sub "${CcsUserServiceLogStorage}.s3.amazonaws.com"
           IncludeCookies: false
           Prefix: ""
+        IPV6Enabled: true
         DefaultRootObject: "index.html"
         Origins:
           - Id: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
@@ -87,20 +89,12 @@ Resources:
               Enabled: false
             ConnectionAttempts: 3
             ConnectionTimeout: 10
-        DefaultCacheBehavior:
-          AllowedMethods:
-            - "HEAD"
-            - "GET"
-          CachedMethods:
-            - "HEAD"
-            - "GET"
-          Compress: true
-          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6"
-          SmoothStreaming: false
-          TargetOriginId: !Sub "${S3Bucket2}.s3.ap-northeast-1.amazonaws.com"
-          ViewerProtocolPolicy: "https-only"
         CacheBehaviors:
-          - AllowedMethods:
+          - PathPattern: "/api/*"
+            TargetOriginId: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
+            Compress: true
+            ViewerProtocolPolicy: "https-only"
+            AllowedMethods:
               - "HEAD"
               - "DELETE"
               - "POST"
@@ -108,24 +102,29 @@ Resources:
               - "OPTIONS"
               - "PUT"
               - "PATCH"
-            Compress: true
-            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
-            PathPattern: "/api/*"
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # CachingDisabled policy id managed by AWS
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3" # AllViewer policy id managed by AWS
             SmoothStreaming: false
-            TargetOriginId: "api.career-change-supporter.com"
-            ViewerProtocolPolicy: "https-only"
+        DefaultCacheBehavior:
+          TargetOriginId: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
+          Compress: true
+          ViewerProtocolPolicy: "https-only"
+          AllowedMethods:
+            - "HEAD"
+            - "GET"
+          CachedMethods:
+            - "HEAD"
+            - "GET"
+          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6" # CachingOptimized policy id managed by AWS
+          SmoothStreaming: false
         CustomErrorResponses:
           - ErrorCode: 403
+            ErrorCachingMinTTL: 10
             ResponsePagePath: "/"
             ResponseCode: "200"
-            ErrorCachingMinTTL: 10
-        Comment: ""
-        Enabled: true
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-        IPV6Enabled: true
   CcsUserServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
