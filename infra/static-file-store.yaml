@@ -1,122 +1,121 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Metadata:
-    Generator: "former2"
-Description: ""
+Parameters:
+  # prodの場合はスタック名に"ProdStaticFileStore"、devの場合はスタック名に"DevStaticFileStore"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-    S3Bucket:
-        Type: "AWS::S3::Bucket"
-        Properties:
-            BucketName: "ccs-user-app"
-            BucketEncryption: 
-                ServerSideEncryptionConfiguration: 
-                  - 
-                    ServerSideEncryptionByDefault: 
-                        SSEAlgorithm: "AES256"
-                    BucketKeyEnabled: true
-            OwnershipControls: 
-                Rules: 
-                  - 
-                    ObjectOwnership: "BucketOwnerEnforced"
-            PublicAccessBlockConfiguration: 
-                BlockPublicAcls: true
-                BlockPublicPolicy: true
-                IgnorePublicAcls: true
-                RestrictPublicBuckets: true
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  S3Bucket2:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub "${S3Bucket}-staging"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  S3Bucket3:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub "${S3Bucket4}-staging"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  S3Bucket4:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: "ccs-admin-app"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
 
-    S3Bucket2:
-        Type: "AWS::S3::Bucket"
-        Properties:
-            BucketName: !Sub "${S3Bucket}-staging"
-            BucketEncryption: 
-                ServerSideEncryptionConfiguration: 
-                  - 
-                    ServerSideEncryptionByDefault: 
-                        SSEAlgorithm: "AES256"
-                    BucketKeyEnabled: true
-            OwnershipControls: 
-                Rules: 
-                  - 
-                    ObjectOwnership: "BucketOwnerEnforced"
-            PublicAccessBlockConfiguration: 
-                BlockPublicAcls: true
-                BlockPublicPolicy: true
-                IgnorePublicAcls: true
-                RestrictPublicBuckets: true
+# S3BucketPolicy:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#         Bucket: !Ref S3Bucket
+#         PolicyDocument: 
+#             Version: "2008-10-17"
+#             Id: "PolicyForCloudFrontPrivateContent"
+#             Statement: 
+#               - 
+#                 Sid: "AllowCloudFrontServicePrincipal"
+#                 Effect: "Allow"
+#                 Principal: 
+#                     Service: "cloudfront.amazonaws.com"
+#                 Action: "s3:GetObject"
+#                 Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+#                 Condition: 
+#                     StringEquals: 
+#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1BL2NRJQYGUK9"
 
-    S3Bucket3:
-        Type: "AWS::S3::Bucket"
-        Properties:
-            BucketName: !Sub "${S3Bucket4}-staging"
-            BucketEncryption: 
-                ServerSideEncryptionConfiguration: 
-                  - 
-                    ServerSideEncryptionByDefault: 
-                        SSEAlgorithm: "AES256"
-                    BucketKeyEnabled: true
-            OwnershipControls: 
-                Rules: 
-                  - 
-                    ObjectOwnership: "BucketOwnerEnforced"
-            PublicAccessBlockConfiguration: 
-                BlockPublicAcls: true
-                BlockPublicPolicy: true
-                IgnorePublicAcls: true
-                RestrictPublicBuckets: true
-
-    S3Bucket4:
-        Type: "AWS::S3::Bucket"
-        Properties:
-            BucketName: "ccs-admin-app"
-            BucketEncryption: 
-                ServerSideEncryptionConfiguration: 
-                  - 
-                    ServerSideEncryptionByDefault: 
-                        SSEAlgorithm: "AES256"
-                    BucketKeyEnabled: true
-            OwnershipControls: 
-                Rules: 
-                  - 
-                    ObjectOwnership: "BucketOwnerEnforced"
-            PublicAccessBlockConfiguration: 
-                BlockPublicAcls: true
-                BlockPublicPolicy: true
-                IgnorePublicAcls: true
-                RestrictPublicBuckets: true
-
-    S3BucketPolicy:
-        Type: "AWS::S3::BucketPolicy"
-        Properties:
-            Bucket: !Ref S3Bucket
-            PolicyDocument: 
-                Version: "2008-10-17"
-                Id: "PolicyForCloudFrontPrivateContent"
-                Statement: 
-                  - 
-                    Sid: "AllowCloudFrontServicePrincipal"
-                    Effect: "Allow"
-                    Principal: 
-                        Service: "cloudfront.amazonaws.com"
-                    Action: "s3:GetObject"
-                    Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-                    Condition: 
-                        StringEquals: 
-                            "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1BL2NRJQYGUK9"
-
-    S3BucketPolicy2:
-        Type: "AWS::S3::BucketPolicy"
-        Properties:
-            Bucket: !Ref S3Bucket4
-            PolicyDocument: 
-                Version: "2008-10-17"
-                Id: "PolicyForCloudFrontPrivateContent"
-                Statement: 
-                  - 
-                    Sid: "AllowCloudFrontServicePrincipal"
-                    Effect: "Allow"
-                    Principal: 
-                        Service: "cloudfront.amazonaws.com"
-                    Action: "s3:GetObject"
-                    Resource: !Sub "arn:aws:s3:::${S3Bucket4}/*"
-                    Condition: 
-                        StringEquals: 
-                            "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E3GETAQTKY7CA5"
+# S3BucketPolicy2:
+#     Type: "AWS::S3::BucketPolicy"
+#     Properties:
+#         Bucket: !Ref S3Bucket4
+#         PolicyDocument: 
+#             Version: "2008-10-17"
+#             Id: "PolicyForCloudFrontPrivateContent"
+#             Statement: 
+#               - 
+#                 Sid: "AllowCloudFrontServicePrincipal"
+#                 Effect: "Allow"
+#                 Principal: 
+#                     Service: "cloudfront.amazonaws.com"
+#                 Action: "s3:GetObject"
+#                 Resource: !Sub "arn:aws:s3:::${S3Bucket4}/*"
+#                 Condition: 
+#                     StringEquals: 
+#                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E3GETAQTKY7CA5"

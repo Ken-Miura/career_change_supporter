@@ -1,5 +1,4 @@
 AWSTemplateFormatVersion: "2010-09-09"
-
 Parameters:
   # prodの場合はスタック名に"ProdNetwork"、devの場合はスタック名に"DevNetwork"を指定する
   Environment:
@@ -7,399 +6,321 @@ Parameters:
     AllowedValues:
       - prod
       - dev
-
 Conditions:
-  IsProd: !Equals [ !Ref Environment, "prod" ]
-
+  IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-    CcsVpc:
-        Type: "AWS::EC2::VPC"
-        Properties:
-            CidrBlock: "10.0.0.0/16"
-            EnableDnsSupport: true
-            EnableDnsHostnames: true
-            InstanceTenancy: "default"
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-vpc"] ]
-
-    CcsPublicSubnet1:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !Sub "${AWS::Region}a"
-            CidrBlock: "10.0.0.0/20"
-            VpcId: !Ref CcsVpc
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-public-subnet1-${AWS::Region}a"] ]
-
-    CcsPublicSubnet2:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !Sub "${AWS::Region}c"
-            CidrBlock: "10.0.16.0/20"
-            VpcId: !Ref CcsVpc
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-public-subnet2-${AWS::Region}c"] ]
-
-    CcsPrivateSubnet1:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !GetAtt CcsPublicSubnet1.AvailabilityZone
-            CidrBlock: "10.0.128.0/20"
-            VpcId: !Ref CcsVpc
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-private-subnet1-${CcsPublicSubnet1.AvailabilityZone}"] ]
-
-    # 2023年9月時点でプライベートサブネットに置くサービスはMultiAZ対応する予定がないので、2つ以上のプライベートサブネットを用意する必要はない
-    # しかし、今後可用性の向上が必要となり、MultiAZ対応する場合を考慮し、事前に作っておく
-    CcsPrivateSubnet2:
-        Type: "AWS::EC2::Subnet"
-        Properties:
-            AvailabilityZone: !GetAtt CcsPublicSubnet2.AvailabilityZone
-            CidrBlock: "10.0.144.0/20"
-            VpcId: !Ref CcsVpc
-            MapPublicIpOnLaunch: false
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], !Sub "ccs-private-subnet2-${CcsPublicSubnet2.AvailabilityZone}"] ]
-
-    CcsInternetGateway:
-        Type: "AWS::EC2::InternetGateway"
-        Properties:
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-igw"] ]
-
-    CcsVpcGatewayAttachment: 
-        Type: "AWS::EC2::VPCGatewayAttachment"
-        Properties: 
-            InternetGatewayId: !Ref CcsInternetGateway
-            VpcId: !Ref CcsVpc 
-
-    CcsPublicSubnetRouteTable:
-        Type: "AWS::EC2::RouteTable"
-        Properties:
-            VpcId: !Ref CcsVpc
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-public-subnet-rtb"] ]
-
-    CcsPrivateSubnetRouteTable:
-        Type: "AWS::EC2::RouteTable"
-        Properties:
-            VpcId: !Ref CcsVpc
-            Tags: 
-              - 
-                Key: "Name"
-                Value: !Join [ "-", [!If [ IsProd, "prod", "dev" ], "ccs-private-subnet-rtb"] ]
-
-    CcsRouteToIgw:
-        Type: "AWS::EC2::Route"
-        Properties:
-            DestinationCidrBlock: "0.0.0.0/0"
-            GatewayId: !Ref CcsInternetGateway
-            RouteTableId: !Ref CcsPublicSubnetRouteTable
-
-    CcsS3VpcEndpoint:
-        Type: "AWS::EC2::VPCEndpoint"
-        Properties:
-            VpcEndpointType: "Gateway"
-            VpcId: !Ref CcsVpc
-            ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
-            PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
-            RouteTableIds: 
-              - !Ref CcsPublicSubnetRouteTable
-            PrivateDnsEnabled: false
-
-    CcsSsmVpcEndpoint:
-        Type: "AWS::EC2::VPCEndpoint"
-        Properties:
-            VpcEndpointType: "Interface"
-            VpcId: !Ref CcsVpc
-            ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
-            PolicyDocument: |
-                {
-                  "Statement": [
-                    {
-                      "Action": "*", 
-                      "Effect": "Allow", 
-                      "Principal": "*", 
-                      "Resource": "*"
-                    }
-                  ]
-                }
-            SubnetIds: 
-              - !Ref CcsPublicSubnet1
-              - !Ref CcsPublicSubnet2
-            PrivateDnsEnabled: true
-            SecurityGroupIds: 
-              - !Ref CcsSsmEndpointSecurityGroup
-
-    CcsPublicSubnet1RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
-        Properties:
-            RouteTableId: !Ref CcsPublicSubnetRouteTable
-            SubnetId: !Ref CcsPublicSubnet1
-
-    CcsPublicSubnet2RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
-        Properties:
-            RouteTableId: !Ref CcsPublicSubnetRouteTable
-            SubnetId: !Ref CcsPublicSubnet2
-
-    CcsPrivateSubnet1RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
-        Properties:
-            RouteTableId: !Ref CcsPrivateSubnetRouteTable
-            SubnetId: !Ref CcsPrivateSubnet1
-
-    CcsPrivateSubnet2RouteTableAssociation:
-        Type: "AWS::EC2::SubnetRouteTableAssociation"
-        Properties:
-            RouteTableId: !Ref CcsPrivateSubnetRouteTable
-            SubnetId: !Ref CcsPrivateSubnet2
-
-    CcsAlbSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for ALB"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAlbSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourcePrefixListId: "pl-58a04531" # CloudFrontのマネージドプリフィックスリストのID
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsUserServiceSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for user service on ecs"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsUserServiceSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 3000
-                IpProtocol: "tcp"
-                ToPort: 3000
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsAdminServiceSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for admin service on ecs"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsAdminServiceSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 3001
-                IpProtocol: "tcp"
-                ToPort: 3001
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsToolSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for tool"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsToolSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsDbSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for database"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsDbSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
-              - 
-                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
-              - 
-                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 5432
-                IpProtocol: "tcp"
-                ToPort: 5432
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsRedisSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for redis on elastic cache"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsRedisSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsOpenSearchSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for OpenSearch"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsOpenSearchSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-              - 
-                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                FromPort: 443
-                IpProtocol: "tcp"
-                ToPort: 443
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
-    CcsSsmEndpointSecurityGroup:
-        Type: "AWS::EC2::SecurityGroup"
-        Properties:
-            GroupDescription: "security group for ssm endpoint"
-            GroupName: !Join [ "", [!If [ IsProd, "Prod", "Dev" ], "CcsSsmEndpointSecurityGroup"] ]
-            VpcId: !Ref CcsVpc
-            SecurityGroupIngress: 
-              - 
-                SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-              - 
-                SourceSecurityGroupId: !Ref CcsToolSecurityGroup
-                SourceSecurityGroupOwnerId: !Ref AWS::AccountId
-                IpProtocol: "-1"
-            SecurityGroupEgress: 
-              - 
-                CidrIp: "0.0.0.0/0"
-                IpProtocol: "-1"
-
+  CcsVpc:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "10.0.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: "default"
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-vpc"]]
+  CcsPublicSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      CidrBlock: "10.0.0.0/20"
+      VpcId: !Ref CcsVpc
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], !Sub "ccs-public-subnet1-${AWS::Region}a"]]
+  CcsPublicSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      CidrBlock: "10.0.16.0/20"
+      VpcId: !Ref CcsVpc
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], !Sub "ccs-public-subnet2-${AWS::Region}c"]]
+  CcsPrivateSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !GetAtt CcsPublicSubnet1.AvailabilityZone
+      CidrBlock: "10.0.128.0/20"
+      VpcId: !Ref CcsVpc
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], !Sub "ccs-private-subnet1-${CcsPublicSubnet1.AvailabilityZone}"]]
+  # 2023年9月時点でプライベートサブネットに置くサービスはMultiAZ対応する予定がないので、2つ以上のプライベートサブネットを用意する必要はない
+  # しかし、今後可用性の向上が必要となり、MultiAZ対応する場合を考慮し、事前に作っておく
+  CcsPrivateSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone: !GetAtt CcsPublicSubnet2.AvailabilityZone
+      CidrBlock: "10.0.144.0/20"
+      VpcId: !Ref CcsVpc
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], !Sub "ccs-private-subnet2-${CcsPublicSubnet2.AvailabilityZone}"]]
+  CcsInternetGateway:
+    Type: "AWS::EC2::InternetGateway"
+    Properties:
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-igw"]]
+  CcsVpcGatewayAttachment:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref CcsInternetGateway
+      VpcId: !Ref CcsVpc
+  CcsPublicSubnetRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref CcsVpc
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-public-subnet-rtb"]]
+  CcsPrivateSubnetRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref CcsVpc
+      Tags:
+        - Key: "Name"
+          Value: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-private-subnet-rtb"]]
+  CcsRouteToIgw:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref CcsInternetGateway
+      RouteTableId: !Ref CcsPublicSubnetRouteTable
+  CcsS3VpcEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      VpcEndpointType: "Gateway"
+      VpcId: !Ref CcsVpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      PolicyDocument: "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"*\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+      RouteTableIds:
+        - !Ref CcsPublicSubnetRouteTable
+      PrivateDnsEnabled: false
+  CcsSsmVpcEndpoint:
+    Type: "AWS::EC2::VPCEndpoint"
+    Properties:
+      VpcEndpointType: "Interface"
+      VpcId: !Ref CcsVpc
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.ssm"
+      PolicyDocument: "{\n  \"Statement\": [\n    {\n      \"Action\": \"*\", \n      \"Effect\": \"Allow\", \n      \"Principal\": \"*\", \n      \"Resource\": \"*\"\n    }\n  ]\n}\n"
+      SubnetIds:
+        - !Ref CcsPublicSubnet1
+        - !Ref CcsPublicSubnet2
+      PrivateDnsEnabled: true
+      SecurityGroupIds:
+        - !Ref CcsSsmEndpointSecurityGroup
+  CcsPublicSubnet1RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref CcsPublicSubnetRouteTable
+      SubnetId: !Ref CcsPublicSubnet1
+  CcsPublicSubnet2RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref CcsPublicSubnetRouteTable
+      SubnetId: !Ref CcsPublicSubnet2
+  CcsPrivateSubnet1RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref CcsPrivateSubnetRouteTable
+      SubnetId: !Ref CcsPrivateSubnet1
+  CcsPrivateSubnet2RouteTableAssociation:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref CcsPrivateSubnetRouteTable
+      SubnetId: !Ref CcsPrivateSubnet2
+  CcsAlbSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for ALB"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAlbSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourcePrefixListId: "pl-58a04531" # CloudFrontのマネージドプリフィックスリストのID
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsUserServiceSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for user service on ecs"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsUserServiceSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 3000
+          IpProtocol: "tcp"
+          ToPort: 3000
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsAdminServiceSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for admin service on ecs"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAdminServiceSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsAlbSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 3001
+          IpProtocol: "tcp"
+          ToPort: 3001
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsToolSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for tool"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsToolSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsDbSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for database"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsDbSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 5432
+          IpProtocol: "tcp"
+          ToPort: 5432
+        - SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 5432
+          IpProtocol: "tcp"
+          ToPort: 5432
+        - SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 5432
+          IpProtocol: "tcp"
+          ToPort: 5432
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsRedisSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for redis on elastic cache"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsRedisSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsOpenSearchSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for OpenSearch"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsOpenSearchSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+        - SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+        - SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
+  CcsSsmEndpointSecurityGroup:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "security group for ssm endpoint"
+      GroupName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsSsmEndpointSecurityGroup"]]
+      VpcId: !Ref CcsVpc
+      SecurityGroupIngress:
+        - SourceSecurityGroupId: !Ref CcsUserServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref CcsAdminServiceSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref CcsToolSecurityGroup
+          SourceSecurityGroupOwnerId: !Ref AWS::AccountId
+          IpProtocol: "-1"
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          IpProtocol: "-1"
 Outputs:
   VpcId:
     Value: !Ref CcsVpc
     Export:
       Name: !Sub "${AWS::StackName}-VpcId"
-
   PublicSubnet1Id:
     Value: !Ref CcsPublicSubnet1
     Export:
       Name: !Sub "${AWS::StackName}-PublicSubnet1Id"
-
   PublicSubnet2Id:
     Value: !Ref CcsPublicSubnet2
     Export:
       Name: !Sub "${AWS::StackName}-PublicSubnet2Id"
-
   PrivateSubnet1Id:
     Value: !Ref CcsPrivateSubnet1
     Export:
       Name: !Sub "${AWS::StackName}-PrivateSubnet1Id"
-
   PrivateSubnet2Id:
     Value: !Ref CcsPrivateSubnet2
     Export:
       Name: !Sub "${AWS::StackName}-PrivateSubnet2Id"
-
   AlbSecurityGroupId:
     Value: !Ref CcsAlbSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-AlbSecurityGroupId"
-
   UserServiceSecurityGroupId:
     Value: !Ref CcsUserServiceSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-UserServiceSecurityGroupId"
-
   AdminServiceSecurityGroupId:
     Value: !Ref CcsAdminServiceSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-AdminServiceSecurityGroupId"
-
   ToolSecurityGroupId:
     Value: !Ref CcsToolSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-ToolSecurityGroupId"
-
   DbSecurityGroupId:
     Value: !Ref CcsDbSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-DbSecurityGroupId"
-
   RedisSecurityGroupId:
     Value: !Ref CcsRedisSecurityGroup
     Export:
       Name: !Sub "${AWS::StackName}-RedisSecurityGroupId"
-
   OpenSearchSecurityGroupId:
     Value: !Ref CcsOpenSearchSecurityGroup
     Export:

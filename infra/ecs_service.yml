@@ -1,85 +1,78 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
-    Generator: "former2"
+  Generator: "former2"
 Description: ""
 Resources:
-    ECSService:
-        Type: "AWS::ECS::Service"
-        Properties:
-            ServiceName: "admin-service"
-            Cluster: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/ccs-cluster"
-            LoadBalancers: 
-              - 
-                TargetGroupArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/admin-service-target-group/62737c5bc2c149c2"
-                ContainerName: "admin-service"
-                ContainerPort: 3001
-            DesiredCount: 0
-            PlatformVersion: "LATEST"
-            TaskDefinition: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/admin-service:1"
-            DeploymentConfiguration: 
-                MaximumPercent: 200
-                MinimumHealthyPercent: 100
-                DeploymentCircuitBreaker: 
-                    Enable: true
-                    Rollback: true
-            Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
-            NetworkConfiguration: 
-                AwsvpcConfiguration: 
-                    AssignPublicIp: "ENABLED"
-                    SecurityGroups: 
-                      - "sg-0101cfb0b18218aa8"
-                    Subnets: 
-                      - "subnet-090373565e0ad5c52"
-                      - "subnet-061b6a216e31cb1f2"
-            HealthCheckGracePeriodSeconds: 0
-            SchedulingStrategy: "REPLICA"
-            DeploymentController: 
-                Type: "ECS"
-            CapacityProviderStrategy: 
-              - 
-                CapacityProvider: "FARGATE"
-                Weight: 1
-                Base: 0
-
-    ECSService2:
-        Type: "AWS::ECS::Service"
-        Properties:
-            ServiceName: "user-service"
-            Cluster: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/ccs-cluster"
-            LoadBalancers: 
-              - 
-                TargetGroupArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/user-service-target-group/2394f144a018e169"
-                ContainerName: "user-service"
-                ContainerPort: 3000
-            DesiredCount: 0
-            PlatformVersion: "LATEST"
-            TaskDefinition: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/user-service:10"
-            DeploymentConfiguration: 
-                MaximumPercent: 200
-                MinimumHealthyPercent: 100
-                DeploymentCircuitBreaker: 
-                    Enable: true
-                    Rollback: true
-            Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
-            NetworkConfiguration: 
-                AwsvpcConfiguration: 
-                    AssignPublicIp: "ENABLED"
-                    SecurityGroups: 
-                      - "sg-0a454f06a4c78a981"
-                    Subnets: 
-                      - "subnet-090373565e0ad5c52"
-                      - "subnet-061b6a216e31cb1f2"
-            HealthCheckGracePeriodSeconds: 0
-            SchedulingStrategy: "REPLICA"
-            DeploymentController: 
-                Type: "ECS"
-            CapacityProviderStrategy: 
-              - 
-                CapacityProvider: "FARGATE"
-                Weight: 1
-                Base: 0
-              - 
-                CapacityProvider: "FARGATE_SPOT"
-                Weight: 1
-                Base: 0
-
+  ECSService:
+    Type: "AWS::ECS::Service"
+    Properties:
+      ServiceName: "admin-service"
+      Cluster: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/ccs-cluster"
+      LoadBalancers:
+        - TargetGroupArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/admin-service-target-group/62737c5bc2c149c2"
+          ContainerName: "admin-service"
+          ContainerPort: 3001
+      DesiredCount: 0
+      PlatformVersion: "LATEST"
+      TaskDefinition: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/admin-service:1"
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          SecurityGroups:
+            - "sg-0101cfb0b18218aa8"
+          Subnets:
+            - "subnet-090373565e0ad5c52"
+            - "subnet-061b6a216e31cb1f2"
+      HealthCheckGracePeriodSeconds: 0
+      SchedulingStrategy: "REPLICA"
+      DeploymentController:
+        Type: "ECS"
+      CapacityProviderStrategy:
+        - CapacityProvider: "FARGATE"
+          Weight: 1
+          Base: 0
+  ECSService2:
+    Type: "AWS::ECS::Service"
+    Properties:
+      ServiceName: "user-service"
+      Cluster: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/ccs-cluster"
+      LoadBalancers:
+        - TargetGroupArn: !Sub "arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/user-service-target-group/2394f144a018e169"
+          ContainerName: "user-service"
+          ContainerPort: 3000
+      DesiredCount: 0
+      PlatformVersion: "LATEST"
+      TaskDefinition: !Sub "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/user-service:10"
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS"
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          SecurityGroups:
+            - "sg-0a454f06a4c78a981"
+          Subnets:
+            - "subnet-090373565e0ad5c52"
+            - "subnet-061b6a216e31cb1f2"
+      HealthCheckGracePeriodSeconds: 0
+      SchedulingStrategy: "REPLICA"
+      DeploymentController:
+        Type: "ECS"
+      CapacityProviderStrategy:
+        - CapacityProvider: "FARGATE"
+          Weight: 1
+          Base: 0
+        - CapacityProvider: "FARGATE_SPOT"
+          Weight: 1
+          Base: 0

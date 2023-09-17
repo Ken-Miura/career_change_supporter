@@ -1,94 +1,88 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
-    Generator: "former2"
+  Generator: "former2"
 Description: ""
 Resources:
-    RDSDBCluster:
-        Type: "AWS::RDS::DBCluster"
-        Properties:
-            AvailabilityZones: 
-              - !Sub "${AWS::Region}c"
-              - !Sub "${AWS::Region}a"
-              - !Sub "${AWS::Region}d"
-            BackupRetentionPeriod: 7
-            DBClusterIdentifier: "ccs-db-cluster-1"
-            DBClusterParameterGroupName: "default.aurora-postgresql14"
-            DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
-            Engine: "aurora-postgresql"
-            Port: !GetAtt RDSDBInstance.Endpoint.Port
-            MasterUsername: "postgres"
-            MasterUserPassword: "REPLACEME"
-            PreferredBackupWindow: "19:53-20:23"
-            PreferredMaintenanceWindow: "sat:14:30-sat:15:00"
-            VpcSecurityGroupIds: 
-              - "sg-0f654d20f0333ef89"
-            StorageEncrypted: true
-            KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
-            EngineVersion: "14.7"
-            EnableIAMDatabaseAuthentication: false
-            EngineMode: "provisioned"
-            DeletionProtection: false
-            EnableHttpEndpoint: false
-
-    RDSDBInstance:
-        Type: "AWS::RDS::DBInstance"
-        Properties:
-            DBInstanceIdentifier: "ccs-db-cluster-1-instance-1"
-            DBInstanceClass: "db.serverless"
-            Engine: "aurora-postgresql"
-            PreferredBackupWindow: "19:53-20:23"
-            AvailabilityZone: !Sub "${AWS::Region}a"
-            PreferredMaintenanceWindow: "fri:18:59-fri:19:29"
-            MultiAZ: false
-            EngineVersion: "14.7"
-            AutoMinorVersionUpgrade: true
-            LicenseModel: "postgresql-license"
-            PubliclyAccessible: false
-            StorageType: "aurora"
-            Port: 5432
-            DBClusterIdentifier: "ccs-db-cluster-1"
-            KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
-            MonitoringInterval: 60
-            PromotionTier: 1
-            EnablePerformanceInsights: true
-            PerformanceInsightsKMSKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
-            PerformanceInsightsRetentionPeriod: 7
-            DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
-            VPCSecurityGroups: 
-              - "sg-0f654d20f0333ef89"
-            DBParameterGroupName: "default.aurora-postgresql14"
-            OptionGroupName: "default:aurora-postgresql-14"
-            MonitoringRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/rds-monitoring-role"
-            CACertificateIdentifier: "rds-ca-2019"
-
-    RDSDBSubnetGroup:
-        Type: "AWS::RDS::DBSubnetGroup"
-        Properties:
-            DBSubnetGroupDescription: "Created from the RDS Management Console"
-            DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
-            SubnetIds: 
-              - "subnet-090373565e0ad5c52"
-              - "subnet-014c176888d2e5d77"
-              - "subnet-0f4ec39e245d2470d"
-              - "subnet-061b6a216e31cb1f2"
-
-    RDSDBSubnetGroup2:
-        Type: "AWS::RDS::DBSubnetGroup"
-        Properties:
-            DBSubnetGroupDescription: "Created from the RDS Management Console"
-            DBSubnetGroupName: "default-vpc-0d730422076c75a9c"
-            SubnetIds: 
-              - "subnet-0d1facbdd623bdd12"
-              - "subnet-0e7bde36234d811f8"
-              - "subnet-0d476d25f4d0086ad"
-
-    RDSDBSubnetGroup3:
-        Type: "AWS::RDS::DBSubnetGroup"
-        Properties:
-            DBSubnetGroupDescription: "subnet group for testing RDS functionality"
-            DBSubnetGroupName: "private_subnet_group"
-            SubnetIds: 
-              - "subnet-0d1facbdd623bdd12"
-              - "subnet-0e7bde36234d811f8"
-
-
+  RDSDBCluster:
+    Type: "AWS::RDS::DBCluster"
+    Properties:
+      AvailabilityZones:
+        - !Sub "${AWS::Region}c"
+        - !Sub "${AWS::Region}a"
+        - !Sub "${AWS::Region}d"
+      BackupRetentionPeriod: 7
+      DBClusterIdentifier: "ccs-db-cluster-1"
+      DBClusterParameterGroupName: "default.aurora-postgresql14"
+      DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
+      Engine: "aurora-postgresql"
+      Port: !GetAtt RDSDBInstance.Endpoint.Port
+      MasterUsername: "postgres"
+      MasterUserPassword: "REPLACEME"
+      PreferredBackupWindow: "19:53-20:23"
+      PreferredMaintenanceWindow: "sat:14:30-sat:15:00"
+      VpcSecurityGroupIds:
+        - "sg-0f654d20f0333ef89"
+      StorageEncrypted: true
+      KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      EngineVersion: "14.7"
+      EnableIAMDatabaseAuthentication: false
+      EngineMode: "provisioned"
+      DeletionProtection: false
+      EnableHttpEndpoint: false
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceIdentifier: "ccs-db-cluster-1-instance-1"
+      DBInstanceClass: "db.serverless"
+      Engine: "aurora-postgresql"
+      PreferredBackupWindow: "19:53-20:23"
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      PreferredMaintenanceWindow: "fri:18:59-fri:19:29"
+      MultiAZ: false
+      EngineVersion: "14.7"
+      AutoMinorVersionUpgrade: true
+      LicenseModel: "postgresql-license"
+      PubliclyAccessible: false
+      StorageType: "aurora"
+      Port: 5432
+      DBClusterIdentifier: "ccs-db-cluster-1"
+      KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      MonitoringInterval: 60
+      PromotionTier: 1
+      EnablePerformanceInsights: true
+      PerformanceInsightsKMSKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      PerformanceInsightsRetentionPeriod: 7
+      DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
+      VPCSecurityGroups:
+        - "sg-0f654d20f0333ef89"
+      DBParameterGroupName: "default.aurora-postgresql14"
+      OptionGroupName: "default:aurora-postgresql-14"
+      MonitoringRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/rds-monitoring-role"
+      CACertificateIdentifier: "rds-ca-2019"
+  RDSDBSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Created from the RDS Management Console"
+      DBSubnetGroupName: "default-vpc-0b23fe7dd45be9bd0"
+      SubnetIds:
+        - "subnet-090373565e0ad5c52"
+        - "subnet-014c176888d2e5d77"
+        - "subnet-0f4ec39e245d2470d"
+        - "subnet-061b6a216e31cb1f2"
+  RDSDBSubnetGroup2:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Created from the RDS Management Console"
+      DBSubnetGroupName: "default-vpc-0d730422076c75a9c"
+      SubnetIds:
+        - "subnet-0d1facbdd623bdd12"
+        - "subnet-0e7bde36234d811f8"
+        - "subnet-0d476d25f4d0086ad"
+  RDSDBSubnetGroup3:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "subnet group for testing RDS functionality"
+      DBSubnetGroupName: "private_subnet_group"
+      SubnetIds:
+        - "subnet-0d1facbdd623bdd12"
+        - "subnet-0e7bde36234d811f8"

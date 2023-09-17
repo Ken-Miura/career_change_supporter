@@ -1,54 +1,52 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
-    Generator: "former2"
+  Generator: "former2"
 Description: ""
 Resources:
-    OpenSearchServiceDomain:
-        Type: "AWS::OpenSearchService::Domain"
-        Properties:
-            DomainName: "ccs-opensearch-domain"
-            EngineVersion: "OpenSearch_2.7"
-            ClusterConfig: 
-                ColdStorageOptions: 
-                    Enabled: false
-                DedicatedMasterEnabled: false
-                InstanceCount: 1
-                InstanceType: "t3.small.elasticsearch"
-                ZoneAwarenessEnabled: false
-                WarmEnabled: false
-            AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/ccs-opensearch-domain/*\"}]}"
-            SnapshotOptions: {}
-            snapshot_options: {}
-            VPCOptions: 
-                SecurityGroupIds: 
-                  - "sg-0ec2db6b8673794bd"
-                SubnetIds: 
-                  - "subnet-014c176888d2e5d77"
-            EncryptionAtRestOptions: 
-                Enabled: true
-                KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
-            NodeToNodeEncryptionOptions: 
-                Enabled: true
-            AdvancedOptions: 
-                "indices.fielddata.cache.size": "20"
-                "indices.query.bool.max_clause_count": "1024"
-                override_main_response_version: "false"
-                "rest.action.multi.allow_explicit_index": "true"
-            EBSOptions: 
-                EBSEnabled: true
-                VolumeType: "gp3"
-                VolumeSize: 10
-                Iops: 3000
-                Throughput: 125
-            CognitoOptions: 
-                Enabled: false
-            DomainEndpointOptions: 
-                EnforceHTTPS: true
-                TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
-                CustomEndpointEnabled: false
-            AdvancedSecurityOptions: 
-                Enabled: true
-                InternalUserDatabaseEnabled: true
-                AnonymousAuthEnabled: false
-
-
+  OpenSearchServiceDomain:
+    Type: "AWS::OpenSearchService::Domain"
+    Properties:
+      DomainName: "ccs-opensearch-domain"
+      EngineVersion: "OpenSearch_2.7"
+      ClusterConfig:
+        ColdStorageOptions:
+          Enabled: false
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType: "t3.small.elasticsearch"
+        ZoneAwarenessEnabled: false
+        WarmEnabled: false
+      AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/ccs-opensearch-domain/*\"}]}"
+      SnapshotOptions: {}
+      snapshot_options: {}
+      VPCOptions:
+        SecurityGroupIds:
+          - "sg-0ec2db6b8673794bd"
+        SubnetIds:
+          - "subnet-014c176888d2e5d77"
+      EncryptionAtRestOptions:
+        Enabled: true
+        KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+      AdvancedOptions:
+        "indices.fielddata.cache.size": "20"
+        "indices.query.bool.max_clause_count": "1024"
+        override_main_response_version: "false"
+        "rest.action.multi.allow_explicit_index": "true"
+      EBSOptions:
+        EBSEnabled: true
+        VolumeType: "gp3"
+        VolumeSize: 10
+        Iops: 3000
+        Throughput: 125
+      CognitoOptions:
+        Enabled: false
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+        CustomEndpointEnabled: false
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        AnonymousAuthEnabled: false
