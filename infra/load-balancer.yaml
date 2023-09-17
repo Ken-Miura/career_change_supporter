@@ -31,11 +31,13 @@ Parameters:
     AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
 
   UserServiceAccessRestrictionCustomHeaderValue:
+    NoEcho: true
     Type: String
     Description: Enter same value as the one you set on CloudFront for user service
     AllowedPattern: ^[a-zA-Z0-9]{32}$
 
   AdminServiceAccessRestrictionCustomHeaderValue:
+    NoEcho: true
     Type: String
     Description: Enter same value as the one you set on CloudFront for admin service
     AllowedPattern: ^[a-zA-Z0-9]{32}$
