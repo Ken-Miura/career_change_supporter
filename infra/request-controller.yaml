@@ -78,13 +78,15 @@ Resources:
               Enabled: false
             ConnectionAttempts: 3
             ConnectionTimeout: 10
-          - ConnectionAttempts: 3
-            ConnectionTimeout: 10
-            DomainName: !Sub "${S3Bucket2}.s3.ap-northeast-1.amazonaws.com"
-            Id: !Sub "${S3Bucket2}.s3.ap-northeast-1.amazonaws.com"
+          - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
+            DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
             OriginPath: ""
             S3OriginConfig:
               OriginAccessIdentity: ""
+            OriginShield:
+              Enabled: false
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
         DefaultCacheBehavior:
           AllowedMethods:
             - "HEAD"
