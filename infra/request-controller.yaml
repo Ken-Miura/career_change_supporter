@@ -49,7 +49,7 @@ Resources:
         HttpVersion: "http2"
         WebACLId: !GetAtt CcsUserServiceWaf.Arn
         Aliases:
-          - !Ref ServiceDomainName
+          - !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
         ViewerCertificate:
           AcmCertificateArn: !Ref CcsUserServiceCertificate
           CloudFrontDefaultCertificate: false
@@ -61,22 +61,23 @@ Resources:
           Prefix: ""
         DefaultRootObject: "index.html"
         Origins:
-          - ConnectionAttempts: 3
-            ConnectionTimeout: 10
+          - Id: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
+            DomainName: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
             CustomOriginConfig:
-              HTTPPort: 80
-              HTTPSPort: 443
-              OriginKeepaliveTimeout: 5
               OriginProtocolPolicy: "https-only"
-              OriginReadTimeout: 30
+              HTTPSPort: 443
               OriginSSLProtocols:
                 - "TLSv1.2"
-            DomainName: "api.career-change-supporter.com"
-            Id: "api.career-change-supporter.com"
+              OriginReadTimeout: 30
+              OriginKeepaliveTimeout: 5
+            OriginPath: ""
             OriginCustomHeaders:
               - HeaderName: "X-Ccs-Alb-Access-Restriction"
-                HeaderValue: "7f20344762334d3cb542bff1610e0fcc"
-            OriginPath: ""
+                HeaderValue: !Ref UserServiceAccessRestrictionCustomHeaderValue
+            OriginShield:
+              Enabled: false
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
           - ConnectionAttempts: 3
             ConnectionTimeout: 10
             DomainName: !Sub "${S3Bucket2}.s3.ap-northeast-1.amazonaws.com"
