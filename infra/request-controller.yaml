@@ -413,7 +413,6 @@ Resources:
     Type: "AWS::WAFv2::IPSet"
     Properties:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
-      Description: ""
       IPAddressVersion: "IPV4"
       Addresses:
         - "106.72.35.128/32"
@@ -422,7 +421,6 @@ Resources:
     Type: "AWS::WAFv2::IPSet"
     Properties:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
-      Description: ""
       IPAddressVersion: "IPV6"
       Addresses:
         - "240b:0010:2380:5800:4cc2:b27c:9666:7d33/128"
