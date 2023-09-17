@@ -53,7 +53,6 @@ Resources:
           - !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
         ViewerCertificate:
           AcmCertificateArn: !Ref CcsUserServiceCertificate
-          CloudFrontDefaultCertificate: false # TODO: いらない？ https://note.com/build_service/n/na69b7e292a7e
           MinimumProtocolVersion: "TLSv1.2_2021"
           SslSupportMethod: "sni-only"
         Logging:
