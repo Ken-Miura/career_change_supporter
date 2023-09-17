@@ -39,6 +39,7 @@ Parameters:
     AllowedPattern: ^[a-zA-Z0-9]{32}$
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
+# CloudFrontで利用するACMとWAFはus-east1でしか作成できないため、us-east1で作成する
 Resources:
   CloudFrontDistribution:
     Type: "AWS::CloudFront::Distribution"
