@@ -107,7 +107,7 @@ Resources:
         PriceClass: "PriceClass_All"
         Enabled: true
         ViewerCertificate:
-          AcmCertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/433ba22c-1c3a-4bf6-ab87-fe9988052998"
+          AcmCertificateArn: !Ref CertificateManagerCertificate
           CloudFrontDefaultCertificate: false
           MinimumProtocolVersion: "TLSv1.2_2021"
           SslSupportMethod: "sni-only"
@@ -189,7 +189,7 @@ Resources:
         PriceClass: "PriceClass_All"
         Enabled: true
         ViewerCertificate:
-          AcmCertificateArn: !Sub "arn:aws:acm:${AWS::Region}:${AWS::AccountId}:certificate/eeb4fc49-2254-4b98-b982-7a68ab1c49ac"
+          AcmCertificateArn: !Ref CertificateManagerCertificate2
           CloudFrontDefaultCertificate: false
           MinimumProtocolVersion: "TLSv1.2_2021"
           SslSupportMethod: "sni-only"
@@ -402,6 +402,66 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+    CertificateManagerCertificate:
+      Type: "AWS::CertificateManager::Certificate"
+      Properties:
+        DomainName: "career-change-supporter.com"
+        SubjectAlternativeNames:
+          - "career-change-supporter.com"
+        DomainValidationOptions:
+          - DomainName: "career-change-supporter.com"
+            ValidationDomain: "career-change-supporter.com"
+        CertificateTransparencyLoggingPreference: "ENABLED"
+    CertificateManagerCertificate2:
+      Type: "AWS::CertificateManager::Certificate"
+      Properties:
+        DomainName: "admin.career-change-supporter.com"
+        SubjectAlternativeNames:
+          - "admin.career-change-supporter.com"
+        DomainValidationOptions:
+          - DomainName: "admin.career-change-supporter.com"
+            ValidationDomain: "admin.career-change-supporter.com"
+        CertificateTransparencyLoggingPreference: "ENABLED"
+    Route53RecordSet:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        Name: !Ref Route53RecordSet2
+        Type: "A"
+        AliasTarget:
+          HostedZoneId: "Z2FDTNDATAQYW2"
+          DNSName: !Sub "${CloudFrontDistribution.DomainName}."
+          EvaluateTargetHealth: false
+        HostedZoneId: "Z027771334FILNAP83QUT"
+    Route53RecordSet2:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        Name: "career-change-supporter.com."
+        Type: "AAAA"
+        AliasTarget:
+          HostedZoneId: "Z2FDTNDATAQYW2"
+          DNSName: !Sub "${CloudFrontDistribution.DomainName}."
+          EvaluateTargetHealth: false
+        HostedZoneId: "Z027771334FILNAP83QUT"
+    Route53RecordSet3:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        Name: !Sub "admin.${Route53RecordSet}"
+        Type: "A"
+        AliasTarget:
+          HostedZoneId: "Z2FDTNDATAQYW2"
+          DNSName: !Sub "${CloudFrontDistribution2.DomainName}."
+          EvaluateTargetHealth: false
+        HostedZoneId: "Z027771334FILNAP83QUT"
+    Route53RecordSet4:
+      Type: "AWS::Route53::RecordSet"
+      Properties:
+        Name: !Sub "admin.${Route53RecordSet}"
+        Type: "AAAA"
+        AliasTarget:
+          HostedZoneId: "Z2FDTNDATAQYW2"
+          DNSName: !Sub "${CloudFrontDistribution2.DomainName}."
+          EvaluateTargetHealth: false
+        HostedZoneId: "Z027771334FILNAP83QUT"
 
 # S3の方から一時コピー
 # S3BucketPolicy:
