@@ -1,7 +1,44 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Metadata:
-  Generator: "former2"
-Description: ""
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameters
+        Parameters:
+          - Environment
+          - UserServiceAccessRestrictionCustomHeaderValue
+          - AdminServiceAccessRestrictionCustomHeaderValue
+      - Label:
+          default: Optional parameter
+        Parameters:
+          - ServiceDomainName
+Parameters:
+  # prodの場合はスタック名に"ProdRequestController"、devの場合はスタック名に"DevRequestController"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ServiceDomainName:
+    Type: String
+    Default: career-change-supporter.com
+    Description: |-
+      ${ServiceDomainName} and admin.${ServiceDomainName} are registered for prod.
+      dev.${ServiceDomainName} and admin.dev.${ServiceDomainName} are registered for dev.
+      api.${ServiceDomainName} for prod or api.dev.${ServiceDomainName} for dev is used for api access
+    AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
+  UserServiceAccessRestrictionCustomHeaderValue:
+    NoEcho: true
+    Type: String
+    Description: Enter same value as the one you set on ALB for user service
+    AllowedPattern: ^[a-zA-Z0-9]{32}$
+  AdminServiceAccessRestrictionCustomHeaderValue:
+    NoEcho: true
+    Type: String
+    Description: Enter same value as the one you set on ALB for admin service
+    AllowedPattern: ^[a-zA-Z0-9]{32}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
   CloudFrontDistribution:
     Type: "AWS::CloudFront::Distribution"
