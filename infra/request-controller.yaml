@@ -129,7 +129,6 @@ Resources:
     Type: "AWS::WAFv2::WebACL"
     Properties:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
-      Description: ""
       DefaultAction:
         Block: {}
       VisibilityConfig:
