@@ -328,7 +328,8 @@ Resources:
                     Resource: !Sub "arn:aws:s3:::${CcsApplicationLoadBalancerLogStorage}/AWSLogs/${AWS::AccountId}/*"
 
 Outputs:
-  # CloudFrontに渡す値。CloudFrontは別リージョンでの構築となるため、Exportでなく値をそのまま出力する
+  # CloudFrontに渡す値。CloudFrontのスタックは別リージョンでの構築となる。
+  # CloudFormationはリージョンをまたいで値をExport、ImportValueできないので、値をそのまま出力しパラメータとしてCloudFrontのスタックに渡す。
   LoadBalancerDnsName:
     Value: !Join [ ".", [!If [ IsProd, "api", "api.dev" ], !Ref ServiceDomainName ] ]
 
