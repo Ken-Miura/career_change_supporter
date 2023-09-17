@@ -197,7 +197,24 @@ Resources:
           AliasTarget:
             HostedZoneId: "Z2FDTNDATAQYW2"
             DNSName: !GetAtt 'CcsUserServiceRequestController.DomainName'
-  CloudFrontDistribution2:
+  CcsUserAppBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref S3Bucket2
+      PolicyDocument:
+        Version: "2008-10-17"
+        Id: "PolicyForCloudFrontPrivateContent"
+        Statement:
+          - Sid: "AllowCloudFrontServicePrincipal"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudfront.amazonaws.com"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsUserServiceRequestController}"
+  CcsAdminServiceRequestController:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
@@ -300,40 +317,6 @@ Resources:
         OriginAccessControlOriginType: "s3"
         SigningBehavior: "always"
         SigningProtocol: "sigv4"
-  S3Bucket:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: "ccs-admin-app"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "AES256"
-            BucketKeyEnabled: true
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: "BucketOwnerEnforced"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-  S3Bucket2:
-    Type: "AWS::S3::Bucket"
-    Properties:
-      BucketName: "ccs-user-app"
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - ServerSideEncryptionByDefault:
-              SSEAlgorithm: "AES256"
-            BucketKeyEnabled: true
-      OwnershipControls:
-        Rules:
-          - ObjectOwnership: "BucketOwnerEnforced"
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
   S3BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -350,24 +333,7 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
             Condition:
               StringEquals:
-                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution2}"
-  S3BucketPolicy2:
-    Type: "AWS::S3::BucketPolicy"
-    Properties:
-      Bucket: !Ref S3Bucket2
-      PolicyDocument:
-        Version: "2008-10-17"
-        Id: "PolicyForCloudFrontPrivateContent"
-        Statement:
-          - Sid: "AllowCloudFrontServicePrincipal"
-            Effect: "Allow"
-            Principal:
-              Service: "cloudfront.amazonaws.com"
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
-            Condition:
-              StringEquals:
-                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsUserServiceRequestController}"
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsAdminServiceRequestController}"
   WAFv2WebACL2:
     Type: "AWS::WAFv2::WebACL"
     Properties:
@@ -449,7 +415,7 @@ Resources:
         Type: "A"
         AliasTarget:
           HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CloudFrontDistribution2.DomainName}."
+          DNSName: !Sub "${CcsAdminServiceRequestController.DomainName}."
           EvaluateTargetHealth: false
         HostedZoneId: "Z027771334FILNAP83QUT"
     Route53RecordSet4:
@@ -459,7 +425,7 @@ Resources:
         Type: "AAAA"
         AliasTarget:
           HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CloudFrontDistribution2.DomainName}."
+          DNSName: !Sub "${CcsAdminServiceRequestController.DomainName}."
           EvaluateTargetHealth: false
         HostedZoneId: "Z027771334FILNAP83QUT"
 
@@ -483,7 +449,7 @@ Resources:
 #                     StringEquals: 
 #                         "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/E1BL2NRJQYGUK9"
 
-# S3BucketPolicy2:
+# CcsUserAppBucketPolicy:
 #     Type: "AWS::S3::BucketPolicy"
 #     Properties:
 #         Bucket: !Ref CcsAdminAppStore
