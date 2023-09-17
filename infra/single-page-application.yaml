@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-  # prodの場合はスタック名に"ProdSinglePageApplicationStore"、devの場合はスタック名に"DevSinglePageApplicationStore"を指定する
+  # prodの場合はスタック名に"ProdSinglePageApplication"、devの場合はスタック名に"DevSinglePageApplication"を指定する
   Environment:
     Type: String
     AllowedValues:
@@ -27,11 +27,12 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  CcsUserAppStore:
+  # CIの結果をアップロードするバケット。この中身をCcsUserAppへコピーすることでクライアントサイドのリリースを行う。
+  CcsUserAppCiResultStorage:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app-store"]]
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app-ci-result-storage"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -63,11 +64,12 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  CcsAdminAppStore:
+  # CIの結果をアップロードするバケット。この中身をCcsAdminAppへコピーすることでクライアントサイドのリリースを行う。
+  CcsAdminAppCiResultStorage:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app-store"]]
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app-ci-result-storage"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -86,8 +88,8 @@ Outputs:
   CcsUserAppBucket:
     Value: !Ref CcsUserApp
   CcsUserAppStoreBucket:
-    Value: !Ref CcsUserAppStore
+    Value: !Ref CcsUserAppCiResultStorage
   CcsAdminAppBucket:
     Value: !Ref CcsAdminApp
   CcsAdminAppStoreBucket:
-    Value: !Ref CcsAdminAppStore
+    Value: !Ref CcsAdminAppCiResultStorage
