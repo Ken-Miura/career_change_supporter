@@ -128,14 +128,14 @@ Resources:
   CcsUserServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
-      Name: "CcsCloudFrontWebAcl"
+      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
       Description: ""
       DefaultAction:
         Block: {}
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: "CcsCloudFrontWebAcl"
+        MetricName: !Join ["-", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
       Scope: "CLOUDFRONT"
       Rules:
         - Name: "OnlyAllowFromMyIP"
@@ -146,9 +146,9 @@ Resources:
             OrStatement:
               Statements:
                 - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet.Arn
+                    ARN: !GetAtt CcsIpV4Set.Arn
                 - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet2.Arn
+                    ARN: !GetAtt CcsIpV6Set.Arn
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
@@ -372,26 +372,26 @@ Resources:
             OrStatement:
               Statements:
                 - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet.Arn
+                    ARN: !GetAtt CcsIpV4Set.Arn
                 - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet2.Arn
+                    ARN: !GetAtt CcsIpV6Set.Arn
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: "OnlyAllowFromMyIP"
-  WAFv2IPSet:
+  CcsIpV4Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
-      Name: "MyIPv4"
+      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
       Description: ""
       IPAddressVersion: "IPV4"
       Addresses:
         - "106.72.35.128/32"
       Scope: "CLOUDFRONT"
-  WAFv2IPSet2:
+  CcsIpV6Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
-      Name: "MyIPv6"
+      Name: !Join ["-", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
       Description: ""
       IPAddressVersion: "IPV6"
       Addresses:
