@@ -182,7 +182,7 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  CcsUserServiceRequestControllerDnsARecord:
+  CcsUserServiceRequestControllerDnsRecords:
     Type: AWS::Route53::RecordSetGroup
     Properties:
       HostedZoneName: !Sub "${ServiceDomainName}." # need trailing comma
@@ -190,28 +190,13 @@ Resources:
         - Name: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"] # you don't have to need trailing comma because AWS handle both as same
           Type: A
           AliasTarget:
-            HostedZoneId: "Z027771334FILNAP83QUT"
-            DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
-  # Route53RecordSet:
-  #   Type: "AWS::Route53::RecordSet"
-  #   Properties:
-  #     Name: !Ref Route53RecordSet2
-  #     Type: "A"
-  #     AliasTarget:
-  #       HostedZoneId: "Z2FDTNDATAQYW2"
-  #       DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
-  #       EvaluateTargetHealth: false
-  #     HostedZoneId: "Z027771334FILNAP83QUT"
-  Route53RecordSet2:
-    Type: "AWS::Route53::RecordSet"
-    Properties:
-      Name: "career-change-supporter.com."
-      Type: "AAAA"
-      AliasTarget:
-        HostedZoneId: "Z2FDTNDATAQYW2"
-        DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
-        EvaluateTargetHealth: false
-      HostedZoneId: "Z027771334FILNAP83QUT"
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName: !GetAtt 'CcsUserServiceRequestController.DomainName'
+        - Name: !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"] # you don't have to need trailing comma because AWS handle both as same
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName: !GetAtt 'CcsUserServiceRequestController.DomainName'
   CloudFrontDistribution2:
     Type: "AWS::CloudFront::Distribution"
     Properties:
