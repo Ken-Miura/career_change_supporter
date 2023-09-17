@@ -41,12 +41,25 @@ Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 # CloudFrontで利用するACMとWAFはus-east1でしか作成できないため、us-east1で作成する
 Resources:
-  CloudFrontDistribution:
+  CcsUserServiceRequestController:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
+        PriceClass: "PriceClass_All"
+        HttpVersion: "http2"
+        WebACLId: !GetAtt CcsUserServiceWaf.Arn
         Aliases:
-          - "career-change-supporter.com"
+          - !Ref ServiceDomainName
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CcsUserServiceCertificate
+          CloudFrontDefaultCertificate: false
+          MinimumProtocolVersion: "TLSv1.2_2021"
+          SslSupportMethod: "sni-only"
+        Logging:
+          Bucket: !Sub "${CcsUserServiceLogStorage}.s3.amazonaws.com"
+          IncludeCookies: false
+          Prefix: ""
+        DefaultRootObject: "index.html"
         Origins:
           - ConnectionAttempts: 3
             ConnectionTimeout: 10
@@ -105,24 +118,66 @@ Resources:
             ResponseCode: "200"
             ErrorCachingMinTTL: 10
         Comment: ""
-        PriceClass: "PriceClass_All"
         Enabled: true
-        ViewerCertificate:
-          AcmCertificateArn: !Ref CertificateManagerCertificate
-          CloudFrontDefaultCertificate: false
-          MinimumProtocolVersion: "TLSv1.2_2021"
-          SslSupportMethod: "sni-only"
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-        WebACLId: !GetAtt WAFv2WebACL.Arn
-        HttpVersion: "http2"
-        DefaultRootObject: "index.html"
         IPV6Enabled: true
-        Logging:
-          Bucket: !Sub "${S3Bucket4}.s3.amazonaws.com"
-          IncludeCookies: false
-          Prefix: ""
+  CcsUserServiceWaf:
+    Type: "AWS::WAFv2::WebACL"
+    Properties:
+      Name: "CcsCloudFrontWebAcl"
+      Description: ""
+      DefaultAction:
+        Block: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: "CcsCloudFrontWebAcl"
+      Scope: "CLOUDFRONT"
+      Rules:
+        - Name: "OnlyAllowFromMyIP"
+          Priority: 0
+          Action:
+            Allow: {}
+          Statement:
+            OrStatement:
+              Statements:
+                - IPSetReferenceStatement:
+                    ARN: !GetAtt WAFv2IPSet.Arn
+                - IPSetReferenceStatement:
+                    ARN: !GetAtt WAFv2IPSet2.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "OnlyAllowFromMyIP"
+    CcsUserServiceCertificate:
+      Type: "AWS::CertificateManager::Certificate"
+      Properties:
+        DomainName: "career-change-supporter.com"
+        SubjectAlternativeNames:
+          - "career-change-supporter.com"
+        DomainValidationOptions:
+          - DomainName: "career-change-supporter.com"
+            ValidationDomain: "career-change-supporter.com"
+        CertificateTransparencyLoggingPreference: "ENABLED"
+  CcsUserServiceLogStorage:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: "ccs-cloudfront-logs"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerPreferred"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
   CloudFrontDistribution2:
     Type: "AWS::CloudFront::Distribution"
     Properties:
@@ -293,35 +348,7 @@ Resources:
             Resource: !Sub "arn:aws:s3:::${S3Bucket2}/*"
             Condition:
               StringEquals:
-                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
-  WAFv2WebACL:
-    Type: "AWS::WAFv2::WebACL"
-    Properties:
-      Name: "CcsCloudFrontWebAcl"
-      Description: ""
-      DefaultAction:
-        Block: {}
-      VisibilityConfig:
-        SampledRequestsEnabled: true
-        CloudWatchMetricsEnabled: true
-        MetricName: "CcsCloudFrontWebAcl"
-      Scope: "CLOUDFRONT"
-      Rules:
-        - Name: "OnlyAllowFromMyIP"
-          Priority: 0
-          Action:
-            Allow: {}
-          Statement:
-            OrStatement:
-              Statements:
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet.Arn
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt WAFv2IPSet2.Arn
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: "OnlyAllowFromMyIP"
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsUserServiceRequestController}"
   WAFv2WebACL2:
     Type: "AWS::WAFv2::WebACL"
     Properties:
@@ -372,7 +399,7 @@ Resources:
   S3Bucket3:
     Type: "AWS::S3::Bucket"
     Properties:
-      BucketName: !Sub "admin-${S3Bucket4}"
+      BucketName: "admin-ccs-cloudfront-logs"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -403,16 +430,6 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-    CertificateManagerCertificate:
-      Type: "AWS::CertificateManager::Certificate"
-      Properties:
-        DomainName: "career-change-supporter.com"
-        SubjectAlternativeNames:
-          - "career-change-supporter.com"
-        DomainValidationOptions:
-          - DomainName: "career-change-supporter.com"
-            ValidationDomain: "career-change-supporter.com"
-        CertificateTransparencyLoggingPreference: "ENABLED"
     CertificateManagerCertificate2:
       Type: "AWS::CertificateManager::Certificate"
       Properties:
@@ -430,7 +447,7 @@ Resources:
         Type: "A"
         AliasTarget:
           HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CloudFrontDistribution.DomainName}."
+          DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
           EvaluateTargetHealth: false
         HostedZoneId: "Z027771334FILNAP83QUT"
     Route53RecordSet2:
@@ -440,7 +457,7 @@ Resources:
         Type: "AAAA"
         AliasTarget:
           HostedZoneId: "Z2FDTNDATAQYW2"
-          DNSName: !Sub "${CloudFrontDistribution.DomainName}."
+          DNSName: !Sub "${CcsUserServiceRequestController.DomainName}."
           EvaluateTargetHealth: false
         HostedZoneId: "Z027771334FILNAP83QUT"
     Route53RecordSet3:
