@@ -128,13 +128,13 @@ Resources:
   CcsUserServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
-      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsUserCloudFrontWebAcl"]]
       DefaultAction:
         Block: {}
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCloudFrontWebAcl"]]
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsUserCloudFrontWebAcl"]]
       Scope: "CLOUDFRONT"
       Rules:
         - Name: "OnlyAllowFromMyIP"
@@ -308,13 +308,13 @@ Resources:
   CcsAdminServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
-      Name: "AdminCcsCloudFrontWebAcl"
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAdminCloudFrontWebAcl"]]
       DefaultAction:
         Block: {}
       VisibilityConfig:
         SampledRequestsEnabled: true
         CloudWatchMetricsEnabled: true
-        MetricName: "AdminCcsCloudFrontWebAcl"
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAdminCloudFrontWebAcl"]]
       Scope: "CLOUDFRONT"
       Rules:
         - Name: "OnlyAllowFromMyIP"
