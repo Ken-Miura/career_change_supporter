@@ -225,32 +225,66 @@ Resources:
     Type: "AWS::CloudFront::Distribution"
     Properties:
       DistributionConfig:
+        Enabled: true
+        PriceClass: "PriceClass_All"
+        HttpVersion: "http2"
+        WebACLId: !GetAtt CcsAdminServiceWaf.Arn
         Aliases:
-          - "admin.career-change-supporter.com"
+          - !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CcsAdminServiceCertificate
+          MinimumProtocolVersion: "TLSv1.2_2021"
+          SslSupportMethod: "sni-only"
+        Logging:
+          Bucket: !Sub "${CcsAdminServiceLogStorage}.s3.amazonaws.com"
+          IncludeCookies: false
+          Prefix: ""
+        IPV6Enabled: true
+        DefaultRootObject: "index.html"
         Origins:
-          - ConnectionAttempts: 3
-            ConnectionTimeout: 10
+          - Id: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
+            DomainName: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
             CustomOriginConfig:
-              HTTPPort: 80
-              HTTPSPort: 443
-              OriginKeepaliveTimeout: 5
               OriginProtocolPolicy: "https-only"
-              OriginReadTimeout: 30
+              HTTPSPort: 443
               OriginSSLProtocols:
                 - "TLSv1.2"
-            DomainName: "api.career-change-supporter.com"
-            Id: "api.career-change-supporter.com"
+              OriginReadTimeout: 30
+              OriginKeepaliveTimeout: 5
+            OriginPath: ""
             OriginCustomHeaders:
               - HeaderName: "X-Admin-Ccs-Alb-Access-Restriction"
-                HeaderValue: "2233ef9458ba4d7ca88886c794b75c26"
-            OriginPath: ""
-          - ConnectionAttempts: 3
+                HeaderValue: !Ref AdminServiceAccessRestrictionCustomHeaderValue
+            OriginShield:
+              Enabled: false
+            ConnectionAttempts: 3
             ConnectionTimeout: 10
-            DomainName: !Sub "${S3Bucket}.s3.ap-northeast-1.amazonaws.com"
-            Id: !Sub "${S3Bucket}.s3.ap-northeast-1.amazonaws.com"
+          - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app.s3.ap-northeast-1.amazonaws.com"]]
+            DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app.s3.ap-northeast-1.amazonaws.com"]]
             OriginPath: ""
+            OriginAccessControlId: !GetAtt CcsAdminAppS3OriginAccessControl.Id
             S3OriginConfig:
               OriginAccessIdentity: ""
+            OriginShield:
+              Enabled: false
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
+        CacheBehaviors:
+          - PathPattern: "/admin/api/*"
+            TargetOriginId: !Join [".", [!If [IsProd, "api", "api.dev"], !Ref ServiceDomainName]]
+            Compress: true
+            ViewerProtocolPolicy: "https-only"
+            AllowedMethods:
+              - "HEAD"
+              - "DELETE"
+              - "POST"
+              - "GET"
+              - "OPTIONS"
+              - "PUT"
+              - "PATCH"
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad" # CachingDisabled policy id managed by AWS
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3" # AllViewer policy id managed by AWS
+            SmoothStreaming: false
         DefaultCacheBehavior:
           AllowedMethods:
             - "HEAD"
@@ -263,54 +297,15 @@ Resources:
           SmoothStreaming: false
           TargetOriginId: !Sub "${S3Bucket}.s3.ap-northeast-1.amazonaws.com"
           ViewerProtocolPolicy: "https-only"
-        CacheBehaviors:
-          - AllowedMethods:
-              - "HEAD"
-              - "DELETE"
-              - "POST"
-              - "GET"
-              - "OPTIONS"
-              - "PUT"
-              - "PATCH"
-            Compress: true
-            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
-            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
-            PathPattern: "/admin/api/*"
-            SmoothStreaming: false
-            TargetOriginId: "api.career-change-supporter.com"
-            ViewerProtocolPolicy: "https-only"
         CustomErrorResponses:
           - ErrorCode: 403
             ResponsePagePath: "/"
             ResponseCode: "403"
             ErrorCachingMinTTL: 10
         Comment: ""
-        PriceClass: "PriceClass_All"
-        Enabled: true
-        ViewerCertificate:
-          AcmCertificateArn: !Ref CertificateManagerCertificate2
-          CloudFrontDefaultCertificate: false
-          MinimumProtocolVersion: "TLSv1.2_2021"
-          SslSupportMethod: "sni-only"
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-        WebACLId: !GetAtt WAFv2WebACL2.Arn
-        HttpVersion: "http2"
-        DefaultRootObject: "index.html"
-        IPV6Enabled: true
-        Logging:
-          Bucket: !Sub "${S3Bucket3}.s3.amazonaws.com"
-          IncludeCookies: false
-          Prefix: ""
-  CloudFrontOriginAccessControl2:
-    Type: "AWS::CloudFront::OriginAccessControl"
-    Properties:
-      OriginAccessControlConfig:
-        Name: !Sub "${S3Bucket}.s3.ap-northeast-1.amazonaws.com"
-        OriginAccessControlOriginType: "s3"
-        SigningBehavior: "always"
-        SigningProtocol: "sigv4"
   S3BucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -328,7 +323,7 @@ Resources:
             Condition:
               StringEquals:
                 "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsAdminServiceRequestController}"
-  WAFv2WebACL2:
+  CcsAdminServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
       Name: "AdminCcsCloudFrontWebAcl"
@@ -356,7 +351,7 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: "OnlyAllowFromMyIP"
-  S3Bucket3:
+  CcsAdminServiceLogStorage:
     Type: "AWS::S3::Bucket"
     Properties:
       BucketName: "admin-ccs-cloudfront-logs"
@@ -373,16 +368,24 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-    CertificateManagerCertificate2:
-      Type: "AWS::CertificateManager::Certificate"
-      Properties:
-        DomainName: "admin.career-change-supporter.com"
-        SubjectAlternativeNames:
-          - "admin.career-change-supporter.com"
-        DomainValidationOptions:
-          - DomainName: "admin.career-change-supporter.com"
-            ValidationDomain: "admin.career-change-supporter.com"
-        CertificateTransparencyLoggingPreference: "ENABLED"
+  CcsAdminServiceCertificate:
+    Type: "AWS::CertificateManager::Certificate"
+    Properties:
+      DomainName: "admin.career-change-supporter.com"
+      SubjectAlternativeNames:
+        - "admin.career-change-supporter.com"
+      DomainValidationOptions:
+        - DomainName: "admin.career-change-supporter.com"
+          ValidationDomain: "admin.career-change-supporter.com"
+      CertificateTransparencyLoggingPreference: "ENABLED"
+  CcsAdminAppS3OriginAccessControl:
+    Type: "AWS::CloudFront::OriginAccessControl"
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app.s3.ap-northeast-1.amazonaws.com"]]
+        SigningBehavior: "always"
+        SigningProtocol: "sigv4"
+        OriginAccessControlOriginType: "s3"
   #   Route53RecordSet3:
   #     Type: "AWS::Route53::RecordSet"
   #     Properties:
