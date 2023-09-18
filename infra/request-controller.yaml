@@ -376,10 +376,10 @@ Resources:
           AliasTarget:
             HostedZoneId: "Z2FDTNDATAQYW2"
             DNSName: !GetAtt 'CcsAdminServiceRequestController.DomainName'
-  S3BucketPolicy:
+  CcsAdminAppBucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
-      Bucket: !Ref S3Bucket
+      Bucket: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app"]]
       PolicyDocument:
         Version: "2008-10-17"
         Id: "PolicyForCloudFrontPrivateContent"
@@ -389,7 +389,7 @@ Resources:
             Principal:
               Service: "cloudfront.amazonaws.com"
             Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+            Resource: !Join [":::", ["arn:aws:s3", !If [IsProd, "prod-ccs-admin-app/*", "dev-ccs-admin-app/*"]]]
             Condition:
               StringEquals:
                 "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsAdminServiceRequestController}"
