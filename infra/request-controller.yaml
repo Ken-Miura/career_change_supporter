@@ -82,6 +82,7 @@ Resources:
           - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
             DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
             OriginPath: ""
+            OriginAccessControlId: !GetAtt CcsUserAppS3OriginAccessControl.Id
             S3OriginConfig:
               OriginAccessIdentity: ""
             OriginShield:
