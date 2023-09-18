@@ -167,7 +167,7 @@ Resources:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-cloudfront-logs"]]
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-cloudfront-logs"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -286,48 +286,29 @@ Resources:
             OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3" # AllViewer policy id managed by AWS
             SmoothStreaming: false
         DefaultCacheBehavior:
+          TargetOriginId: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app.s3.ap-northeast-1.amazonaws.com"]]
+          Compress: true
+          ViewerProtocolPolicy: "https-only"
           AllowedMethods:
             - "HEAD"
             - "GET"
           CachedMethods:
             - "HEAD"
             - "GET"
-          Compress: true
-          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6"
+          CachePolicyId: "658327ea-f89d-4fab-a63d-7e88639e58f6" # CachingOptimized policy id managed by AWS
           SmoothStreaming: false
-          TargetOriginId: !Sub "${S3Bucket}.s3.ap-northeast-1.amazonaws.com"
-          ViewerProtocolPolicy: "https-only"
         CustomErrorResponses:
           - ErrorCode: 403
+            ErrorCachingMinTTL: 10
             ResponsePagePath: "/"
             ResponseCode: "403"
-            ErrorCachingMinTTL: 10
-        Comment: ""
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-  S3BucketPolicy:
-    Type: "AWS::S3::BucketPolicy"
-    Properties:
-      Bucket: !Ref S3Bucket
-      PolicyDocument:
-        Version: "2008-10-17"
-        Id: "PolicyForCloudFrontPrivateContent"
-        Statement:
-          - Sid: "AllowCloudFrontServicePrincipal"
-            Effect: "Allow"
-            Principal:
-              Service: "cloudfront.amazonaws.com"
-            Action: "s3:GetObject"
-            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
-            Condition:
-              StringEquals:
-                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsAdminServiceRequestController}"
   CcsAdminServiceWaf:
     Type: "AWS::WAFv2::WebACL"
     Properties:
       Name: "AdminCcsCloudFrontWebAcl"
-      Description: ""
       DefaultAction:
         Block: {}
       VisibilityConfig:
@@ -351,10 +332,22 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: "OnlyAllowFromMyIP"
+  CcsAdminServiceCertificate:
+    Type: "AWS::CertificateManager::Certificate"
+    Properties:
+      DomainName: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
+      # DNSレコード検証のため、初回は手動で検証用のレコードを作成する必要がある。二回目以降は作成済の検証用レコードがあればすべて自動で処理される。
+      # 参考: https://dev.classmethod.jp/articles/cfn-support-acm-dns-validation/
+      ValidationMethod: DNS
+      DomainValidationOptions:
+        - DomainName: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
+          ValidationDomain: !Ref ServiceDomainName
+      CertificateTransparencyLoggingPreference: "ENABLED"
   CcsAdminServiceLogStorage:
     Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
     Properties:
-      BucketName: "admin-ccs-cloudfront-logs"
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-cloudfront-logs"]]
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -368,16 +361,38 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  CcsAdminServiceCertificate:
-    Type: "AWS::CertificateManager::Certificate"
+  CcsAdminServiceRequestControllerDnsRecords:
+    Type: AWS::Route53::RecordSetGroup
     Properties:
-      DomainName: "admin.career-change-supporter.com"
-      SubjectAlternativeNames:
-        - "admin.career-change-supporter.com"
-      DomainValidationOptions:
-        - DomainName: "admin.career-change-supporter.com"
-          ValidationDomain: "admin.career-change-supporter.com"
-      CertificateTransparencyLoggingPreference: "ENABLED"
+      HostedZoneName: !Sub "${ServiceDomainName}." # need trailing comma
+      RecordSets:
+        - Name: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"] # you don't have to need trailing comma because AWS handle both as same
+          Type: A
+          AliasTarget:
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName: !GetAtt 'CcsAdminServiceRequestController.DomainName'
+        - Name: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"] # you don't have to need trailing comma because AWS handle both as same
+          Type: AAAA
+          AliasTarget:
+            HostedZoneId: "Z2FDTNDATAQYW2"
+            DNSName: !GetAtt 'CcsAdminServiceRequestController.DomainName'
+  S3BucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref S3Bucket
+      PolicyDocument:
+        Version: "2008-10-17"
+        Id: "PolicyForCloudFrontPrivateContent"
+        Statement:
+          - Sid: "AllowCloudFrontServicePrincipal"
+            Effect: "Allow"
+            Principal:
+              Service: "cloudfront.amazonaws.com"
+            Action: "s3:GetObject"
+            Resource: !Sub "arn:aws:s3:::${S3Bucket}/*"
+            Condition:
+              StringEquals:
+                "AWS:SourceArn": !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CcsAdminServiceRequestController}"
   CcsAdminAppS3OriginAccessControl:
     Type: "AWS::CloudFront::OriginAccessControl"
     Properties:
@@ -386,26 +401,6 @@ Resources:
         SigningBehavior: "always"
         SigningProtocol: "sigv4"
         OriginAccessControlOriginType: "s3"
-  #   Route53RecordSet3:
-  #     Type: "AWS::Route53::RecordSet"
-  #     Properties:
-  #       Name: !Sub "admin.${Route53RecordSet}"
-  #       Type: "A"
-  #       AliasTarget:
-  #         HostedZoneId: "Z2FDTNDATAQYW2"
-  #         DNSName: !Sub "${CcsAdminServiceRequestController.DomainName}."
-  #         EvaluateTargetHealth: false
-  #       HostedZoneId: "Z027771334FILNAP83QUT"
-  #   Route53RecordSet4:
-  #     Type: "AWS::Route53::RecordSet"
-  #     Properties:
-  #       Name: !Sub "admin.${Route53RecordSet}"
-  #       Type: "AAAA"
-  #       AliasTarget:
-  #         HostedZoneId: "Z2FDTNDATAQYW2"
-  #         DNSName: !Sub "${CcsAdminServiceRequestController.DomainName}."
-  #         EvaluateTargetHealth: false
-  #       HostedZoneId: "Z027771334FILNAP83QUT"
   CcsIpV4Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
