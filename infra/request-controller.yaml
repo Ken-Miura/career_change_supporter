@@ -407,7 +407,7 @@ Resources:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
       IPAddressVersion: "IPV4"
       Addresses:
-        - "106.72.35.128/32"
+        - "106.72.35.128/32" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
       Scope: "CLOUDFRONT"
   CcsIpV6Set:
     Type: "AWS::WAFv2::IPSet"
@@ -415,6 +415,5 @@ Resources:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
       IPAddressVersion: "IPV6"
       Addresses:
-        - "240b:0010:2380:5800:4cc2:b27c:9666:7d33/128"
-        - "240b:0010:2380:5800:a057:65c8:dd72:542d/128"
+        - "240b:10:2380:5800:b806:1f6e:cec4:a461/128" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
       Scope: "CLOUDFRONT"
