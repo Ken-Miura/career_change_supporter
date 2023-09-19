@@ -48,7 +48,7 @@ Resources:
         Enabled: true
         PriceClass: "PriceClass_All"
         HttpVersion: "http2"
-        WebACLId: !GetAtt CcsUserServiceWaf.Arn
+        WebACLId: !GetAtt CcsWafWithIpRestriction.Arn # TODO: 本番リリース時にIsProdでCcsWafとCcsWafWithIpRestrictionを切り替える
         Aliases:
           - !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
         ViewerCertificate:
@@ -125,33 +125,6 @@ Resources:
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-  CcsUserServiceWaf:
-    Type: "AWS::WAFv2::WebACL"
-    Properties:
-      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsUserCloudFrontWebAcl"]]
-      DefaultAction:
-        Block: {}
-      VisibilityConfig:
-        SampledRequestsEnabled: true
-        CloudWatchMetricsEnabled: true
-        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsUserCloudFrontWebAcl"]]
-      Scope: "CLOUDFRONT"
-      Rules:
-        - Name: "OnlyAllowFromMyIP"
-          Priority: 0
-          Action:
-            Allow: {}
-          Statement:
-            OrStatement:
-              Statements:
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt CcsIpV4Set.Arn
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt CcsIpV6Set.Arn
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: "OnlyAllowFromMyIP"
   CcsUserServiceCertificate:
     Type: "AWS::CertificateManager::Certificate"
     Properties:
@@ -228,7 +201,7 @@ Resources:
         Enabled: true
         PriceClass: "PriceClass_All"
         HttpVersion: "http2"
-        WebACLId: !GetAtt CcsAdminServiceWaf.Arn
+        WebACLId: !GetAtt CcsWafWithIpRestriction.Arn
         Aliases:
           - !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
         ViewerCertificate:
@@ -305,33 +278,6 @@ Resources:
         Restrictions:
           GeoRestriction:
             RestrictionType: "none"
-  CcsAdminServiceWaf:
-    Type: "AWS::WAFv2::WebACL"
-    Properties:
-      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAdminCloudFrontWebAcl"]]
-      DefaultAction:
-        Block: {}
-      VisibilityConfig:
-        SampledRequestsEnabled: true
-        CloudWatchMetricsEnabled: true
-        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsAdminCloudFrontWebAcl"]]
-      Scope: "CLOUDFRONT"
-      Rules:
-        - Name: "OnlyAllowFromMyIP"
-          Priority: 0
-          Action:
-            Allow: {}
-          Statement:
-            OrStatement:
-              Statements:
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt CcsIpV4Set.Arn
-                - IPSetReferenceStatement:
-                    ARN: !GetAtt CcsIpV6Set.Arn
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: "OnlyAllowFromMyIP"
   CcsAdminServiceCertificate:
     Type: "AWS::CertificateManager::Certificate"
     Properties:
@@ -401,6 +347,158 @@ Resources:
         SigningBehavior: "always"
         SigningProtocol: "sigv4"
         OriginAccessControlOriginType: "s3"
+  CcsWafWithIpRestriction:
+    Type: "AWS::WAFv2::WebACL"
+    Properties:
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsWafWithIpRestriction"]]
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsWafWithIpRestriction"]]
+      Scope: "CLOUDFRONT"
+      Rules:
+        - Name: "BlockNonMyIP"
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            RuleGroupReferenceStatement:
+              Arn: !GetAtt CcsBlockNonMyIpRuleGroup.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "BlockNonMyIP"
+        - Name: "GeneralRateLimit"
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            RuleGroupReferenceStatement:
+              Arn: !GetAtt CcsGeneralRateLimit.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "GeneralRateLimit"
+        - Name: "AWS-AWSManagedRulesAmazonIpReputationList"
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesAmazonIpReputationList"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAmazonIpReputationList"
+        - Name: "AWS-AWSManagedRulesAnonymousIpList"
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesAnonymousIpList"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAnonymousIpList"
+        - Name: "AWS-AWSManagedRulesCommonRuleSet"
+          Priority: 4
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesCommonRuleSet"
+              RuleActionOverrides:
+                - Name: "SizeRestrictions_BODY"
+                  ActionToUse:
+                    Count: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesCommonRuleSet"
+        - Name: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+          Priority: 5
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesKnownBadInputsRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+        - Name: "AWS-AWSManagedRulesLinuxRuleSet"
+          Priority: 6
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesLinuxRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesLinuxRuleSet"
+        - Name: "AWS-AWSManagedRulesUnixRuleSet"
+          Priority: 7
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesUnixRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesUnixRuleSet"
+        - Name: "AWS-AWSManagedRulesSQLiRuleSet"
+          Priority: 8
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesSQLiRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesSQLiRuleSet"
+  CcsBlockNonMyIpRuleGroup:
+    Type: "AWS::WAFv2::RuleGroup"
+    Properties:
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "BlockNonMyIP"]]
+      Capacity: 2
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "BlockNonMyIP"]]
+      Scope: "CLOUDFRONT"
+      Rules:
+        - Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "BlockNonMyIP"]]
+          Priority: 0
+          Action:
+            Block: {}
+          Statement:
+            AndStatement:
+              Statements:
+                - NotStatement:
+                    Statement:
+                      IPSetReferenceStatement:
+                        ARN: !GetAtt CcsIpV4Set.Arn
+                - NotStatement:
+                    Statement:
+                      IPSetReferenceStatement:
+                        ARN: !GetAtt CcsIpV6Set.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "BlockNonMyIP"
   CcsIpV4Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
@@ -415,5 +513,141 @@ Resources:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
       IPAddressVersion: "IPV6"
       Addresses:
-        - "240b:10:2380:5800:b806:1f6e:cec4:a461/128" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
+        - "240b:0010:2380:5800:a8c3:317b:57ca:cee1/128" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
       Scope: "CLOUDFRONT"
+  CcsGeneralRateLimit:
+    Type: "AWS::WAFv2::RuleGroup"
+    Properties:
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "GeneralRateLimit"]]
+      Capacity: 2
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "GeneralRateLimit"]]
+      Scope: "CLOUDFRONT"
+      Rules:
+        - Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "GeneralRateLimit"]]
+          Priority: 0
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          Statement:
+            RateBasedStatement:
+              Limit: 300
+              AggregateKeyType: "IP"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "GeneralRateLimit"]]
+  CcsWaf:
+    Type: "AWS::WAFv2::WebACL"
+    Properties:
+      Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsWaf"]]
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsWaf"]]
+      Scope: "CLOUDFRONT"
+      Rules:
+        - Name: "GeneralRateLimit"
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            RuleGroupReferenceStatement:
+              Arn: !GetAtt CcsGeneralRateLimit.Arn
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "GeneralRateLimit"
+        - Name: "AWS-AWSManagedRulesAmazonIpReputationList"
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesAmazonIpReputationList"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAmazonIpReputationList"
+        - Name: "AWS-AWSManagedRulesAnonymousIpList"
+          Priority: 2
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesAnonymousIpList"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesAnonymousIpList"
+        - Name: "AWS-AWSManagedRulesCommonRuleSet"
+          Priority: 3
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesCommonRuleSet"
+              RuleActionOverrides:
+                - Name: "SizeRestrictions_BODY"
+                  ActionToUse:
+                    Count: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesCommonRuleSet"
+        - Name: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+          Priority: 4
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesKnownBadInputsRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+        - Name: "AWS-AWSManagedRulesLinuxRuleSet"
+          Priority: 5
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesLinuxRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesLinuxRuleSet"
+        - Name: "AWS-AWSManagedRulesUnixRuleSet"
+          Priority: 6
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesUnixRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesUnixRuleSet"
+        - Name: "AWS-AWSManagedRulesSQLiRuleSet"
+          Priority: 7
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: "AWS"
+              Name: "AWSManagedRulesSQLiRuleSet"
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: "AWS-AWSManagedRulesSQLiRuleSet"
