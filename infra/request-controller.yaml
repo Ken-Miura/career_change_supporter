@@ -490,11 +490,11 @@ Resources:
                 - NotStatement:
                     Statement:
                       IPSetReferenceStatement:
-                        ARN: !GetAtt CcsIpV4Set.Arn
+                        Arn: !GetAtt CcsIpV4Set.Arn
                 - NotStatement:
                     Statement:
                       IPSetReferenceStatement:
-                        ARN: !GetAtt CcsIpV6Set.Arn
+                        Arn: !GetAtt CcsIpV6Set.Arn
           VisibilityConfig:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
