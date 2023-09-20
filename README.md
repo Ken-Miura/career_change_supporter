@@ -14,10 +14,9 @@
 
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
-Rate Limitについて検討、実装する（AWS API Gatewayのスロットリング、AWS WAFのrate limit、APIサーバのどれで実現するのか検討する）<br>
-APIサーバで実装する際の参考: https://github.com/tokio-rs/axum/issues/278<br>
-上記のURLを参考にするだけではコンパイルエラーとなる。axumはmiddlewareに対してInfallibleなエラーを許していないので下記のようにエラーハンドリングも追加する必要がある。<br>
-https://docs.rs/axum/latest/axum/error_handling/index.html#applying-fallible-middleware
+WAFで用意したRate Limitが適切に動作するか確認する
+
+WAFのAWSマネージドのルールに関して、クエリ、パスのサイズを制限するものに引っかからないか確認する
 
 AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサーバ→Redis、APサーバ→DB、APサーバ→OpenSearch）にTLSを用いるかどうか検討する
 
