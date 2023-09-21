@@ -9,6 +9,7 @@ pub mod admin_mfa_info;
 pub mod approved_create_career_req;
 pub mod approved_create_identity_req;
 pub mod approved_update_identity_req;
+pub mod bank_account;
 pub mod career;
 pub mod consultant_rating;
 pub mod consultation;

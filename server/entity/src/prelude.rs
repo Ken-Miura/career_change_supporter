@@ -5,6 +5,7 @@ pub use super::admin_mfa_info::Entity as AdminMfaInfo;
 pub use super::approved_create_career_req::Entity as ApprovedCreateCareerReq;
 pub use super::approved_create_identity_req::Entity as ApprovedCreateIdentityReq;
 pub use super::approved_update_identity_req::Entity as ApprovedUpdateIdentityReq;
+pub use super::bank_account::Entity as BankAccount;
 pub use super::career::Entity as Career;
 pub use super::consultant_rating::Entity as ConsultantRating;
 pub use super::consultation::Entity as Consultation;
