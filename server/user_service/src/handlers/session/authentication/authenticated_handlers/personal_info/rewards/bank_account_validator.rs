@@ -1,4 +1,5 @@
 // Copyright 2022 Ken Miura
+//! 口座情報のバリデーションを行う。バリデーションはPAY.JPを実装した際に理解した仕様を参考としている。
 
 use std::{collections::HashSet, error::Error, fmt::Display};
 
@@ -12,17 +13,16 @@ use crate::handlers::session::authentication::authenticated_handlers::personal_i
 use super::BankAccount;
 
 const BANK_CODE_REGEXP: &str = r"^[0-9]{4}$";
-/// 数字を4桁のケース。pay.jpの仕様に合わせ数字4桁とする
+/// 数字4桁
 static BANK_CODE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(BANK_CODE_REGEXP).expect("failed to compile num char regexp"));
 
 const BRANCH_CODE_REGEXP: &str = r"^[0-9]{3}$";
-/// 数字を3桁のケース。pay.jpの仕様に合わせ数字3桁とする
+/// 数字3桁
 static BRANCH_CODE_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(BRANCH_CODE_REGEXP).expect("failed to compile num char regexp"));
 
-/// サポートする預金種別。問い合わせの回答からpay.jpは"普通"、"当座"をサポートしている。
-/// CCSとしては個人利用を想定しているため、"普通"のみのサポートとする。
+/// サポートする預金種別。"普通"のみのサポートとする。
 static ACCOUNT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
     let mut set: HashSet<String> = HashSet::with_capacity(1);
     set.insert("普通".to_string());
@@ -30,9 +30,9 @@ static ACCOUNT_TYPE_SET: Lazy<HashSet<String>> = Lazy::new(|| {
 });
 
 const ACCOUNT_NUMBER_REGEXP: &str = r"^[0-9]{7,8}$";
-/// 数字を7桁、または8桁のケース
+/// 数字7桁、または8桁
 ///
-/// pay.jpには明確な仕様はない。しかし、一般的にゆうちょ銀行が8桁、それ以外の金融機関は7桁と成るため、それらに沿うか確認する。
+/// 一般的にゆうちょ銀行が8桁、それ以外の金融機関は7桁と成るため、それらに沿うか確認する。
 static ACCOUNT_NUMBER_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(ACCOUNT_NUMBER_REGEXP).expect("failed to compile num char regexp"));
 
