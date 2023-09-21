@@ -42,11 +42,6 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            /* PAY.JPより回答してもらった仕様をそのままチェック */
-            .execute(sql.stmt(r"CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );"))
-            .await
-            .map(|_| ())?;
-        let _ = conn
             /* 
              * regular: 正社員、contract: 契約社員、other: その他
              */
@@ -413,22 +408,34 @@ impl MigrationTrait for Migration {
             /* ユーザーが（初めて）入金口座の登録をしたときに生成される。
              * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
              */
-            /* user_account一つに対して、tenantは0もしくは1の関係とする。 */
+            /*
+             * user_account一つに対して、bank_accountは0もしくは1の関係とする。
+             * 口座に関する情報は仕様が統一されていないように見える。従って口座情報に関してはTEXT型で保存し、把握していない仕様が後から判明しても対応できるようにする。
+             * 現状把握している口座情報の制限はアプリケーションコードのバリデーションチェックで対応する。
+             */
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.tenant (
+                r"CREATE TABLE ccs_schema.bank_account (
                   user_account_id BIGINT PRIMARY KEY,
-                  tenant_id ccs_schema.tenant_id UNIQUE NOT NULL
+                  bank_code TEXT NOT NULL,
+                  branch_code TEXT NOT NULL,
+                  account_type TEXT NOT NULL,
+                  account_number TEXT NOT NULL,
+                  account_holder_name TEXT NOT NULL
                 );",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.tenant To user_app;"))
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.bank_account To user_app;"),
+            )
             .await
             .map(|_| ())?;
         // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.tenant To admin_app;"))
+            .execute(
+                sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.bank_account To admin_app;"),
+            )
             .await
             .map(|_| ())?;
 
@@ -1419,6 +1426,36 @@ impl MigrationTrait for Migration {
                     r"GRANT SELECT, INSERT, DELETE ON ccs_schema.admin_mfa_info To admin_app;",
                 ),
             )
+            .await
+            .map(|_| ())?;
+
+        // TODO: これより下はPAY.JPで必要であったもの。収納代行としての実装が進んだ段階で削除する
+        let _ = conn
+            /* PAY.JPより回答してもらった仕様をそのままチェック */
+            .execute(sql.stmt(r"CREATE DOMAIN ccs_schema.tenant_id AS VARCHAR (100) CHECK ( VALUE ~ '^[-_0-9a-zA-Z]{1,100}$' );"))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /* ユーザーが（初めて）入金口座の登録をしたときに生成される。
+             * ユーザーがアカウントを削除した後（削除されたユーザーテーブルに移された後）一定期間後、定期実行ツールにより削除される
+             */
+            /* user_account一つに対して、tenantは0もしくは1の関係とする。 */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.tenant (
+                  user_account_id BIGINT PRIMARY KEY,
+                  tenant_id ccs_schema.tenant_id UNIQUE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.tenant To user_app;"))
+            .await
+            .map(|_| ())?;
+        // 定期削除ツールはadmin_appのロールを使う。そのため、定期削除ツールが削除できるようにDELETE権限を保持させる
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.tenant To admin_app;"))
             .await
             .map(|_| ())?;
 
