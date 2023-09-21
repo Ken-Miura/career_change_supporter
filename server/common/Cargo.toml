@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 async-fred-session = "0.1.5"
 aws-config = "0.56.1"
-aws-sdk-s3 = "0.30.0"
-aws-sdk-sesv2 = "0.30.0"
+aws-sdk-s3 = "0.31.1"
+aws-sdk-sesv2 = "0.31.1"
 axum = { version = "0.6.19", features = ["macros"] }
 axum-extra = { version = "0.8.0", features = ["cookie", "cookie-signed"] }
 bcrypt = "0.15.0"
