@@ -49,7 +49,6 @@ impl MigrationTrait for Migration {
         let _ = conn
             /* 
              * regular: 正社員、contract: 契約社員、other: その他
-             * TODO: enumがサポートされた後、修正する
              */
             .execute(sql.stmt(r"CREATE DOMAIN ccs_schema.contract_type AS VARCHAR (8) CHECK (VALUE ~ 'regular' OR VALUE ~ 'contract' OR VALUE ~ 'other');"))
             .await
