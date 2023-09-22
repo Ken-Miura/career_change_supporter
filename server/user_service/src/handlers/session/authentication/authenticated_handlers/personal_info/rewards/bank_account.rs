@@ -8,22 +8,18 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::Datelike;
 use common::opensearch::{index_document, update_document, INDEX_NAME};
-use common::payment_platform::tenant::{
-    CreateTenant, TenantOperation, TenantOperationImpl, UpdateTenant,
-};
 use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
 use entity::prelude::Tenant as TenantEntity;
 use entity::sea_orm::{
-    ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, QuerySelect, Set,
-    TransactionError, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
+    QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use entity::{career, consulting_fee};
 use once_cell::sync::Lazy;
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
-use uuid::Uuid;
 
 use crate::err::unexpected_err_resp;
 use crate::err::Code;
@@ -31,8 +27,6 @@ use crate::handlers::session::authentication::authenticated_handlers::authentica
 use crate::handlers::session::authentication::authenticated_handlers::document_operation::{
     find_document_model_by_user_account_id_with_exclusive_lock, insert_document,
 };
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::PLATFORM_FEE_RATE_IN_PERCENTAGE;
 
 use super::bank_account_validator::{validate_bank_account, BankAccountValidationError};
 use super::BankAccount;
@@ -51,9 +45,6 @@ static KATAKANA_LOWER_CASE_UPPER_CASE_SET: Lazy<HashSet<(String, String)>> = Laz
     set.insert(("ヮ".to_string(), "ワ".to_string()));
     set
 });
-
-const PAYJP_FEE_INCLUDED: bool = true;
-const MINIMUM_TRANSFER_AMOUNT: i32 = 1000;
 
 pub(crate) async fn post_bank_account(
     User { user_info }: User,
@@ -111,9 +102,9 @@ async fn handle_bank_account_req(
         )
     })?;
 
-    let tenant_exists = op.check_if_tenant_exists(account_id).await?;
-    if !tenant_exists {
-        is_eligible_to_create_tenant(account_id, &op).await?;
+    let bank_account_exists = op.check_if_bank_account_exists(account_id).await?;
+    if !bank_account_exists {
+        is_eligible_to_create_bank_account(account_id, &op).await?;
     }
 
     let zenkaku_space = "　";
@@ -141,10 +132,8 @@ async fn handle_bank_account_req(
 }
 
 // 相談を受け付けるためには、(身分証明に加えて) 職務経歴、相談料、銀行口座の登録が必要となる。
-// 銀行口座の登録操作は、pay.jp上にアカウントを作成することになる。2022年8月時点で、pay.jpはアカウントごとに固定の月額手数料を取るような体系にはなっていない。
-// （類似サービスのstripe connectは存在するアカウントごとに固定の月額料金を取っている）
-// しかし、pay.jpがアカウントごとに固定の手数料を取るような体系になる場合に備えて、余計なアカウント作成を防ぐために他に必要な設定が完了していることを確認する。
-async fn is_eligible_to_create_tenant(
+// 銀行口座情報は必要がない限り保持したくないので、既に他に必要な情報が準備されていることを確認する。
+async fn is_eligible_to_create_bank_account(
     account_id: i64,
     op: &impl SubmitBankAccountOperation,
 ) -> Result<(), ErrResp> {
@@ -178,7 +167,7 @@ trait SubmitBankAccountOperation {
         account_id: i64,
     ) -> Result<Option<Identity>, ErrResp>;
 
-    async fn check_if_tenant_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
+    async fn check_if_bank_account_exists(&self, account_id: i64) -> Result<bool, ErrResp>;
 
     async fn check_if_careers_exist(&self, account_id: i64) -> Result<bool, ErrResp>;
 
@@ -230,7 +219,7 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
         }))
     }
 
-    async fn check_if_tenant_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
+    async fn check_if_bank_account_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
         let tenant_option = TenantEntity::find_by_id(account_id)
             .one(&self.pool)
             .await
@@ -275,176 +264,135 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
         account_id: i64,
         bank_account: BankAccount,
     ) -> Result<(), ErrResp> {
-        // pay.jp上のテナントの作成（更新）とopensearch上のインデックスの作成（更新）は
-        // まとめて一つのトランザクションで実施したい。
-        // しかし、片方が失敗し、もう片方が成功するケースのハンドリングが複雑になるため、それぞれ独立したトランザクションで対応する
-        let _ = self.submit_tenant(account_id, bank_account).await?;
-        let _ = self
-            .set_bank_account_registered_on_index(account_id)
-            .await?;
+        let index_client = self.index_client.clone();
+        self.pool
+            .transaction::<_, (), ErrRespStruct>(|txn| {
+                Box::pin(async move {
+                    let model_option = find_bank_account_with_exclusive_lock(txn, account_id).await?;
+                    if let Some(model) = model_option {
+                        // 処理が失敗して解析が必要になる場合以外、口座情報という個人情報はログに残さないようにする。
+                        info!("update banck account (account_id: {})", account_id);
+                        update_bank_account(txn, model, bank_account).await?;
+                    } else {
+                        // 処理が失敗して解析が必要になる場合以外、口座情報という個人情報はログに残さないようにする。
+                        info!("register banck account (account_id: {})", account_id);
+                        create_bank_account(txn, account_id, bank_account).await?;
+
+                        // 口座情報を登録済かどうかでコンサルタント検索に出てくるかどうか変えるため、
+                        // 以下で口座情報を登録済かどうかインデックスを更新する。
+                        let document_option =
+                        find_document_model_by_user_account_id_with_exclusive_lock(txn, account_id).await?;
+                        if let Some(document) = document_option {
+                            let document_id = document.document_id;
+                            info!(
+                                "update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})",
+                                account_id, document_id
+                            );
+                            update_is_bank_account_registered_on_document(INDEX_NAME, document_id.to_string().as_str(), index_client).await?;
+                        } else {
+                            // document_idとしてuser_account_idを利用
+                            let document_id = account_id;
+                            info!(
+                                "create document for \"is_bank_account_registered\" (account_id: {}, document_id: {})",
+                                account_id, document_id
+                            );
+                            insert_document(txn, account_id, document_id).await?;
+                            add_new_document_with_is_bank_account_registered(
+                                INDEX_NAME,
+                                document_id.to_string().as_str(),
+                                account_id,
+                                index_client,
+                            ).await?;
+                        };
+                    }
+                    Ok(())
+                })
+            })
+            .await
+            .map_err(|e| match e {
+                TransactionError::Connection(db_err) => {
+                    error!("connection error: {}", db_err);
+                    unexpected_err_resp()
+                }
+                TransactionError::Transaction(err_resp_struct) => {
+                    error!("failed to submit_bank_account: {}", err_resp_struct);
+                    err_resp_struct.err_resp
+                }
+            })?;
+
         Ok(())
     }
 }
 
-impl SubmitBankAccountOperationImpl {
-    async fn submit_tenant(
-        &self,
-        account_id: i64,
-        bank_account: BankAccount,
-    ) -> Result<(), ErrResp> {
-        self.pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let tenant_option = TenantEntity::find_by_id(account_id)
-                        .lock_shared()
-                        .one(txn)
-                        .await
-                        .map_err(|e| {
-                            error!("failed to find tenant (account_id: {}): {}", account_id, e);
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
+async fn find_bank_account_with_exclusive_lock(
+    txn: &DatabaseTransaction,
+    account_id: i64,
+) -> Result<Option<entity::bank_account::Model>, ErrRespStruct> {
+    let ba = entity::bank_account::Entity::find_by_id(account_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find bank_account (account_id: {}): {}",
+                account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(ba)
+}
 
-                    let tenant_op = TenantOperationImpl::new(&ACCESS_INFO);
-                    if let Some(tenant) = tenant_option {
-                        let update_tenant = UpdateTenant {
-                            name: bank_account.account_holder_name.clone(),
-                            platform_fee_rate: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
-                            minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
-                            bank_code: bank_account.bank_code,
-                            bank_branch_code: bank_account.branch_code,
-                            bank_account_type: bank_account.account_type,
-                            bank_account_number: bank_account.account_number,
-                            bank_account_holder_name: bank_account.account_holder_name,
-                            metadata: None,
-                        };
-                        info!(
-                            "update tenant (account_id: {}, tenant_id: {}, update_tenant: {:?})",
-                            account_id, tenant.tenant_id, update_tenant
-                        );
-                        let _ = tenant_op
-                            .update_tenant(tenant.tenant_id.as_str(), &update_tenant)
-                            .await
-                            .map_err(|e| {
-                                error!(
-                                "failed to update tenant (account_id: {}, update_tenant: {:?}): {}",
-                                account_id, update_tenant, e
-                            );
-                                ErrRespStruct {
-                                    err_resp: create_err_resp(&e),
-                                }
-                            })?;
-                    } else {
-                        let uuid = Uuid::new_v4().simple().to_string();
-                        let active_model = entity::tenant::ActiveModel {
-                            user_account_id: Set(account_id),
-                            tenant_id: Set(uuid.clone()),
-                        };
-                        active_model.insert(txn).await.map_err(|e| {
-                            error!(
-                                "failed to insert tenant (account_id: {}, uuid: {}): {}",
-                                account_id, uuid, e
-                            );
-                            ErrRespStruct {
-                                err_resp: unexpected_err_resp(),
-                            }
-                        })?;
-                        let create_tenant = CreateTenant {
-                            name: bank_account.account_holder_name.clone(),
-                            id: uuid.clone(),
-                            platform_fee_rate: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
-                            payjp_fee_included: PAYJP_FEE_INCLUDED,
-                            minimum_transfer_amount: MINIMUM_TRANSFER_AMOUNT,
-                            bank_code: bank_account.bank_code,
-                            bank_branch_code: bank_account.branch_code,
-                            bank_account_type: bank_account.account_type,
-                            bank_account_number: bank_account.account_number,
-                            bank_account_holder_name: bank_account.account_holder_name,
-                            metadata: None,
-                        };
-                        info!(
-                            "create tenant (account_id: {}, tenant_id: {}, create_tenant: {:?})",
-                            account_id, uuid, create_tenant
-                        );
-                        let _ = tenant_op.create_tenant(&create_tenant).await.map_err(|e| {
-                            error!(
-                                "failed to create tenant (account_id: {}, create_tenant: {:?}): {}",
-                                account_id, create_tenant, e
-                            );
-                            ErrRespStruct {
-                                err_resp: create_err_resp(&e),
-                            }
-                        })?;
-                    }
+async fn update_bank_account(
+    txn: &DatabaseTransaction,
+    model: entity::bank_account::Model,
+    bank_account: BankAccount,
+) -> Result<(), ErrRespStruct> {
+    let account_id = model.user_account_id;
+    let ba = bank_account.clone();
+    let mut active_model: entity::bank_account::ActiveModel = model.into();
+    active_model.bank_code = Set(bank_account.bank_code);
+    active_model.branch_code = Set(bank_account.branch_code);
+    active_model.account_type = Set(bank_account.account_type);
+    active_model.account_number = Set(bank_account.account_number);
+    active_model.account_holder_name = Set(bank_account.account_holder_name);
+    let _ = active_model.update(txn).await.map_err(|e| {
+        error!(
+            "failed to update banck_account (account_id: {}, bank_account: {:?}): {}",
+            account_id, ba, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
 
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to submit tenant: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
-    }
-
-    async fn set_bank_account_registered_on_index(&self, account_id: i64) -> Result<(), ErrResp> {
-        let index_client = self.index_client.clone();
-        self
-            .pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let document_option =
-                        find_document_model_by_user_account_id_with_exclusive_lock(txn, account_id).await?;
-                    if let Some(document) = document_option {
-                        let document_id = document.document_id;
-                        info!("update document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
-                        update_is_bank_account_registered_on_document(
-                            INDEX_NAME,
-                            document_id.to_string().as_str(),
-                            index_client
-                        )
-                        .await?;
-                    } else {
-                        // document_idとしてuser_account_idを利用
-                        let document_id = account_id;
-                        info!("create document for \"is_bank_account_registered\" (account_id: {}, document_id: {})", account_id, document_id);
-                        insert_document(txn, account_id, document_id).await?;
-                        add_new_document_with_is_bank_account_registered(
-                            INDEX_NAME,
-                            document_id.to_string().as_str(),
-                            account_id,
-                            index_client
-                        )
-                        .await?;
-                    };
-
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!(
-                        "failed to index document with is_bank_account_registered: {}",
-                        err_resp_struct
-                    );
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
-    }
+async fn create_bank_account(
+    txn: &DatabaseTransaction,
+    account_id: i64,
+    bank_account: BankAccount,
+) -> Result<(), ErrRespStruct> {
+    let ba = bank_account.clone();
+    let active_model = entity::bank_account::ActiveModel {
+        user_account_id: Set(account_id),
+        bank_code: Set(bank_account.bank_code),
+        branch_code: Set(bank_account.branch_code),
+        account_type: Set(bank_account.account_type),
+        account_number: Set(bank_account.account_number),
+        account_holder_name: Set(bank_account.account_holder_name),
+    };
+    let _ = active_model.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert banck_account (account_id: {}, bank_account: {:?}): {}",
+            account_id, ba, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 async fn update_is_bank_account_registered_on_document(
@@ -554,56 +502,6 @@ fn to_upper_case_of_katakana(katakana: &str) -> String {
     result
 }
 
-fn create_err_resp(e: &common::payment_platform::Error) -> ErrResp {
-    match e {
-        common::payment_platform::Error::RequestProcessingError(_) => unexpected_err_resp(),
-        common::payment_platform::Error::ApiError(e) => {
-            let status_code = e.error.status;
-            if status_code == StatusCode::TOO_MANY_REQUESTS.as_u16() as u32 {
-                return (
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
-                    }),
-                );
-            }
-            let code = &e.error.code;
-            if let Some(code) = code {
-                create_err_resp_from_code(code.as_str())
-            } else {
-                unexpected_err_resp()
-            }
-        }
-    }
-}
-
-fn create_err_resp_from_code(code: &str) -> ErrResp {
-    if code == "invalid_bank_code" {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::InvalidBank as u32,
-            }),
-        )
-    } else if code == "invalid_bank_branch_code" {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::InvalidBankBranch as u32,
-            }),
-        )
-    } else if code == "invalid_bank_account_number" {
-        (
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::InvalidBankAccountNumber as u32,
-            }),
-        )
-    } else {
-        unexpected_err_resp()
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -612,7 +510,7 @@ mod tests {
     #[derive(Debug, Clone)]
     struct SubmitBankAccountOperationMock {
         identity: Option<Identity>,
-        tenant_exists: bool,
+        bank_account_exists: bool,
         careers_exist: bool,
         fee_per_hour_in_yen_exists: bool,
         submit_bank_account_err: Option<ErrResp>,
@@ -627,8 +525,8 @@ mod tests {
             Ok(self.identity.clone())
         }
 
-        async fn check_if_tenant_exists(&self, _account_id: i64) -> Result<bool, ErrResp> {
-            Ok(self.tenant_exists)
+        async fn check_if_bank_account_exists(&self, _account_id: i64) -> Result<bool, ErrResp> {
+            Ok(self.bank_account_exists)
         }
 
         async fn check_if_careers_exist(&self, _account_id: i64) -> Result<bool, ErrResp> {
@@ -740,7 +638,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -764,7 +662,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2.clone()),
-                        tenant_exists: true,
+                        bank_account_exists: true,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -788,7 +686,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity2),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -812,7 +710,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -836,7 +734,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -862,7 +760,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: true,
+                        bank_account_exists: true,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -893,7 +791,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -924,7 +822,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: true,
+                        bank_account_exists: true,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -955,7 +853,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -984,7 +882,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: true,
+                        bank_account_exists: true,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -1013,7 +911,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -1042,7 +940,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: None,
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: false,
                         fee_per_hour_in_yen_exists: false,
                         submit_bank_account_err: None,
@@ -1071,7 +969,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: true,
+                        bank_account_exists: true,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -1100,7 +998,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity3),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -1110,150 +1008,6 @@ mod tests {
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::AccountHolderNameDoesNotMatchFullName as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail illegal bank code".to_string(),
-                input: Input {
-                    account_id: 514,
-                    bank_account_register_req: BankAccountRegisterReq {
-                        bank_account: BankAccount {
-                            bank_code: "0004".to_string(),
-                            branch_code: "001".to_string(),
-                            account_type: "普通".to_string(),
-                            account_number: "1234567".to_string(),
-                            account_holder_name: identity1.last_name_furigana.clone()
-                                + "　"
-                                + identity1.first_name_furigana.as_str(),
-                        },
-                        non_profit_objective: true,
-                    },
-                    op: SubmitBankAccountOperationMock {
-                        identity: Some(identity1.clone()),
-                        tenant_exists: true,
-                        careers_exist: true,
-                        fee_per_hour_in_yen_exists: true,
-                        submit_bank_account_err: Some((
-                            StatusCode::BAD_REQUEST,
-                            Json(ApiError {
-                                code: Code::InvalidBank as u32,
-                            }),
-                        )),
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidBank as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail illegal branch code".to_string(),
-                input: Input {
-                    account_id: 514,
-                    bank_account_register_req: BankAccountRegisterReq {
-                        bank_account: BankAccount {
-                            bank_code: "0001".to_string(),
-                            branch_code: "002".to_string(),
-                            account_type: "普通".to_string(),
-                            account_number: "1234567".to_string(),
-                            account_holder_name: identity1.last_name_furigana.clone()
-                                + "　"
-                                + identity1.first_name_furigana.as_str(),
-                        },
-                        non_profit_objective: true,
-                    },
-                    op: SubmitBankAccountOperationMock {
-                        identity: Some(identity1.clone()),
-                        tenant_exists: false,
-                        careers_exist: true,
-                        fee_per_hour_in_yen_exists: true,
-                        submit_bank_account_err: Some((
-                            StatusCode::BAD_REQUEST,
-                            Json(ApiError {
-                                code: Code::InvalidBankBranch as u32,
-                            }),
-                        )),
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidBankBranch as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail illegal account number".to_string(),
-                input: Input {
-                    account_id: 514,
-                    bank_account_register_req: BankAccountRegisterReq {
-                        bank_account: BankAccount {
-                            bank_code: "0001".to_string(),
-                            branch_code: "001".to_string(),
-                            account_type: "普通".to_string(),
-                            account_number: "12345678".to_string(),
-                            account_holder_name: identity1.last_name_furigana.clone()
-                                + "　"
-                                + identity1.first_name_furigana.as_str(),
-                        },
-                        non_profit_objective: true,
-                    },
-                    op: SubmitBankAccountOperationMock {
-                        identity: Some(identity1.clone()),
-                        tenant_exists: false,
-                        careers_exist: true,
-                        fee_per_hour_in_yen_exists: true,
-                        submit_bank_account_err: Some((
-                            StatusCode::BAD_REQUEST,
-                            Json(ApiError {
-                                code: Code::InvalidBankAccountNumber as u32,
-                            }),
-                        )),
-                    },
-                },
-                expected: Err((
-                    StatusCode::BAD_REQUEST,
-                    Json(ApiError {
-                        code: Code::InvalidBankAccountNumber as u32,
-                    }),
-                )),
-            },
-            TestCase {
-                name: "fail too many requests".to_string(),
-                input: Input {
-                    account_id: 514,
-                    bank_account_register_req: BankAccountRegisterReq {
-                        bank_account: BankAccount {
-                            bank_code: "0001".to_string(),
-                            branch_code: "001".to_string(),
-                            account_type: "普通".to_string(),
-                            account_number: "1234567".to_string(),
-                            account_holder_name: identity1.last_name_furigana.clone()
-                                + "　"
-                                + identity1.first_name_furigana.as_str(),
-                        },
-                        non_profit_objective: true,
-                    },
-                    op: SubmitBankAccountOperationMock {
-                        identity: Some(identity1.clone()),
-                        tenant_exists: true,
-                        careers_exist: true,
-                        fee_per_hour_in_yen_exists: true,
-                        submit_bank_account_err: Some((
-                            StatusCode::TOO_MANY_REQUESTS,
-                            Json(ApiError {
-                                code: Code::ReachPaymentPlatformRateLimit as u32,
-                            }),
-                        )),
-                    },
-                },
-                expected: Err((
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
                     }),
                 )),
             },
@@ -1275,7 +1029,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: false,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
@@ -1306,7 +1060,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: false,
                         submit_bank_account_err: None,
@@ -1337,7 +1091,7 @@ mod tests {
                     },
                     op: SubmitBankAccountOperationMock {
                         identity: Some(identity1.clone()),
-                        tenant_exists: false,
+                        bank_account_exists: false,
                         careers_exist: true,
                         fee_per_hour_in_yen_exists: true,
                         submit_bank_account_err: None,
