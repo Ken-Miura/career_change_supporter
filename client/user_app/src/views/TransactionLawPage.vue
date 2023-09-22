@@ -26,8 +26,8 @@
         <h2 class="font-bold text-lg lg:text-xl">相談料と手数料</h2>
         <p class="ml-2 text-base lg:text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
         <ol class="list-disc ml-8 text-base lg:text-lg">
-          <li>プラットフォーム利用料：相談１回につき、相談料の{{ PLATFORM_FEE_IN_PERCENTAGE }}パーセント</li>
-          <li>振込手数料：報酬の振込の際に{{ TRANSFER_FEE_IN_YEN }}円</li>
+          <li>プラットフォーム利用料：相談１回につき、相談料の{{ platformFeeInPercentage }}パーセント</li>
+          <li>振込手数料：報酬の振込の際に{{ transferFeeInYen }}円</li>
         </ol>
       </div>
       <div class="mt-4 ml-2">
@@ -63,8 +63,6 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { TRANSFER_FEE_IN_YEN } from '@/util/personalized/reward/TransferFee'
-import { PLATFORM_FEE_IN_PERCENTAGE } from '@/util/personalized/profile/PlatformFee'
 
 export default defineComponent({
   name: 'TransactionLawPage',
@@ -74,6 +72,8 @@ export default defineComponent({
     const businessOperatorAddress = process.env.VUE_APP_BUSINESS_OPERATOR_ADDRESS
     const businessOperatorPhoneNumber = process.env.VUE_APP_BUSINESS_OPERATOR_PHONE_NUMBER
     const businessOperatorInquiryEmailAddress = process.env.VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS
+    const platformFeeInPercentage = process.env.VUE_APP_PLATFORM_FEE_IN_PERCENTAGE
+    const transferFeeInYen = process.env.VUE_APP_TRANSFER_FEE_IN_YEN
 
     return {
       businessOperatorName,
@@ -81,8 +81,8 @@ export default defineComponent({
       businessOperatorAddress,
       businessOperatorPhoneNumber,
       businessOperatorInquiryEmailAddress,
-      PLATFORM_FEE_IN_PERCENTAGE,
-      TRANSFER_FEE_IN_YEN
+      platformFeeInPercentage,
+      transferFeeInYen
     }
   }
 })

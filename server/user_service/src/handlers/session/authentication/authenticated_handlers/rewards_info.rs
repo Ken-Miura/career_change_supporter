@@ -2,7 +2,7 @@
 
 use std::str::FromStr;
 
-use chrono::{DateTime, Datelike, Duration, FixedOffset, TimeZone};
+use chrono::{DateTime, Datelike, FixedOffset, TimeZone};
 use common::{ErrResp, JAPANESE_TIME_ZONE};
 use entity::{
     consultation,
@@ -149,54 +149,6 @@ pub(super) fn create_start_and_end_date_time_of_current_year(
     Ok((start, end))
 }
 
-/// 渡された日時に対して、その月の日本時間における1日0時0分0秒と最終日23時59分59秒を示す日時を返す。
-pub(super) fn create_start_and_end_date_time_of_current_month(
-    current_date_time: &DateTime<FixedOffset>,
-) -> Result<(DateTime<FixedOffset>, DateTime<FixedOffset>), ErrResp> {
-    let current_year = current_date_time.year();
-    let current_month = current_date_time.month();
-
-    // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
-    let start = match JAPANESE_TIME_ZONE.with_ymd_and_hms(current_year, current_month, 1, 0, 0, 0) {
-        chrono::LocalResult::None => {
-            error!(
-                "failed to get start (current_year: {}, current_month: {})",
-                current_year, current_month
-            );
-            return Err(unexpected_err_resp());
-        }
-        chrono::LocalResult::Single(s) => s,
-        chrono::LocalResult::Ambiguous(a1, a2) => {
-            error!("failed to get start (current_year: {}, current_month: {}, ambiguous1: {}, ambiguous2: {})", current_year, current_month, a1 ,a2);
-            return Err(unexpected_err_resp());
-        }
-    };
-
-    let (year, month) = if current_month >= 12 {
-        (current_year + 1, 1)
-    } else {
-        (current_year, current_month + 1)
-    };
-
-    // 日本のタイムゾーンにおいて、（サマータイム等による）タイムゾーンの遷移は発生しないので一意にならない場合はすべてエラー
-    let end = match JAPANESE_TIME_ZONE.with_ymd_and_hms(year, month, 1, 23, 59, 59) {
-        chrono::LocalResult::None => {
-            error!("failed to get end (year: {}, month: {})", year, month);
-            return Err(unexpected_err_resp());
-        }
-        chrono::LocalResult::Single(s) => s,
-        chrono::LocalResult::Ambiguous(a1, a2) => {
-            error!(
-                "failed to get end (year: {}, month: {}, ambiguous1: {}, ambiguous2: {})",
-                year, month, a1, a2
-            );
-            return Err(unexpected_err_resp());
-        }
-    } - Duration::days(1);
-
-    Ok((start, end))
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -332,90 +284,6 @@ mod tests {
         assert_eq!(
             JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2020, 12, 31, 23, 59, 59)
-                .unwrap(),
-            end
-        );
-    }
-
-    #[test]
-    fn test_case_normal_month_create_start_and_end_date_time_of_current_month() {
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2022, 7, 15, 15, 43, 39)
-            .unwrap();
-        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time)
-            .expect("failed to get Ok");
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2022, 7, 1, 0, 0, 0)
-                .unwrap(),
-            start
-        );
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2022, 7, 31, 23, 59, 59)
-                .unwrap(),
-            end
-        );
-    }
-
-    #[test]
-    fn test_case_feb_in_normal_year_create_start_and_end_date_time_of_current_month() {
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2021, 2, 15, 15, 43, 39)
-            .unwrap();
-        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time)
-            .expect("failed to get Ok");
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2021, 2, 1, 0, 0, 0)
-                .unwrap(),
-            start
-        );
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2021, 2, 28, 23, 59, 59)
-                .unwrap(),
-            end
-        );
-    }
-
-    #[test]
-    fn test_case_feb_in_leap_year_create_start_and_end_date_time_of_current_month() {
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2020, 2, 15, 15, 43, 39)
-            .unwrap();
-        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time)
-            .expect("failed to get Ok");
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2020, 2, 1, 0, 0, 0)
-                .unwrap(),
-            start
-        );
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2020, 2, 29, 23, 59, 59)
-                .unwrap(),
-            end
-        );
-    }
-
-    #[test]
-    fn test_case_dec_create_start_and_end_date_time_of_current_month() {
-        let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2022, 12, 15, 15, 43, 39)
-            .unwrap();
-        let (start, end) = create_start_and_end_date_time_of_current_month(&current_date_time)
-            .expect("failed to get Ok");
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2022, 12, 1, 0, 0, 0)
-                .unwrap(),
-            start
-        );
-        assert_eq!(
-            JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2022, 12, 31, 23, 59, 59)
                 .unwrap(),
             end
         );
