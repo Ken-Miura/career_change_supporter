@@ -4,24 +4,18 @@ use chrono::{DateTime, Duration, FixedOffset};
 use dotenv::dotenv;
 use entity::sea_orm::{
     prelude::async_trait::async_trait, ColumnTrait, ConnectOptions, Database, DatabaseConnection,
-    EntityTrait, QueryFilter, QuerySelect, TransactionError, TransactionTrait,
+    EntityTrait, QueryFilter, QuerySelect,
 };
 use std::{env::set_var, error::Error, process::exit};
 use tracing::{error, info};
 
 use common::{
     admin::{
-        wait_for, TransactionExecutionError,
-        DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS, KEY_TO_DB_ADMIN_NAME,
-        KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
+        wait_for, DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
+        KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     log::{init_log, LOG_LEVEL},
-    payment_platform::{
-        charge::{ChargeOperation, ChargeOperationImpl, RefundQuery},
-        construct_access_info, AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
-        KEY_TO_PAYMENT_PLATFORM_API_URL, KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-    },
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
@@ -49,9 +43,6 @@ fn main() {
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
         KEY_TO_USE_ECS_TASK_ROLE.to_string(),
     ]);
     if result.is_err() {
@@ -94,21 +85,8 @@ async fn main_internal() {
         exit(CONNECTION_ERROR)
     });
 
-    let access_info = match construct_access_info(
-        KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
-    ) {
-        Ok(ai) => ai,
-        Err(e) => {
-            error!("invalid PAYJP access info: {}", e);
-            exit(ENV_VAR_CAPTURE_FAILURE);
-        }
-    };
-
     let op = DeleteExpiredConsultationReqsOperationImpl {
         pool,
-        access_info,
         duration_per_iteration_in_milli_seconds:
             *DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
     };
@@ -167,8 +145,7 @@ async fn delete_expired_consultation_reqs(
         Vec::with_capacity(expired_consultation_reqs.len());
     for expired_consultation_req in expired_consultation_reqs {
         let req_id = expired_consultation_req.consultation_req_id;
-        let charge_id = expired_consultation_req.charge_id.as_str();
-        let result = op.delete_consultation_req(req_id, charge_id).await;
+        let result = op.delete_consultation_req(req_id).await;
         if result.is_err() {
             error!("failed delete_consultation_req: {:?}", result);
             delete_failed.push(expired_consultation_req);
@@ -219,11 +196,8 @@ trait DeleteExpiredConsultationReqsOperation {
         limit: Option<u64>,
     ) -> Result<Vec<ConsultationReq>, Box<dyn Error>>;
 
-    async fn delete_consultation_req(
-        &self,
-        consultation_req_id: i64,
-        charge_id: &str,
-    ) -> Result<(), Box<dyn Error>>;
+    async fn delete_consultation_req(&self, consultation_req_id: i64)
+        -> Result<(), Box<dyn Error>>;
 
     async fn wait_for_dependent_service_rate_limit(&self);
 }
@@ -237,15 +211,11 @@ struct ConsultationReq {
     second_candidate_date_time: DateTime<FixedOffset>,
     third_candidate_date_time: DateTime<FixedOffset>,
     latest_candidate_date_time: DateTime<FixedOffset>,
-    charge_id: String,
     fee_per_hour_in_yen: i32,
-    platform_fee_rate_in_percentage: String,
-    credit_facilities_expired_at: DateTime<FixedOffset>,
 }
 
 struct DeleteExpiredConsultationReqsOperationImpl {
     pool: DatabaseConnection,
-    access_info: AccessInfo,
     duration_per_iteration_in_milli_seconds: u64,
 }
 
@@ -272,10 +242,7 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
                 second_candidate_date_time: m.second_candidate_date_time,
                 third_candidate_date_time: m.third_candidate_date_time,
                 latest_candidate_date_time: m.latest_candidate_date_time,
-                charge_id: m.charge_id,
                 fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-                credit_facilities_expired_at: m.credit_facilities_expired_at,
             })
             .collect())
     }
@@ -283,50 +250,15 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
     async fn delete_consultation_req(
         &self,
         consultation_req_id: i64,
-        charge_id: &str,
     ) -> Result<(), Box<dyn Error>> {
-        let charge_id = charge_id.to_string();
-        let access_info = self.access_info.clone();
-        let _ = self
-            .pool
-            .transaction::<_, (), TransactionExecutionError>(|txn| {
-                Box::pin(async move {
-                    let _ = entity::consultation_req::Entity::delete_by_id(consultation_req_id)
-                        .exec(txn)
-                        .await
-                        .map_err(|e| TransactionExecutionError {
-                            message: format!(
-                                "failed to delete consultation_req (consultation_req_id: {}): {}",
-                                consultation_req_id, e
-                            ),
-                        })?;
-
-                    let charge_op = ChargeOperationImpl::new(&access_info);
-                    let refund_reason = "credit_facility_was_released_automatically_because_consultantion_date_has_been_outdated".to_string();
-                    let query = RefundQuery::new(refund_reason).map_err(|e|{
-                        TransactionExecutionError {
-                            message: format!("failed to create RefundQuery: {}", e)
-                        }
-                    })?;
-                    // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
-                    // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
-                    let _ = charge_op.refund(&charge_id, query).await.map_err(|e| {
-                        TransactionExecutionError {
-                            message: format!("failed to release credit faclity (charge_id: {}): {}", charge_id, e)
-                        }
-                    })?;
-
-                    Ok(())
-                })
-            })
+        let _ = entity::consultation_req::Entity::delete_by_id(consultation_req_id)
+            .exec(&self.pool)
             .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    format!("connection error: {}", db_err)
-                }
-                TransactionError::Transaction(transaction_err) => {
-                    format!("transaction error: {}", transaction_err)
-                }
+            .map_err(|e| {
+                format!(
+                    "failed to delete consultation_req (consultation_req_id: {}): {}",
+                    consultation_req_id, e
+                )
             })?;
         Ok(())
     }
@@ -408,13 +340,11 @@ mod tests {
         async fn delete_consultation_req(
             &self,
             consultation_req_id: i64,
-            charge_id: &str,
         ) -> Result<(), Box<dyn Error>> {
             let consultation_req = self
                 .consultation_reqs
                 .get(&consultation_req_id)
                 .expect("assert that consultation_req has value!");
-            assert_eq!(consultation_req.0.charge_id, charge_id);
             if !consultation_req.1 {
                 return Err("mock error message".into());
             }
@@ -546,12 +476,7 @@ mod tests {
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 )
                 + Duration::seconds(1),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
         let mut map = HashMap::with_capacity(1);
         map.insert(consultation_req_id, (consultation_req, true));
@@ -607,12 +532,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
         let mut map = HashMap::with_capacity(1);
         map.insert(consultation_req_id, (consultation_req, true));
@@ -722,12 +642,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
 
         let consultation_req_id2 = 56;
@@ -749,12 +664,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
             fee_per_hour_in_yen: 8000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 17, 15, 0, 0)
-                .unwrap(),
         };
 
         let mut map = HashMap::with_capacity(2);
@@ -896,12 +806,7 @@ mod tests {
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 )
                 + Duration::seconds(1),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
 
         let consultation_req_id2 = 56;
@@ -923,12 +828,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
             fee_per_hour_in_yen: 8000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 17, 15, 0, 0)
-                .unwrap(),
         };
 
         let mut map = HashMap::with_capacity(2);
@@ -1018,7 +918,6 @@ mod tests {
                 "1234".to_string(),
                 "456".to_string(),
                 "789".to_string(),
-                "ch_fa990a4c10672a93053a774730b0a".to_string(),
                 "2023-08-27T14:00:00+09:00".to_string(),
             ],
         );
@@ -1037,7 +936,6 @@ mod tests {
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("456"));
         assert!(err_message.contains("789"));
-        assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
         assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     }
 
@@ -1063,12 +961,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
         let mut map = HashMap::with_capacity(1);
         map.insert(consultation_req_id, (consultation_req, false));
@@ -1098,12 +991,10 @@ mod tests {
                 "1234".to_string(),
                 "456".to_string(),
                 "789".to_string(),
-                "ch_fa990a4c10672a93053a774730b0a".to_string(),
                 "2023-08-27T14:00:00+09:00".to_string(),
                 "56".to_string(),
                 "32".to_string(),
                 "87".to_string(),
-                "ch_ea990a4c10672a93053a774730b0b".to_string(),
                 "2023-08-27T14:00:00+09:00".to_string(),
             ],
         );
@@ -1123,13 +1014,11 @@ mod tests {
         assert!(err_message.contains("1234"));
         assert!(err_message.contains("456"));
         assert!(err_message.contains("789"));
-        assert!(err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
         assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
 
         assert!(err_message.contains("56"));
         assert!(err_message.contains("32"));
         assert!(err_message.contains("87"));
-        assert!(err_message.contains("ch_ea990a4c10672a93053a774730b0b"));
         assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     }
 
@@ -1155,12 +1044,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
 
         let consultation_req_id2 = 56;
@@ -1182,12 +1066,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
             fee_per_hour_in_yen: 8000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 17, 15, 0, 0)
-                .unwrap(),
         };
 
         let mut map = HashMap::with_capacity(2);
@@ -1222,7 +1101,6 @@ mod tests {
                 "56".to_string(),
                 "32".to_string(),
                 "87".to_string(),
-                "ch_ea990a4c10672a93053a774730b0b".to_string(),
                 "2023-08-27T14:00:00+09:00".to_string(),
             ],
         );
@@ -1242,13 +1120,11 @@ mod tests {
         assert!(!err_message.contains("1234"));
         assert!(!err_message.contains("456"));
         assert!(!err_message.contains("789"));
-        assert!(!err_message.contains("ch_fa990a4c10672a93053a774730b0a"));
         assert!(!err_message.contains("2023-08-27 13:00:00 +09:00"));
 
         assert!(err_message.contains("56"));
         assert!(err_message.contains("32"));
         assert!(err_message.contains("87"));
-        assert!(err_message.contains("ch_ea990a4c10672a93053a774730b0b"));
         assert!(err_message.contains("2023-08-27T14:00:00+09:00"));
     }
 
@@ -1275,12 +1151,7 @@ mod tests {
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 )
                 - Duration::hours(1),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 19, 15, 0, 0)
-                .unwrap(),
         };
 
         let consultation_req_id2 = 56;
@@ -1302,12 +1173,7 @@ mod tests {
                 + Duration::seconds(
                     common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
                 ),
-            charge_id: "ch_ea990a4c10672a93053a774730b0b".to_string(),
             fee_per_hour_in_yen: 8000,
-            platform_fee_rate_in_percentage: "30.0".to_string(),
-            credit_facilities_expired_at: JAPANESE_TIME_ZONE
-                .with_ymd_and_hms(2023, 10, 17, 15, 0, 0)
-                .unwrap(),
         };
 
         let mut map = HashMap::with_capacity(2);
