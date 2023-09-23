@@ -87,10 +87,7 @@ struct ConsultationReq {
     second_candidate_date_time: String, // RFC 3339形式の文字列
     third_candidate_date_time: String,  // RFC 3339形式の文字列
     latest_candidate_date_time: String, // RFC 3339形式の文字列
-    charge_id: String,
     fee_per_hour_in_yen: i32,
-    platform_fee_rate_in_percentage: String,
-    credit_facilities_expired_at: String, // RFC 3339形式の文字列
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]

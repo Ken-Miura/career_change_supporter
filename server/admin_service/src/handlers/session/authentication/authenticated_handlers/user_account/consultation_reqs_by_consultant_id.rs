@@ -89,13 +89,7 @@ impl ConsultationReqsOperation for ConsultationReqsOperationImpl {
                     .latest_candidate_date_time
                     .with_timezone(&(*JAPANESE_TIME_ZONE))
                     .to_rfc3339(),
-                charge_id: m.charge_id,
                 fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-                credit_facilities_expired_at: m
-                    .credit_facilities_expired_at
-                    .with_timezone(&(*JAPANESE_TIME_ZONE))
-                    .to_rfc3339(),
             })
             .collect::<Vec<ConsultationReq>>())
     }
@@ -138,10 +132,7 @@ mod tests {
             second_candidate_date_time: "2023-04-14T14:00:00.0000+09:00 ".to_string(),
             third_candidate_date_time: "2023-04-15T14:00:00.0000+09:00 ".to_string(),
             latest_candidate_date_time: "2023-04-15T14:00:00.0000+09:00 ".to_string(),
-            charge_id: "ch_6ebea6645ba1bb27307032b23cd5d".to_string(),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "30.00".to_string(),
-            credit_facilities_expired_at: "2023-06-06T14:50:12.0000+09:00 ".to_string(),
         }
     }
 
@@ -154,10 +145,7 @@ mod tests {
             second_candidate_date_time: "2023-04-14T16:00:00.0000+09:00 ".to_string(),
             third_candidate_date_time: "2023-04-15T16:00:00.0000+09:00 ".to_string(),
             latest_candidate_date_time: "2023-04-15T16:00:00.0000+09:00 ".to_string(),
-            charge_id: "ch_7ebea6645ba1bb27307032b23cd5d".to_string(),
             fee_per_hour_in_yen: 5000,
-            platform_fee_rate_in_percentage: "30.00".to_string(),
-            credit_facilities_expired_at: "2023-06-06T14:50:12.0000+09:00 ".to_string(),
         }
     }
 
