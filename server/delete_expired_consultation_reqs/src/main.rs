@@ -142,7 +142,7 @@ async fn delete_expired_consultation_reqs(
     let num_of_expired_consultation_reqs = expired_consultation_reqs.len();
 
     let mut delete_failed: Vec<ConsultationReq> =
-        Vec::with_capacity(expired_consultation_reqs.len());
+        Vec::with_capacity(num_of_expired_consultation_reqs);
     for expired_consultation_req in expired_consultation_reqs {
         let req_id = expired_consultation_req.consultation_req_id;
         let result = op.delete_consultation_req(req_id).await;
