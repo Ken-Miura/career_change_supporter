@@ -193,10 +193,7 @@
                     <div class="mt-2 justify-self-start col-span-3">相談日時（第二候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.second_candidate_date_time }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談日時（第三候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.third_candidate_date_time }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談日時（最遅の候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.latest_candidate_date_time }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.charge_id }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.fee_per_hour_in_yen }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.platform_fee_rate_in_percentage }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationReq.credit_facilities_expired_at }}</div>
                   </div>
                 </li>
               </ul>
@@ -222,10 +219,7 @@
                     <div class="mt-2 justify-self-start col-span-3">相談日時（第二候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.second_candidate_date_time }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談日時（第三候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.third_candidate_date_time }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談日時（最遅の候補）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.latest_candidate_date_time }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.charge_id }}</div>
                     <div class="mt-2 justify-self-start col-span-3">相談料（円/時間）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.fee_per_hour_in_yen }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.platform_fee_rate_in_percentage }}</div>
-                    <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ consultationOffer.credit_facilities_expired_at }}</div>
                   </div>
                 </li>
               </ul>
