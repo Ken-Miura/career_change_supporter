@@ -38,3 +38,4 @@ pub mod update_identity_req;
 pub mod user_account;
 pub mod user_rating;
 pub mod user_temp_account;
+pub mod waiting_for_payment;

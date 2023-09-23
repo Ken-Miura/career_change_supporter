@@ -34,3 +34,4 @@ pub use super::update_identity_req::Entity as UpdateIdentityReq;
 pub use super::user_account::Entity as UserAccount;
 pub use super::user_rating::Entity as UserRating;
 pub use super::user_temp_account::Entity as UserTempAccount;
+pub use super::waiting_for_payment::Entity as WaitingForPayment;
