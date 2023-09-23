@@ -443,9 +443,6 @@ impl MigrationTrait for Migration {
             /* ユーザーが相談申し込みをしたときに生成される。コンサルタントが相談申し込みを承認、または拒否したときに削除される。
              * 相談開始日時の候補すべてが現在時刻を超えている場合、定期実行ツールにより削除される
              */
-            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
-            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける。
-            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultation_req (
                   consultation_req_id BIGSERIAL PRIMARY KEY,
@@ -455,10 +452,7 @@ impl MigrationTrait for Migration {
                   second_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   third_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
                   latest_candidate_date_time TIMESTAMP WITH TIME ZONE NOT NULL,
-                  charge_id TEXT NOT NULL UNIQUE,
-                  fee_per_hour_in_yen INTEGER NOT NULL,
-                  platform_fee_rate_in_percentage TEXT NOT NULL,
-                  credit_facilities_expired_at TIMESTAMP WITH TIME ZONE NOT NULL
+                  fee_per_hour_in_yen INTEGER NOT NULL
                 );",
             ))
             .await
@@ -491,8 +485,6 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /* コンサルタントが相談申し込みを承認したときに生成される。サービスの運用期間を通じて存在し続ける。不要なデータは相談日時でフィルタリングして利用する */
-            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
-            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.consultation (
                   consultation_id BIGSERIAL PRIMARY KEY,
@@ -527,6 +519,48 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"CREATE INDEX consultation_meeting_at_idx ON ccs_schema.consultation (meeting_at);",
+            ))
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
+             * コンサルタントが相談申し込みを承認したときに生成される。
+             * 管理者がユーザーからの支払いを確認したとき削除される。
+             * 管理者がユーザーからの返金依頼を処理したときに削除される（返金を受け付けるのは、ユーザーが相談日時までに入金したにも関わらず、管理者が支払いの確認を出来なかった場合のみ）
+             * NOTE: 削除されるケースに当てはまらない場合、サービスの運用期間を通じて存在し続けるが、それによりサービスが遅くなる場合は不要なものを選定して削除することを検討する。
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.waiting_for_payment (
+                  waiting_for_payment_id BIGSERIAL PRIMARY KEY,
+                  consultation_id BIGINT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.waiting_for_payment To user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.waiting_for_payment To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"GRANT USAGE ON SEQUENCE ccs_schema.waiting_for_payment_waiting_for_payment_id_seq TO user_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX created_at_idx ON ccs_schema.waiting_for_payment (created_at);",
             ))
             .await
             .map(|_| ())?;
