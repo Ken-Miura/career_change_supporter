@@ -1643,6 +1643,144 @@ mod tests {
         assert_eq!(Code::DuplicateDateTimeCandidates as u32, resp.1 .0.code);
     }
 
+    #[tokio::test]
+    async fn test_handle_request_consultation_fail_consultant_is_not_available() {
+        let user_account_id = 12345;
+        let user_email_address = "test1@test.com".to_string();
+        let fee = 4000;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+            .unwrap();
+        let param = RequestConsultationParam {
+            consultant_id: user_account_id + 67,
+            fee_per_hour_in_yen: fee,
+            first_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 11,
+                hour: 7,
+            },
+            second_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 14,
+                hour: 23,
+            },
+            third_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 22,
+                hour: 7,
+            },
+        };
+        let op = RequestConsultationOperationMock {
+            consultant_id: user_account_id + 67,
+            consultant_available: false,
+            fee_per_hour_in_yen: Some(fee),
+            user_account_id,
+            candidates: Candidates {
+                first_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 11, 7, 0, 0)
+                    .unwrap(),
+                second_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 14, 23, 0, 0)
+                    .unwrap(),
+                third_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                    .unwrap(),
+            },
+            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                .unwrap(),
+            consultation_req_id: 3,
+            consultant_email_address: "test2@test.com".to_string(),
+        };
+        let send_mail = SendMailMock {};
+
+        let result = handle_request_consultation(
+            user_account_id,
+            user_email_address,
+            param,
+            &current_date_time,
+            op,
+            send_mail,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::ConsultantIsNotAvailable as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn test_handle_request_consultation_fail_fee_is_updated() {
+        let user_account_id = 12345;
+        let user_email_address = "test1@test.com".to_string();
+        let fee = 4000;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2022, 11, 1, 7, 0, 0)
+            .unwrap();
+        let param = RequestConsultationParam {
+            consultant_id: user_account_id + 67,
+            fee_per_hour_in_yen: fee,
+            first_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 11,
+                hour: 7,
+            },
+            second_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 14,
+                hour: 23,
+            },
+            third_candidate_in_jst: ConsultationDateTime {
+                year: 2022,
+                month: 11,
+                day: 22,
+                hour: 7,
+            },
+        };
+        let op = RequestConsultationOperationMock {
+            consultant_id: user_account_id + 67,
+            consultant_available: true,
+            fee_per_hour_in_yen: Some(fee + 1000),
+            user_account_id,
+            candidates: Candidates {
+                first_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 11, 7, 0, 0)
+                    .unwrap(),
+                second_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 14, 23, 0, 0)
+                    .unwrap(),
+                third_candidate_in_jst: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                    .unwrap(),
+            },
+            latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                .with_ymd_and_hms(2022, 11, 22, 7, 0, 0)
+                .unwrap(),
+            consultation_req_id: 3,
+            consultant_email_address: "test2@test.com".to_string(),
+        };
+        let send_mail = SendMailMock {};
+
+        let result = handle_request_consultation(
+            user_account_id,
+            user_email_address,
+            param,
+            &current_date_time,
+            op,
+            send_mail,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::FeePerHourInYenWasUpdated as u32, resp.1 .0.code);
+    }
+
     #[test]
     fn test_create_text_for_consultant_mail() {
         let user_account_id = 1;
