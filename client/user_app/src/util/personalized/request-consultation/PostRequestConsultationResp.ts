@@ -1,9 +1,9 @@
-export class PostFinishRequestConsultationResp {
+export class PostRequestConsultationResp {
   // createからアクセスしているため、意味のないコンストラクタではない
   // eslint-disable-next-line
   private constructor () {}
 
-  public static create (): PostFinishRequestConsultationResp {
-    return new PostFinishRequestConsultationResp()
+  public static create (): PostRequestConsultationResp {
+    return new PostRequestConsultationResp()
   }
 }

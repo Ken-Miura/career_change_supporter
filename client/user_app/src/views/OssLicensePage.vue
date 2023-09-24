@@ -38,11 +38,6 @@
         <p class="ml-4">Copyright (c) 2015-present Evan You</p>
         <p class="ml-4"><a class="hover:underline" href="https://github.com/vuejs/vuex/blob/main/LICENSE">Released under the MIT license</a></p>
       </div>
-      <div class="mt-4">
-        <h2 class="font-bold"><a class="hover:underline" href="https://github.com/tserkov/vue-plugin-load-script">vue-plugin-load-script</a></h2>
-        <p class="ml-4">Copyright (c) 2017 James Churchard</p>
-        <p class="ml-4"><a class="hover:underline" href="https://github.com/tserkov/vue-plugin-load-script/blob/master/LICENSE.md">Released under the MIT license</a></p>
-      </div>
     </main>
     <footer class="max-w-lg mx-auto flex justify-center text-white">
       <router-link to="/" class="hover:underline">トップページへ</router-link>

@@ -1,7 +1,7 @@
 import { Identity } from '@/util/personalized/profile/Identity'
 import { BankAccount } from '@/util/personalized/BankAccount'
 import { createStore } from 'vuex'
-import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_CONSULTANT_SEARCH_PARAM, SET_PAY_JP, SET_RECOVERY_CODE } from './mutationTypes'
+import { SET_PASSWORD_UPDATE_RESULT_MESSAGE, SET_BANK_ACCOUNT, SET_FEE_PER_HOUR_IN_YEN, SET_IDENTITY, SET_CONSULTANT_SEARCH_PARAM, SET_RECOVERY_CODE } from './mutationTypes'
 import { ConsultantSearchParam } from '@/util/personalized/ConsultantSearchParam'
 
 export type State = {
@@ -10,9 +10,6 @@ export type State = {
   feePerHourInYen: number | null,
   bankAccount: BankAccount | null,
   consultantSearchParam: ConsultantSearchParam | null,
-  // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payJp: any,
   recoveryCode: string | null
 };
 
@@ -28,7 +25,6 @@ export default createStore<State>({
     feePerHourInYen: null,
     bankAccount: null,
     consultantSearchParam: null,
-    payJp: null,
     recoveryCode: null
   },
   mutations: {
@@ -46,11 +42,6 @@ export default createStore<State>({
     },
     [SET_CONSULTANT_SEARCH_PARAM] (state: State, consultantSearchParam: ConsultantSearchParam | null) {
       state.consultantSearchParam = consultantSearchParam
-    },
-    // PAY.JPから型定義が提供されていないため、anyでの扱いを許容する
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [SET_PAY_JP] (state: State, payJp: any) {
-      state.payJp = payJp
     },
     [SET_RECOVERY_CODE] (state: State, recoveryCode: string) {
       state.recoveryCode = recoveryCode

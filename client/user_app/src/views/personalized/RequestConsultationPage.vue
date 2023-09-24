@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getFeePerHourInYenForApplicationDone || !requestConsultationDone" class="m-6">
+    <div v-if="!getFeePerHourInYenForApplicationDone || !postRequestConsultationDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -125,14 +125,8 @@
             <div data-test="consultant-id" class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div data-test="consultant-id-value" class="mt-2 justify-self-start col-span-1">{{ consultantId }}</div>
             <div data-test="fee-per-hour-in-yen" class="mt-2 justify-self-start col-span-3">相談一回（１時間）の相談料</div><div data-test="fee-per-hour-in-yen-value" class="mt-2 justify-self-start col-span-1">{{ feePerHourInYen }}円</div>
           </div>
-          <h3 data-test="card-label" class="mt-4 font-bold text-xl lg:text-2xl">クレジットカード</h3>
-          <div data-test="card-area" class="m-2 flex flex-col">
-            <div class="mt-3" id="payjp-card-number-area"></div>
-            <div class="mt-3" id="payjp-card-expiry-area"></div>
-            <div class="mt-3" id="payjp-card-cvc-area"></div>
-          </div>
           <h3 data-test="notice" class="mt-6 ml-2 text-red-500 text-base lg:text-xl">相談申し込み後にキャンセルや相談開始日時変更は出来ませんので、申し込み内容についてよくご確認の上、相談をお申し込み下さい。</h3>
-          <button data-test="apply-for-consultation-btn" v-bind:disabled="disabled" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
+          <button data-test="apply-for-consultation-btn" v-bind:disabled="!postRequestConsultationDone" class="mt-8 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" v-on:click="requestConsultation">相談を申し込む</button>
           <div data-test="inner-alert-message" v-if="errorBelowBtn.exists">
             <AlertMessage class="mt-4" v-bind:message="errorBelowBtn.message"/>
           </div>
@@ -146,9 +140,8 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { defineComponent, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useStore } from 'vuex'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
 import WaitingCircle from '@/components/WaitingCircle.vue'
@@ -157,24 +150,17 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { useGetFeePerHourInYenForApplication } from '@/util/personalized/request-consultation/useGetFeePerHourInYenForApplication'
 import { GetFeePerHourInYenForApplicationResp } from '@/util/personalized/request-consultation/GetFeePerHourInYenForApplicationResp'
 import { Message } from '@/util/Message'
-import { SET_PAY_JP } from '@/store/mutationTypes'
-import { createPayJp } from '@/util/PayJp'
 import { createDayList } from '@/util/personalized/request-consultation/DayList'
 import { createHourList } from '@/util/personalized/request-consultation/HourList'
 import { createMonthList } from '@/util/personalized/request-consultation/MonthList'
 import { createYearList } from '@/util/personalized/request-consultation/YearList'
 import { getCurrentMonth, getCurrentYear } from '@/util/personalized/request-consultation/CurrentDateTime'
 import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultationInDays } from '@/util/personalized/request-consultation/DurationBeforeConsultation'
-import { convertRemToPx } from '@/util/personalized/request-consultation/FontSizeConverter'
-import { FinishRequestConsultation } from '@/util/personalized/request-consultation/FinishRequestConsultation'
-import { PostFinishRequestConsultationResp } from '@/util/personalized/request-consultation/PostFinishRequestConsultationResp'
-import { useRequestConsultationDone } from '@/util/personalized/request-consultation/useRequestConsultationDone'
-import { postFinishRequestConsultation } from '@/util/personalized/request-consultation/PostFinishRequestConsultation'
 import { useCandidate } from '@/util/personalized/request-consultation/useCandidate'
 import { ConsultationRequest } from '@/util/personalized/request-consultation/ConsultationRequest'
-import { postBeginRequestConsultation } from '@/util/personalized/request-consultation/PostBeginRequestConsultation'
-import { PostBeginRequestConsultationResp } from '@/util/personalized/request-consultation/PostBeginRequestConsultationResp'
 import { checkIfCandidateIsInValidRange } from '@/util/personalized/request-consultation/CheckIfCandidateIsInValidRange'
+import { useRequestConsultation } from '@/util/personalized/request-consultation/useRequestConsultation'
+import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
 
 export default defineComponent({
   name: 'RequestConsultationPage',
@@ -190,7 +176,6 @@ export default defineComponent({
     })
     const router = useRouter()
     const route = useRoute()
-    const store = useStore()
     const consultantId = route.params.consultant_id as string
     const currentMonth = getCurrentMonth()
     const monthList = ref(createMonthList(currentMonth))
@@ -201,26 +186,15 @@ export default defineComponent({
     const minDurationInDays = getMinDurationBeforeConsultationInDays()
     const maxDurationInDays = getMaxDurationBeforeConsultationInDays()
     const { candidates, allCandidatesAreNotEmpty, sameCandidatesExist } = useCandidate()
-    // PAY.JPから型定義が提供されていないため、カード情報に関してはanyでの扱いを許容する
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let cardNumberElement = null as any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let cardExpiryElement = null as any
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let cardCvcElement = null as any
     const {
       getFeePerHourInYenForApplicationDone,
       getFeePerHourInYenForApplicationFunc
     } = useGetFeePerHourInYenForApplication()
     const feePerHourInYen = ref(0 as number)
     const {
-      requestConsultationDone,
-      beginRequestConsultation,
-      finishRequestConsultation,
-      disabled,
-      disableBtn,
-      enableBtn
-    } = useRequestConsultationDone()
+      postRequestConsultationDone,
+      postRequestConsultationFunc
+    } = useRequestConsultation()
     const errorBelowBtn = reactive({
       exists: false,
       message: ''
@@ -246,208 +220,75 @@ export default defineComponent({
           return
         }
         feePerHourInYen.value = resp.getFeePerHourInYenForApplication()
-
-        let payjp = store.state.payJp
-        if (payjp === null) {
-          payjp = await createPayJp()
-          store.commit(SET_PAY_JP, payjp)
-        }
-        const elements = await payjp.elements()
-        if (elements === null) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: elements is null`
-          return
-        }
-        const px = convertRemToPx(1.25)
-        const styleObj = {
-          style: {
-            base: {
-              color: 'black',
-              fontSize: px.toString() + 'px'
-            },
-            invalid: {
-              color: 'red'
-            }
-          }
-        }
-
-        cardNumberElement = elements.create('cardNumber', styleObj)
-        if (cardNumberElement === null) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: cardNumberElement is null`
-          return
-        }
-
-        cardExpiryElement = elements.create('cardExpiry', styleObj)
-        if (cardExpiryElement === null) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: cardExpiryElement is null`
-          return
-        }
-
-        cardCvcElement = elements.create('cardCvc', styleObj)
-        if (cardCvcElement === null) {
-          error.exists = true
-          error.message = `${Message.UNEXPECTED_ERR}: cardCvcElement is null`
-          return
-        }
-
-        cardNumberElement.mount('#payjp-card-number-area')
-        cardExpiryElement.mount('#payjp-card-expiry-area')
-        cardCvcElement.mount('#payjp-card-cvc-area')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     })
 
-    onUnmounted(async () => {
-      cardNumberElement.unmount()
-      cardNumberElement = null
-      cardExpiryElement.unmount()
-      cardExpiryElement = null
-      cardCvcElement.unmount()
-      cardCvcElement = null
-    })
-
     const requestConsultation = async () => {
-      try {
-        disableBtn()
-
-        const payjp = store.state.payJp
-        if (payjp === null) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = `${Message.UNEXPECTED_ERR}: payjp is null`
-          return
-        }
-
-        if (!allCandidatesAreNotEmpty.value) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = `${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE}`
-          return
-        }
-        if (sameCandidatesExist.value) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = `${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE}`
-          return
-        }
-        if (!checkIfCandidateIsInValidRange(candidates.firstCandidateYearInJst, candidates.firstCandidateMonthInJst, candidates.firstCandidateDayInJst, candidates.firstCandidateHourInJst) ||
+      if (!allCandidatesAreNotEmpty.value) {
+        errorBelowBtn.exists = true
+        errorBelowBtn.message = `${Message.NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE}`
+        return
+      }
+      if (sameCandidatesExist.value) {
+        errorBelowBtn.exists = true
+        errorBelowBtn.message = `${Message.DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE}`
+        return
+      }
+      if (!checkIfCandidateIsInValidRange(candidates.firstCandidateYearInJst, candidates.firstCandidateMonthInJst, candidates.firstCandidateDayInJst, candidates.firstCandidateHourInJst) ||
           !checkIfCandidateIsInValidRange(candidates.secondCandidateYearInJst, candidates.secondCandidateMonthInJst, candidates.secondCandidateDayInJst, candidates.secondCandidateHourInJst) ||
           !checkIfCandidateIsInValidRange(candidates.thirdCandidateYearInJst, candidates.thirdCandidateMonthInJst, candidates.thirdCandidateDayInJst, candidates.thirdCandidateHourInJst)) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = `${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE}`
-          return
-        }
+        errorBelowBtn.exists = true
+        errorBelowBtn.message = `${Message.INVALID_CONSULTATION_DATE_TIME_MESSAGE}`
+        return
+      }
 
-        let token: string
-        try {
-          // 公式ドキュメントによると、createTokenにはcardNumber、cardExpiry、cardCvcのいずれか一つは渡せばいい
-          // ここではcardNumberを渡すように実装する
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const createTokenResp: any = await payjp.createToken(cardNumberElement)
-          if (createTokenResp.error) {
-            errorBelowBtn.exists = true
-            errorBelowBtn.message = createTokenResp.error.message
+      const req = {
+        consultant_id: parseInt(consultantId),
+        fee_per_hour_in_yen: feePerHourInYen.value,
+        first_candidate_in_jst: {
+          year: parseInt(candidates.firstCandidateYearInJst),
+          month: parseInt(candidates.firstCandidateMonthInJst),
+          day: parseInt(candidates.firstCandidateDayInJst),
+          hour: parseInt(candidates.firstCandidateHourInJst)
+        },
+        second_candidate_in_jst: {
+          year: parseInt(candidates.secondCandidateYearInJst),
+          month: parseInt(candidates.secondCandidateMonthInJst),
+          day: parseInt(candidates.secondCandidateDayInJst),
+          hour: parseInt(candidates.secondCandidateHourInJst)
+        },
+        third_candidate_in_jst: {
+          year: parseInt(candidates.thirdCandidateYearInJst),
+          month: parseInt(candidates.thirdCandidateMonthInJst),
+          day: parseInt(candidates.thirdCandidateDayInJst),
+          hour: parseInt(candidates.thirdCandidateHourInJst)
+        }
+      } as ConsultationRequest
+      try {
+        const response = await postRequestConsultationFunc(req)
+        if (!(response instanceof PostRequestConsultationResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            error.exists = true
+            error.message = `${Message.UNAUTHORIZED_ON_CONSULTATION_REQ_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`
+            return
+          } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
+            error.exists = true
+            error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CONSULTATION_REQ_OPERATION_MESSAGE} (${Code.NOT_TERMS_OF_USE_AGREED_YET})`
             return
           }
-          token = createTokenResp.id
-        } catch (e) {
-          errorBelowBtn.exists = true
-          errorBelowBtn.message = `failed to create token: ${e}`
-          return
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
         }
-
-        try {
-          beginRequestConsultation()
-          const req = {
-            consultant_id: parseInt(consultantId),
-            fee_per_hour_in_yen: feePerHourInYen.value,
-            card_token: token,
-            first_candidate_in_jst: {
-              year: parseInt(candidates.firstCandidateYearInJst),
-              month: parseInt(candidates.firstCandidateMonthInJst),
-              day: parseInt(candidates.firstCandidateDayInJst),
-              hour: parseInt(candidates.firstCandidateHourInJst)
-            },
-            second_candidate_in_jst: {
-              year: parseInt(candidates.secondCandidateYearInJst),
-              month: parseInt(candidates.secondCandidateMonthInJst),
-              day: parseInt(candidates.secondCandidateDayInJst),
-              hour: parseInt(candidates.secondCandidateHourInJst)
-            },
-            third_candidate_in_jst: {
-              year: parseInt(candidates.thirdCandidateYearInJst),
-              month: parseInt(candidates.thirdCandidateMonthInJst),
-              day: parseInt(candidates.thirdCandidateDayInJst),
-              hour: parseInt(candidates.thirdCandidateHourInJst)
-            }
-          } as ConsultationRequest
-          try {
-            const response = await postBeginRequestConsultation(req)
-            if (!(response instanceof PostBeginRequestConsultationResp)) {
-              if (!(response instanceof ApiErrorResp)) {
-                throw new Error(`unexpected result on getting request detail: ${response}`)
-              }
-              const code = response.getApiError().getCode()
-              if (code === Code.UNAUTHORIZED) {
-                error.exists = true
-                error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`
-                return
-              } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-                error.exists = true
-                error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} (${Code.NOT_TERMS_OF_USE_AGREED_YET})`
-                return
-              }
-              error.exists = true
-              error.message = createErrorMessage(response.getApiError().getCode())
-              return
-            }
-
-            try {
-              await payjp.openThreeDSecureDialog(response.getChargeId())
-            } catch (e) {
-              error.exists = true
-              error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-              return
-            }
-
-            try {
-              const finishRequestConsultation = {
-                charge_id: response.getChargeId()
-              } as FinishRequestConsultation
-              const resp = await postFinishRequestConsultation(finishRequestConsultation)
-              if (!(resp instanceof PostFinishRequestConsultationResp)) {
-                if (!(resp instanceof ApiErrorResp)) {
-                  throw new Error(`unexpected result on getting request detail: ${resp}`)
-                }
-                const code = resp.getApiError().getCode()
-                if (code === Code.UNAUTHORIZED) {
-                  error.exists = true
-                  error.message = `${Message.UNAUTHORIZED_ON_CARD_OPERATION_MESSAGE} (${Code.UNAUTHORIZED})`
-                  return
-                } else if (code === Code.NOT_TERMS_OF_USE_AGREED_YET) {
-                  error.exists = true
-                  error.message = `${Message.NOT_TERMS_OF_USE_AGREED_YET_ON_CARD_OPERATION_MESSAGE} (${Code.NOT_TERMS_OF_USE_AGREED_YET})`
-                  return
-                }
-                error.exists = true
-                error.message = createErrorMessage(resp.getApiError().getCode())
-                return
-              }
-              await router.push('/request-consultation-success')
-            } catch (e) {
-              error.exists = true
-              error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-            }
-          } catch (e) {
-            error.exists = true
-            error.message = `${Message.UNEXPECTED_ERR}: ${e}`
-          }
-        } finally {
-          finishRequestConsultation()
-        }
-      } finally {
-        enableBtn()
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -456,8 +297,7 @@ export default defineComponent({
       error,
       getFeePerHourInYenForApplicationDone,
       feePerHourInYen,
-      requestConsultationDone,
-      disabled,
+      postRequestConsultationDone,
       yearList,
       monthList,
       dayList,
