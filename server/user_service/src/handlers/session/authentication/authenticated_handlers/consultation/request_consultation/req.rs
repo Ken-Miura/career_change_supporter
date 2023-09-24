@@ -593,10 +593,111 @@ Email: {}",
 #[cfg(test)]
 mod tests {
 
-    // use common::payment_platform::customer::Card;
-    // use once_cell::sync::Lazy;
+    use super::*;
 
-    // use super::*;
+    #[test]
+    fn test_create_text_for_consultant_mail() {
+        let user_account_id = 1;
+        let consultation_req_id = 1;
+        let first_candidate = "2022年 11月 12日 7時00分";
+        let second_candidate = "2022年 11月 12日 23時00分";
+        let third_candidate = "2022年 11月 22日 7時00分";
+
+        let result = create_text_for_consultant_mail(
+            user_account_id,
+            consultation_req_id,
+            &(
+                first_candidate.to_string(),
+                second_candidate.to_string(),
+                third_candidate.to_string(),
+            ),
+        );
+
+        let expected = format!(
+            r"ユーザーID ({}) から相談申し込み（相談申し込み番号: {}）が届きました。相談者からの希望相談開始日時を下記に記載します。{}へログインし、相談受け付けのページから該当の申し込みの詳細を確認し、了承する、または拒否するをご選択下さい。
+
+希望相談開始日時
+  第一希望: {}
+  第二希望: {}
+  第三希望: {}
+
+各希望相談開始日時について、その日時の{}日前となると、その日時を選択して了承することができなくなりますのでご注意下さい。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+            user_account_id,
+            consultation_req_id,
+            WEB_SITE_NAME,
+            first_candidate,
+            second_candidate,
+            third_candidate,
+            *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
+            INQUIRY_EMAIL_ADDRESS.as_str()
+        );
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_create_text_for_user_mail() {
+        let consultant_id = 2;
+        let consultation_req_id = 13;
+        let fee_per_hour_in_yen = 5000;
+        let first_candidate = "2022年 11月 12日 7時00分";
+        let second_candidate = "2022年 11月 12日 23時00分";
+        let third_candidate = "2022年 11月 22日 7時00分";
+
+        let result = create_text_for_user_mail(
+            consultant_id,
+            consultation_req_id,
+            fee_per_hour_in_yen,
+            &(
+                first_candidate.to_string(),
+                second_candidate.to_string(),
+                third_candidate.to_string(),
+            ),
+        );
+
+        let expected = format!(
+            r"下記の内容で相談申し込み（相談申し込み番号: {}）を行いました。
+
+相談相手
+  コンサルタントID: {}
+
+相談料金
+  {} 円
+
+希望相談開始日時
+  第一希望: {}
+  第二希望: {}
+  第三希望: {}
+
+相談申し込みが拒否されていない限り、希望相談開始日時の{}日前までは、コンサルタントの相談申し込みに対する了承の可能性があります。相談申し込みが了承されたことを見逃さないために、各希望相談開始日時の{}日前には{}にログイン後、スケジュールのページをご確認下さい。
+
+本メールはシステムより自動配信されています。
+本メールに返信されましても、回答いたしかねます。
+お問い合わせは、下記のお問い合わせ先までご連絡くださいますようお願いいたします。
+
+【お問い合わせ先】
+Email: {}",
+            consultation_req_id,
+            consultant_id,
+            fee_per_hour_in_yen,
+            first_candidate,
+            second_candidate,
+            third_candidate,
+            *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
+            *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
+            WEB_SITE_NAME,
+            INQUIRY_EMAIL_ADDRESS.as_str()
+        );
+
+        assert_eq!(result, expected);
+    }
 
     // #[derive(Debug)]
     // struct TestCase {
