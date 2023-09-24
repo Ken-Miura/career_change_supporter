@@ -132,8 +132,6 @@ export namespace Message {
     export const ILLEGAL_CONSULTATION_HOUR_MESSAGE = '不正な相談開始時間です'
     export const INVALID_CONSULTATION_DATE_TIME_MESSAGE = '申し込み可能な相談開始日時の範囲外です'
     export const DUPLICATE_DATE_TIME_CANDIDATES_MESSAGE = '相談開始日時が重複しています'
-    export const THREE_D_SECURE_ERROR_MESSAGE = 'クレジットカードの処理時にエラーが発生しました。アカウントのメールアドレス、エラー発生時刻を記載し、問い合わせ先にご連絡下さい（決済処理は行われていません）'
-    export const EXCEED_MAX_ANNUAL_REWARDS_MESSAGE = '来年の１月１日までこのコンサルタントIDに対して相談を申し込むことは出来ません'
     export const NOT_ALL_CANDIDATES_ARE_INPUT_MESSAGE = '第一希望、第二希望、第三希望の相談開始日時すべてを指定した上でお申し込み下さい'
     export const REQUEST_CONSULTATION_SUCCESS_MESSAGE = '相談の申し込みを行いました。お申し込みされた内容を記載したメールを送りましたので、メールが届いているかご確認下さい'
     export const CARD_AUTH_PAYMENT_ERROR_MESSAGE = '相談申し込みに失敗しました。再度初めから相談申し込みを行って下さい'

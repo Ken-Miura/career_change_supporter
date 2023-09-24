@@ -159,7 +159,7 @@ import { getMinDurationBeforeConsultationInDays, getMaxDurationBeforeConsultatio
 import { useCandidate } from '@/util/personalized/request-consultation/useCandidate'
 import { ConsultationRequest } from '@/util/personalized/request-consultation/ConsultationRequest'
 import { checkIfCandidateIsInValidRange } from '@/util/personalized/request-consultation/CheckIfCandidateIsInValidRange'
-import { useRequestConsultation } from '@/util/personalized/request-consultation/useRequestConsultation'
+import { usePostRequestConsultation } from '@/util/personalized/request-consultation/usePostRequestConsultation'
 import { PostRequestConsultationResp } from '@/util/personalized/request-consultation/PostRequestConsultationResp'
 
 export default defineComponent({
@@ -194,7 +194,7 @@ export default defineComponent({
     const {
       postRequestConsultationDone,
       postRequestConsultationFunc
-    } = useRequestConsultation()
+    } = usePostRequestConsultation()
     const errorBelowBtn = reactive({
       exists: false,
       message: ''
@@ -286,6 +286,7 @@ export default defineComponent({
           error.exists = true
           error.message = createErrorMessage(response.getApiError().getCode())
         }
+        await router.push('/request-consultation-success')
       } catch (e) {
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`

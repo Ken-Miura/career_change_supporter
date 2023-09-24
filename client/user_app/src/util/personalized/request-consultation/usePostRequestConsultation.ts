@@ -3,7 +3,7 @@ import { ConsultationRequest } from './ConsultationRequest'
 import { postRequestConsultation } from './PostRequestConsultation'
 
 // eslint-disable-next-line
-export function useRequestConsultation () {
+export function usePostRequestConsultation () {
   const postRequestConsultationDone = ref(true)
   const postRequestConsultationFunc = async (consultationRequest: ConsultationRequest) => {
     try {
