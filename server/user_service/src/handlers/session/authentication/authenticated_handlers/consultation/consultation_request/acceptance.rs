@@ -1064,7 +1064,7 @@ mod tests {
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let user_account_id_of_consultant = 6895;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 1, 1, 23, 32, 21)
+            .with_ymd_and_hms(2022, 12, 22, 23, 32, 21)
             .unwrap();
         let consultation_req_id = 431;
         let picked_candidate = 1;

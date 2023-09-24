@@ -6,8 +6,6 @@ use common::payment_platform::{
 };
 use once_cell::sync::Lazy;
 
-pub(super) const PLATFORM_FEE_RATE_IN_PERCENTAGE: &str = "30.00";
-
 /// PAY.JPにアクセスするための情報を保持する変数
 pub(super) static ACCESS_INFO: Lazy<AccessInfo> = Lazy::new(|| {
     construct_access_info(

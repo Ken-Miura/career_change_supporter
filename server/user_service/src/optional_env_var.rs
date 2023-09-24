@@ -7,30 +7,13 @@ use std::env;
 
 use once_cell::sync::Lazy;
 
-const KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN: &str = "MAX_ANNUAL_REWARDS_IN_YEN";
-/// 年間で稼ぐことが可能な最大報酬額（単位：円）
-pub(super) static MAX_ANNUAL_REWARDS_IN_YEN: Lazy<i32> = Lazy::new(|| {
-    let max_annual_rewards =
-        env::var(KEY_TO_MAX_ANNUAL_REWARDS_IN_YEN).unwrap_or_else(|_| "200000".to_string());
-    let max_annual_rewards = max_annual_rewards
-        .parse()
-        .expect("failed to parse MAX_ANNUAL_REWARDS_IN_YEN");
-    if max_annual_rewards <= 0 {
-        panic!(
-            "MAX_ANNUAL_REWARDS_IN_YEN must be positive: {}",
-            max_annual_rewards
-        );
-    }
-    max_annual_rewards
-});
-
 const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: &str =
     "MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS";
 /// 相談者が相談依頼を行った日時を起点とし、相談開始日時までの秒単位での最小期間
 pub(super) static MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy::new(|| {
     let min_duration_in_seconds = env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
         .unwrap_or_else(|_| {
-            "259200".to_string() // 3 days
+            "864000".to_string() // 10 days
         });
     let min_duration_in_seconds = min_duration_in_seconds
         .parse()
@@ -68,33 +51,6 @@ pub(super) static MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS: Lazy<i64> = Lazy:
     max_duration_in_seconds
 });
 
-const KEY_TO_EXPIRY_DAYS_OF_CHARGE: &str = "EXPIRY_DAYS_OF_CHARGE";
-/// 相談者が相談依頼を行った日時を起点とし、決済の認証が切れるまでの有効期限（単位：日）
-pub(super) static EXPIRY_DAYS_OF_CHARGE: Lazy<u32> = Lazy::new(|| {
-    let expiry_days_of_charge =
-        env::var(KEY_TO_EXPIRY_DAYS_OF_CHARGE).unwrap_or_else(|_| "59".to_string());
-    let expiry_days_of_charge = expiry_days_of_charge
-        .parse()
-        .expect("failed to parse EXPIRY_DAYS_OF_CHARGE");
-    // https://pay.jp/docs/api/#%E6%94%AF%E6%89%95%E3%81%84%E3%82%92%E4%BD%9C%E6%88%90
-    // APIドキュメントでは60まで許容されているが、60を指定したときの挙動が奇妙なので59までしか使わないようにする
-    if !(1..=59).contains(&expiry_days_of_charge) {
-        panic!(
-            "EXPIRY_DAYS_OF_CHARGE ({}) must be between 1 and 59",
-            expiry_days_of_charge
-        );
-    };
-    let expiry_days_of_charge_in_seconds = expiry_days_of_charge as i64 * 24 * 60 * 60;
-    // TODO: 相談終了後、相談者が相談相手の評価をせず、自動決済の対象となる期間も考慮した制約として書き直す。
-    if expiry_days_of_charge_in_seconds < *MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS {
-        panic!(
-            "EXPIRY_DAYS_OF_CHARGE in seconds ({}) must be MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS ({}) or more",
-            expiry_days_of_charge, *MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS
-        );
-    };
-    expiry_days_of_charge
-});
-
 const KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: &str =
     "MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS";
 /// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：秒）
@@ -103,7 +59,7 @@ pub(super) static MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: Lazy<u
         let min_duration_in_hour =
             env::var(KEY_TO_MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS).unwrap_or_else(
                 |_| common::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS.to_string(),
-            ); // 6時間
+            ); // 7日間
         min_duration_in_hour
             .parse()
             .expect("failed to parse MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS")

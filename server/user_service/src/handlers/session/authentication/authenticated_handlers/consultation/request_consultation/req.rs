@@ -31,8 +31,8 @@ static CONSULTANT_MAIL_SUBJECT: Lazy<String> =
 static USER_ACCOUNT_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み完了通知", WEB_SITE_NAME));
 
-static MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
-    Lazy::new(|| *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS / 3600);
+static MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE: Lazy<u32> =
+    Lazy::new(|| *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS / (24 * 60 * 60));
 
 pub(crate) async fn post_request_consultation(
     VerifiedUser { user_info }: VerifiedUser,
@@ -504,7 +504,7 @@ fn create_text_for_consultant_mail(
   第二希望: {}
   第三希望: {}
 
-各希望相談開始日時について、その日時の{}時間前となると、その日時を選択して了承することができなくなりますのでご注意下さい。
+各希望相談開始日時について、その日時の{}日前となると、その日時を選択して了承することができなくなりますのでご注意下さい。
 
 本メールはシステムより自動配信されています。
 本メールに返信されましても、回答いたしかねます。
@@ -518,7 +518,7 @@ Email: {}",
         candidates.0,
         candidates.1,
         candidates.2,
-        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
         INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
@@ -569,7 +569,7 @@ fn create_text_for_user_mail(
   第二希望: {}
   第三希望: {}
 
-相談申し込みが拒否されていない限り、希望相談開始日時の{}時間前までは、コンサルタントの相談申し込みに対する了承の可能性があります。相談申し込みが了承されたことを見逃さないために、各希望相談開始日時の{}時間前には{}にログイン後、スケジュールのページをご確認下さい。
+相談申し込みが拒否されていない限り、希望相談開始日時の{}日前までは、コンサルタントの相談申し込みに対する了承の可能性があります。相談申し込みが了承されたことを見逃さないために、各希望相談開始日時の{}日前には{}にログイン後、スケジュールのページをご確認下さい。
 
 本メールはシステムより自動配信されています。
 本メールに返信されましても、回答いたしかねます。
@@ -583,8 +583,8 @@ Email: {}",
         candidates.0,
         candidates.1,
         candidates.2,
-        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
-        *MIN_DURATION_IN_HOURS_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
+        *MIN_DURATION_IN_DAYS_BEFORE_CONSULTATION_ACCEPTANCE,
         WEB_SITE_NAME,
         INQUIRY_EMAIL_ADDRESS.as_str()
     )

@@ -898,7 +898,7 @@ mod tests {
     #[tokio::test]
     async fn delete_expired_consultation_reqs_fail1() {
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
+            .with_ymd_and_hms(2023, 8, 20, 14, 0, 00)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredConsultationReqsOperationMock {
@@ -971,7 +971,7 @@ mod tests {
     #[tokio::test]
     async fn delete_expired_consultation_reqs_fail2() {
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
+            .with_ymd_and_hms(2023, 8, 20, 14, 0, 00)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredConsultationReqsOperationMock {
@@ -1078,7 +1078,7 @@ mod tests {
     #[tokio::test]
     async fn delete_expired_consultation_reqs_fail3() {
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 8, 27, 8, 0, 00)
+            .with_ymd_and_hms(2023, 8, 20, 14, 0, 00)
             .unwrap();
         let max_num_of_target_records = 0;
         let op = DeleteExpiredConsultationReqsOperationMock {

@@ -221,7 +221,7 @@ pub const LENGTH_OF_MEETING_IN_MINUTE: u32 = 60;
 pub const NEWS_RETRIEVAL_CRITERIA_IN_DAYS: i64 = 180;
 
 /// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：秒）
-pub const MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: u32 = 21600;
+pub const MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: u32 = 604800;
 
 // TODO: リリース前に値を調整する
 /// パスワード、パスコードをハッシュ化する際のストレッチング回数（ストレッチングが2^[BCRYPT_COST]回実行される) <br>

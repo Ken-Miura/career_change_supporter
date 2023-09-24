@@ -110,8 +110,6 @@ pub(crate) enum Code {
     IllegalConsultationHour = 20101,
     InvalidConsultationDateTime = 20102,
     DuplicateDateTimeCandidates = 20103,
-    ThreeDSecureError = 20104,
-    ExceedMaxAnnualRewards = 20105,
     CardAuthPaymentError = 20106,
     PayJpCodeIncorrectCardData = 20107,
     PayJpCodeCardDeclined = 20108,

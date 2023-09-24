@@ -10,7 +10,6 @@ pub(crate) mod mfs_setting;
 mod payment_platform;
 pub(crate) mod personal_info;
 pub(crate) mod refresh;
-mod rewards_info;
 pub(crate) mod terms_of_use;
 
 #[cfg(test)]
