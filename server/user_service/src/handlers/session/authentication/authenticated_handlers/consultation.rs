@@ -68,7 +68,6 @@ struct ConsultationRequest {
     first_candidate_date_time_in_jst: DateTime<FixedOffset>,
     second_candidate_date_time_in_jst: DateTime<FixedOffset>,
     third_candidate_date_time_in_jst: DateTime<FixedOffset>,
-    charge_id: String,
     latest_candidate_date_time_in_jst: DateTime<FixedOffset>,
 }
 
@@ -103,7 +102,6 @@ async fn find_consultation_req_by_consultation_req_id(
         third_candidate_date_time_in_jst: m
             .third_candidate_date_time
             .with_timezone(&(*JAPANESE_TIME_ZONE)),
-        charge_id: m.charge_id,
         latest_candidate_date_time_in_jst: m
             .latest_candidate_date_time
             .with_timezone(&(*JAPANESE_TIME_ZONE)),

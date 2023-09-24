@@ -1,4 +1,5 @@
 // Copyright 2022 Ken Miura
+// TODO: 後で全体修正
 
 use axum::async_trait;
 use axum::http::StatusCode;
@@ -466,7 +467,7 @@ async fn create_consultation(
     };
     let result = active_model.insert(txn).await.map_err(|e| {
         error!("failed to insert consultation (user_account_id: {}, consultant_id: {}, meeting_at: {}, room_name: {}, charge_id: {}): {}", 
-            req.user_account_id, req.consultant_id, meeting_date_time, room_name, req.charge_id, e);
+            req.user_account_id, req.consultant_id, meeting_date_time, room_name, "charge_id", e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -504,10 +505,12 @@ async fn create_settlement(
     let active_model = settlement::ActiveModel {
         settlement_id: NotSet,
         consultation_id: Set(consultation_id),
-        charge_id: Set(req.charge_id.clone()),
+        charge_id: Set("req.charge_id.clone()".to_string()),
         fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(req.platform_fee_rate_in_percentage.clone()),
-        credit_facilities_expired_at: Set(req.credit_facilities_expired_at),
+        platform_fee_rate_in_percentage: Set(
+            "req.platform_fee_rate_in_percentage.clone()".to_string()
+        ),
+        credit_facilities_expired_at: Set(chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE)),
     };
     let _ = active_model.insert(txn).await.map_err(|e| {
         error!(
@@ -1094,7 +1097,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1143,7 +1145,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1192,7 +1193,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1241,7 +1241,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1290,7 +1289,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1343,7 +1341,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1396,7 +1393,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 22, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1449,7 +1445,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1502,7 +1497,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1551,7 +1545,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1605,7 +1598,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1659,7 +1651,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1713,7 +1704,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1767,7 +1757,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1821,7 +1810,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1875,7 +1863,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -1932,7 +1919,6 @@ mod tests {
                                     ),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
                                         *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
@@ -1995,7 +1981,6 @@ mod tests {
                                     ),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 4, 23, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 3, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 7, 0, 0).unwrap()
                                     + Duration::seconds(
                                         *MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS as i64,
@@ -2055,7 +2040,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: None,
@@ -2104,7 +2088,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2158,7 +2141,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2212,7 +2194,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2266,7 +2247,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2320,7 +2300,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2378,7 +2357,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2436,7 +2414,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2494,7 +2471,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2552,7 +2528,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 19, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {
@@ -2610,7 +2585,6 @@ mod tests {
                                 first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 5, 23, 0, 0).unwrap(),
                                 second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 6, 15, 0, 0).unwrap(),
                                 third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
-                                charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
                                 latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2023, 1, 7, 7, 0, 0).unwrap(),
                             },
                             user: Some(UserInfo {

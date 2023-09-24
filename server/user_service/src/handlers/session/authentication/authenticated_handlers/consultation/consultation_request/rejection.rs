@@ -1,4 +1,5 @@
 // Copyright 2022 Ken Miura
+// TODO: 後で全体修正
 
 use async_session::log::warn;
 use axum::async_trait;
@@ -65,13 +66,13 @@ async fn handle_consultation_request_rejection(
 
     op.delete_consultation_req(req.consultation_req_id).await?;
 
-    let result = op.release_credit_facility(req.charge_id.as_str()).await;
+    let result = op.release_credit_facility("req.charge_id.as_str()").await;
     // 与信枠は[EXPIRY_DAYS_OF_CHARGE]日後に自動的に開放されるので、失敗しても大きな問題にはならない
     // 従って失敗した場合でもログに記録するだけで処理は先に進める
     if result.is_err() {
         warn!(
             "failed to release credit facility (charge_id: {}, consultation request: {:?}, result: {:?})",
-            req.charge_id.as_str(), req, result
+            "req.charge_id.as_str()", req, result
         );
     };
 
@@ -536,7 +537,6 @@ mod tests {
             third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2022, 12, 3, 11, 0, 0)
                 .unwrap(),
-            charge_id: "ch_fa990a4c10672a93053a774730b0a".to_string(),
             latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
                 .with_ymd_and_hms(2022, 12, 3, 11, 0, 0)
                 .unwrap(),
