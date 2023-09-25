@@ -285,6 +285,7 @@ export default defineComponent({
           }
           error.exists = true
           error.message = createErrorMessage(response.getApiError().getCode())
+          return
         }
         await router.push('/request-consultation-success')
       } catch (e) {

@@ -1,4 +1,4 @@
-const MIN_DURATION_BEFORE_CONSULTATION_IN_DAYS = 10
+const MIN_DURATION_BEFORE_CONSULTATION_IN_DAYS = 3
 const MAX_DURATION_BEFORE_CONSULTATION_IN_HOUR = 21
 
 export function getMinDurationBeforeConsultationInDays (): number {
