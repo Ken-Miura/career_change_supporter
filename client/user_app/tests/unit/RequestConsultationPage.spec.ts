@@ -316,7 +316,7 @@ describe('RequestConsultationPage.vue', () => {
     const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
     await secondCandidateMonth.setValue('11')
     const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
-    await secondCandidateDay.setValue('4')
+    await secondCandidateDay.setValue('11')
     const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
     await secondCandidateHour.setValue('7')
 
@@ -325,7 +325,7 @@ describe('RequestConsultationPage.vue', () => {
     const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
     await thirdCandidateMonth.setValue('11')
     const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
-    await thirdCandidateDay.setValue('4')
+    await thirdCandidateDay.setValue('14')
     // 必須入力項目の内、一つだけ空のままとする
     const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
     await thirdCandidateHour.setValue('')
@@ -361,7 +361,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('14')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -370,7 +370,7 @@ describe('RequestConsultationPage.vue', () => {
     const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
     await secondCandidateMonth.setValue('11')
     const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
-    await secondCandidateDay.setValue('4')
+    await secondCandidateDay.setValue('14')
     const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
     await secondCandidateHour.setValue('7')
 
@@ -379,7 +379,7 @@ describe('RequestConsultationPage.vue', () => {
     const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
     await thirdCandidateMonth.setValue('11')
     const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
-    await thirdCandidateDay.setValue('4')
+    await thirdCandidateDay.setValue('14')
     const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
     await thirdCandidateHour.setValue('7')
 
@@ -432,7 +432,7 @@ describe('RequestConsultationPage.vue', () => {
     const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
     await thirdCandidateMonth.setValue('11')
     const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
-    await thirdCandidateDay.setValue('4')
+    await thirdCandidateDay.setValue('14')
     const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
     await thirdCandidateHour.setValue('23')
 
@@ -476,7 +476,7 @@ describe('RequestConsultationPage.vue', () => {
     const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
     await secondCandidateMonth.setValue('11')
     const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
-    await secondCandidateDay.setValue('4')
+    await secondCandidateDay.setValue('14')
     const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
     await secondCandidateHour.setValue('7')
 
@@ -485,7 +485,7 @@ describe('RequestConsultationPage.vue', () => {
     const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
     await thirdCandidateMonth.setValue('11')
     const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
-    await thirdCandidateDay.setValue('4')
+    await thirdCandidateDay.setValue('14')
     const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
     await thirdCandidateHour.setValue('7')
 
@@ -529,7 +529,7 @@ describe('RequestConsultationPage.vue', () => {
     const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
     await secondCandidateMonth.setValue('11')
     const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
-    await secondCandidateDay.setValue('4')
+    await secondCandidateDay.setValue('11')
     const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
     await secondCandidateHour.setValue('7')
 
@@ -580,7 +580,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -640,7 +640,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -700,7 +700,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -760,7 +760,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -769,7 +769,7 @@ describe('RequestConsultationPage.vue', () => {
     const secondCandidateMonth = wrapper.find('[data-test="second-candidate-month"]')
     await secondCandidateMonth.setValue('11')
     const secondCandidateDay = wrapper.find('[data-test="second-candidate-day"]')
-    await secondCandidateDay.setValue('3')
+    await secondCandidateDay.setValue('13')
     const secondCandidateHour = wrapper.find('[data-test="second-candidate-hour"]')
     await secondCandidateHour.setValue('7')
 
@@ -778,7 +778,7 @@ describe('RequestConsultationPage.vue', () => {
     const thirdCandidateMonth = wrapper.find('[data-test="third-candidate-month"]')
     await thirdCandidateMonth.setValue('11')
     const thirdCandidateDay = wrapper.find('[data-test="third-candidate-day"]')
-    await thirdCandidateDay.setValue('2')
+    await thirdCandidateDay.setValue('20')
     const thirdCandidateHour = wrapper.find('[data-test="third-candidate-hour"]')
     await thirdCandidateHour.setValue('7')
 
@@ -816,7 +816,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -872,7 +872,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -928,7 +928,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -984,7 +984,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1042,7 +1042,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1100,7 +1100,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1158,7 +1158,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1216,7 +1216,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1274,7 +1274,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1332,7 +1332,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1388,7 +1388,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
@@ -1444,7 +1444,7 @@ describe('RequestConsultationPage.vue', () => {
     const firstCandidateMonth = wrapper.find('[data-test="first-candidate-month"]')
     await firstCandidateMonth.setValue('11')
     const firstCandidateDay = wrapper.find('[data-test="first-candidate-day"]')
-    await firstCandidateDay.setValue('4')
+    await firstCandidateDay.setValue('11')
     const firstCandidateHour = wrapper.find('[data-test="first-candidate-hour"]')
     await firstCandidateHour.setValue('7')
 
