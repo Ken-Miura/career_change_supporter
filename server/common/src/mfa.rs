@@ -72,7 +72,7 @@ pub fn generate_base64_encoded_qr_code(
     issuer: &str,
 ) -> Result<String, ErrResp> {
     let totp = create_totp(account_id, base32_encoded_secret, issuer)?;
-    let qr_code = totp.get_qr().map_err(|e| {
+    let qr_code = totp.get_qr_base64().map_err(|e| {
         error!("failed to create QR code (base64 encoded png img): {}", e);
         (
             StatusCode::INTERNAL_SERVER_ERROR,
