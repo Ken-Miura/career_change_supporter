@@ -2,7 +2,8 @@
 
 use std::{error::Error, fmt::Display};
 
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, Timelike};
+use tracing::error;
 
 use crate::{
     handlers::session::authentication::authenticated_handlers::consultation::ConsultationDateTime,
@@ -48,7 +49,7 @@ pub(super) fn validate_consultation_date_time(
     }
 
     let timezone = current_date_time.offset();
-    let consultation_date_time = DateTime::<FixedOffset>::from_local(date_time, *timezone);
+    let consultation_date_time = convert_to_date_time_with_tz(&date_time, timezone)?;
     let duration = consultation_date_time - *current_date_time;
     if !(*MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS
         ..=*MAX_DURATION_BEFORE_CONSULTATION_IN_SECONDS)
@@ -62,6 +63,36 @@ pub(super) fn validate_consultation_date_time(
         );
     }
     Ok(())
+}
+
+fn convert_to_date_time_with_tz(
+    date_time: &NaiveDateTime,
+    timezone: &FixedOffset,
+) -> Result<DateTime<FixedOffset>, ConsultationDateTimeValidationError> {
+    let date_time_with_tz = match date_time.and_local_timezone(*timezone) {
+        chrono::LocalResult::None => {
+            return Err(ConsultationDateTimeValidationError::IllegalDateTime {
+                year: date_time.year(),
+                month: date_time.month(),
+                day: date_time.day(),
+                hour: date_time.hour(),
+            });
+        }
+        chrono::LocalResult::Single(s) => s,
+        chrono::LocalResult::Ambiguous(a1, a2) => {
+            error!(
+                "failed to convert to date time with time zone({} or {})",
+                a1, a2
+            );
+            return Err(ConsultationDateTimeValidationError::IllegalDateTime {
+                year: date_time.year(),
+                month: date_time.month(),
+                day: date_time.day(),
+                hour: date_time.hour(),
+            });
+        }
+    };
+    Ok(date_time_with_tz)
 }
 
 /// Error related to [validate_consultation_date_time()]
@@ -143,13 +174,12 @@ mod tests {
                         day: 29,
                         hour: 7,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(7, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(7, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Ok(()),
             },
@@ -162,13 +192,12 @@ mod tests {
                         day: 22,
                         hour: 23,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 1)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(23, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 1)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(23, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Ok(()),
             },
@@ -181,13 +210,12 @@ mod tests {
                         day: 31,
                         hour: 23,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(23, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(23, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(ConsultationDateTimeValidationError::IllegalDateTime {
                     year: 2022,
@@ -205,13 +233,12 @@ mod tests {
                         day: 30,
                         hour: 24,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(23, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(23, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(ConsultationDateTimeValidationError::IllegalDateTime {
                     year: 2022,
@@ -229,13 +256,12 @@ mod tests {
                         day: 30,
                         hour: 6,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(23, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(23, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(
                     ConsultationDateTimeValidationError::IllegalConsultationHour { hour: 6 },
@@ -250,13 +276,12 @@ mod tests {
                         day: 30,
                         hour: 0,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(23, 0, 0)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(23, 0, 0)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(
                     ConsultationDateTimeValidationError::IllegalConsultationHour { hour: 0 },
@@ -271,30 +296,27 @@ mod tests {
                         day: 29,
                         hour: 7,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 19)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(7, 0, 1)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(7, 0, 1)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(
                     ConsultationDateTimeValidationError::InvalidConsultationDateTime {
-                        consultation_date_time: DateTime::<FixedOffset>::from_local(
-                            NaiveDate::from_ymd_opt(2022, 9, 29)
-                                .expect("failed to get NaiveDate")
-                                .and_hms_opt(7, 0, 0)
-                                .expect("failed to get NaiveDate"),
-                            *JAPANESE_TIME_ZONE,
-                        ),
-                        current_date_time: DateTime::<FixedOffset>::from_local(
-                            NaiveDate::from_ymd_opt(2022, 9, 19)
-                                .expect("failed to get NaiveDate")
-                                .and_hms_opt(7, 0, 1)
-                                .expect("failed to get NaiveDate"),
-                            *JAPANESE_TIME_ZONE,
-                        ),
+                        consultation_date_time: NaiveDate::from_ymd_opt(2022, 9, 29)
+                            .expect("failed to get NaiveDate")
+                            .and_hms_opt(7, 0, 0)
+                            .expect("failed to get NaiveDate")
+                            .and_local_timezone(*JAPANESE_TIME_ZONE)
+                            .unwrap(),
+                        current_date_time: NaiveDate::from_ymd_opt(2022, 9, 19)
+                            .expect("failed to get NaiveDate")
+                            .and_hms_opt(7, 0, 1)
+                            .expect("failed to get NaiveDate")
+                            .and_local_timezone(*JAPANESE_TIME_ZONE)
+                            .unwrap(),
                     },
                 ),
             },
@@ -307,30 +329,27 @@ mod tests {
                         day: 22,
                         hour: 23,
                     },
-                    current_date_time: DateTime::<FixedOffset>::from_local(
-                        NaiveDate::from_ymd_opt(2022, 9, 1)
-                            .expect("failed to get NaiveDate")
-                            .and_hms_opt(22, 59, 59)
-                            .expect("failed to get NaiveDate"),
-                        *JAPANESE_TIME_ZONE,
-                    ),
+                    current_date_time: NaiveDate::from_ymd_opt(2022, 9, 1)
+                        .expect("failed to get NaiveDate")
+                        .and_hms_opt(22, 59, 59)
+                        .expect("failed to get NaiveDate")
+                        .and_local_timezone(*JAPANESE_TIME_ZONE)
+                        .unwrap(),
                 },
                 expected: Err(
                     ConsultationDateTimeValidationError::InvalidConsultationDateTime {
-                        consultation_date_time: DateTime::<FixedOffset>::from_local(
-                            NaiveDate::from_ymd_opt(2022, 9, 22)
-                                .expect("failed to get NaiveDate")
-                                .and_hms_opt(23, 0, 0)
-                                .expect("failed to get NaiveDate"),
-                            *JAPANESE_TIME_ZONE,
-                        ),
-                        current_date_time: DateTime::<FixedOffset>::from_local(
-                            NaiveDate::from_ymd_opt(2022, 9, 1)
-                                .expect("failed to get NaiveDate")
-                                .and_hms_opt(22, 59, 59)
-                                .expect("failed to get NaiveDate"),
-                            *JAPANESE_TIME_ZONE,
-                        ),
+                        consultation_date_time: NaiveDate::from_ymd_opt(2022, 9, 22)
+                            .expect("failed to get NaiveDate")
+                            .and_hms_opt(23, 0, 0)
+                            .expect("failed to get NaiveDate")
+                            .and_local_timezone(*JAPANESE_TIME_ZONE)
+                            .unwrap(),
+                        current_date_time: NaiveDate::from_ymd_opt(2022, 9, 1)
+                            .expect("failed to get NaiveDate")
+                            .and_hms_opt(22, 59, 59)
+                            .expect("failed to get NaiveDate")
+                            .and_local_timezone(*JAPANESE_TIME_ZONE)
+                            .unwrap(),
                     },
                 ),
             },

@@ -10,7 +10,7 @@ async-fred-session = "0.1.5"
 async-session = "3.0.0"
 axum = { version = "0.6.20", features = ["headers", "json", "multipart"] }
 axum-extra = { version = "0.8.0", features = ["cookie", "cookie-signed"] }
-chrono = "0.4.26"
+chrono = "0.4.31"
 common = { path = "../common" }
 dotenv = "0.15.0"
 entity = { path = "../entity" }
