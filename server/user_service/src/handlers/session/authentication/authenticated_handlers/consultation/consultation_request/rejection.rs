@@ -1,11 +1,8 @@
 // Copyright 2022 Ken Miura
-// TODO: 後で全体修正
 
-use async_session::log::warn;
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl, RefundQuery};
 use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
 use common::{ApiError, ErrResp, RespResult, WEB_SITE_NAME};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
@@ -16,7 +13,6 @@ use tracing::{error, info};
 
 use super::validate_consultation_req_id_is_positive;
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
     consultation_req_exists, ConsultationRequest,
@@ -66,16 +62,6 @@ async fn handle_consultation_request_rejection(
 
     op.delete_consultation_req(req.consultation_req_id).await?;
 
-    let result = op.release_credit_facility("req.charge_id.as_str()").await;
-    // 与信枠は[EXPIRY_DAYS_OF_CHARGE]日後に自動的に開放されるので、失敗しても大きな問題にはならない
-    // 従って失敗した場合でもログに記録するだけで処理は先に進める
-    if result.is_err() {
-        warn!(
-            "failed to release credit facility (charge_id: {}, consultation request: {:?}, result: {:?})",
-            "req.charge_id.as_str()", req, result
-        );
-    };
-
     send_consultation_req_rejection_mail_if_user_exists(
         req.user_account_id,
         req.consultation_req_id,
@@ -94,12 +80,9 @@ trait ConsultationRequestRejection {
         &self,
         consultation_req_id: i64,
     ) -> Result<Option<ConsultationRequest>, ErrResp>;
+
     async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp>;
-    /// 与信枠を開放する（＋支払いの確定を出来なくする）
-    async fn release_credit_facility(
-        &self,
-        charge_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>>;
+
     async fn find_user_email_address_by_user_account_id(
         &self,
         user_account_id: i64,
@@ -131,21 +114,6 @@ impl ConsultationRequestRejection for ConsultationRequestRejectionImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(())
-    }
-
-    async fn release_credit_facility(
-        &self,
-        charge_id: &str,
-    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-        let refund_reason =
-            "credit_facility_was_released_because_consultant_rejected_consultation_request"
-                .to_string();
-        let query = RefundQuery::new(refund_reason).map_err(Box::new)?;
-        // ここで実施していることは、返金ではなく与信枠の開放のため、refundテーブルへのレコード作成は行わない
-        // 実施していることが与信枠開放にも関わらず、refundというAPI名なのは、PAYJPが提供しているAPIと合わせているため
-        let _ = charge_op.refund(charge_id, query).await.map_err(Box::new)?;
         Ok(())
     }
 
@@ -216,7 +184,7 @@ async fn send_consultation_req_rejection_mail_if_user_exists(
 fn create_text(consultation_req_id: i64) -> String {
     // TODO: 文面の調整
     format!(
-        r"相談申し込み（相談申し込み番号: {}）が拒否されました（相談申し込みが拒否されたため、相談料金の支払いは発生しません）
+        r"相談申し込み（相談申し込み番号: {}）が拒否されました。
         
 【お問い合わせ先】
 Email: {}",
@@ -229,10 +197,7 @@ Email: {}",
 mod tests {
 
     use chrono::TimeZone;
-    use common::{
-        payment_platform::{ErrorDetail, ErrorInfo},
-        JAPANESE_TIME_ZONE,
-    };
+    use common::JAPANESE_TIME_ZONE;
 
     use crate::handlers::tests::SendMailMock;
 
@@ -257,7 +222,6 @@ mod tests {
     struct ConsultationRequestRejectionMock {
         consultation_req_id: i64,
         consultation_req: Option<ConsultationRequest>,
-        too_many_requests: bool,
         user_account_id: i64,
         user_email_address: Option<String>,
     }
@@ -277,27 +241,6 @@ mod tests {
 
         async fn delete_consultation_req(&self, consultation_req_id: i64) -> Result<(), ErrResp> {
             assert_eq!(self.consultation_req_id, consultation_req_id);
-            Ok(())
-        }
-
-        async fn release_credit_facility(
-            &self,
-            _charge_id: &str,
-        ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            if self.too_many_requests {
-                let err_info = Box::new(ErrorInfo {
-                    error: ErrorDetail {
-                        message: "test_message".to_string(),
-                        status: StatusCode::TOO_MANY_REQUESTS.as_u16() as u32,
-                        r#type: "test_type".to_string(),
-                        code: None,
-                        param: None,
-                        charge: None,
-                    },
-                });
-                let api_err = common::payment_platform::Error::ApiError(err_info);
-                return Err(Box::new(api_err));
-            }
             Ok(())
         }
 
@@ -330,28 +273,6 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
-                        too_many_requests: false,
-                        user_account_id: account_id_of_user,
-                        user_email_address: Some(user_email_address.clone()),
-                    },
-                    smtp_client: SendMailMock::new(
-                        user_email_address.clone(),
-                        SYSTEM_EMAIL_ADDRESS.to_string(),
-                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-                        mail_text.clone(),
-                    ),
-                },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
-            },
-            TestCase {
-                name: "success case (fail release_credit_facility)".to_string(),
-                input: Input {
-                    consultant_id: account_id_of_consultant,
-                    consultation_req_id,
-                    op: ConsultationRequestRejectionMock {
-                        consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req.clone()),
-                        too_many_requests: true,
                         user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
@@ -372,29 +293,6 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
-                        too_many_requests: false,
-                        user_account_id: account_id_of_user,
-                        user_email_address: None,
-                    },
-                    smtp_client: SendMailMock::new(
-                        user_email_address.clone(),
-                        SYSTEM_EMAIL_ADDRESS.to_string(),
-                        CONSULTATION_REQ_REJECTION_MAIL_SUBJECT.to_string(),
-                        mail_text.clone(),
-                    ),
-                },
-                expected: Ok((StatusCode::OK, Json(ConsultationRequestRejectionResult {}))),
-            },
-            TestCase {
-                name: "success case (fail release_credit_facility and no user email address found)"
-                    .to_string(),
-                input: Input {
-                    consultant_id: account_id_of_consultant,
-                    consultation_req_id,
-                    op: ConsultationRequestRejectionMock {
-                        consultation_req_id,
-                        consultation_req: Some(dummy_consultation_req.clone()),
-                        too_many_requests: true,
                         user_account_id: account_id_of_user,
                         user_email_address: None,
                     },
@@ -415,7 +313,6 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req.clone()),
-                        too_many_requests: false,
                         user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
@@ -441,7 +338,6 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: Some(dummy_consultation_req),
-                        too_many_requests: false,
                         user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
@@ -467,7 +363,6 @@ mod tests {
                     op: ConsultationRequestRejectionMock {
                         consultation_req_id,
                         consultation_req: None,
-                        too_many_requests: false,
                         user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
@@ -497,7 +392,6 @@ mod tests {
                             account_id_of_consultant + 1,
                             account_id_of_user,
                         )),
-                        too_many_requests: false,
                         user_account_id: account_id_of_user,
                         user_email_address: Some(user_email_address.clone()),
                     },
