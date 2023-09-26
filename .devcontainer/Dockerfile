@@ -40,7 +40,7 @@ WORKDIR ${HOME}/workspace
 RUN export RUST_VERSION=1.70.0 && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ENV PATH=${PATH}:${HOME}/.cargo/bin
-RUN export SEA_ORM_CLI_VERSION=0.12.2 && \
+RUN export SEA_ORM_CLI_VERSION=0.12.3 && \
     cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
 
 RUN export NVM_VERSION=0.39.3 && \
@@ -145,7 +145,7 @@ FROM --platform=linux/amd64 rust:1.70.0-alpine as migration-tool
 RUN apk add --update build-base pkgconfig openssl-dev && \
         rm -rf /var/cache/apk/*
 WORKDIR /workspace
-RUN export SEA_ORM_CLI_VERSION=0.12.2 && \
+RUN export SEA_ORM_CLI_VERSION=0.12.3 && \
     cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
