@@ -34,6 +34,66 @@ use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECO
 static CONSULTATION_REQ_ACCEPTANCE_MAIL_SUBJECT: Lazy<String> =
     Lazy::new(|| format!("[{}] 相談申し込み成立通知", WEB_SITE_NAME));
 
+pub(crate) const KEY_TO_BANK_CODE: &str = "BANK_CODE";
+/// 収納代行として相談料金を預かる口座の銀行コード
+static BANK_CODE: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_CODE).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "xxxx".to_string()
+    })
+});
+
+pub(crate) const KEY_TO_BANK_NAME: &str = "BANK_NAME";
+/// 収納代行として相談料金を預かる口座の銀行名
+static BANK_NAME: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_NAME).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "XYZ銀行".to_string()
+    })
+});
+
+pub(crate) const KEY_TO_BANK_BRANCH_CODE: &str = "BANK_BRANCH_CODE";
+/// 収納代行として相談料金を預かる口座の銀行支店コード
+static BANK_BRANCH_CODE: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_BRANCH_CODE).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "yyy".to_string()
+    })
+});
+
+pub(crate) const KEY_TO_BANK_BRANCH_NAME: &str = "BANK_BRANCH_NAME";
+/// 収納代行として相談料金を預かる口座の銀行支店名
+static BANK_BRANCH_NAME: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_BRANCH_NAME).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "ABC支店".to_string()
+    })
+});
+
+pub(crate) const KEY_TO_BANK_ACCOUNT_NUMBER: &str = "BANK_ACCOUNT_NUMBER";
+/// 収納代行として相談料金を預かる口座の銀行口座番号
+static BANK_ACCOUNT_NUMBER: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_ACCOUNT_NUMBER).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        "zzzzzzz".to_string()
+    })
+});
+
+pub(crate) const KEY_TO_BANK_ACCOUNT_HOLDER_NAME: &str = "BANK_ACCOUNT_HOLDER_NAME";
+/// 収納代行として相談料金を預かる口座の銀行口座名義名
+static BANK_ACCOUNT_HOLDER_NAME: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_BANK_ACCOUNT_HOLDER_NAME).unwrap_or_else(|_| {
+        // UTのためにダミー用の初期値を設定しているだけ
+        // 実行時には環境変数を指定して適切なものに入れ替える
+        WEB_SITE_NAME.to_string()
+    })
+});
+
 pub(crate) async fn post_consultation_request_acceptance(
     VerifiedUser { user_info }: VerifiedUser,
     State(smtp_client): State<SmtpClient>,
@@ -799,6 +859,7 @@ fn create_text_for_user(
     fee_per_hour_in_yen: i32,
     consultation_date_time: &str,
 ) -> String {
+    // TODO: 振込先口座、振り込み期日、振り込み名義人の例を記載
     // TODO: 文面の調整
     format!(
         r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。

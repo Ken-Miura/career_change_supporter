@@ -11,7 +11,7 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
 use crate::handlers::session::authentication::authenticated_handlers::delete_accounts::delete_accounts;
 use crate::handlers::account_creation::temp_accounts::post_temp_accounts;
 use crate::handlers::session::authentication::authenticated_handlers::agreement::post_agreement;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::acceptance::post_consultation_request_acceptance;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::acceptance::{post_consultation_request_acceptance, KEY_TO_BANK_CODE, KEY_TO_BANK_NAME, KEY_TO_BANK_BRANCH_CODE, KEY_TO_BANK_BRANCH_NAME, KEY_TO_BANK_ACCOUNT_NUMBER, KEY_TO_BANK_ACCOUNT_HOLDER_NAME};
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::detail::get_consultation_request_detail;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::list::get_consultation_requests;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_request::rejection::post_consultation_request_rejection;
@@ -126,6 +126,12 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_SES_REGION.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
         KEY_TO_USE_ECS_TASK_ROLE.to_string(),
+        KEY_TO_BANK_CODE.to_string(),
+        KEY_TO_BANK_NAME.to_string(),
+        KEY_TO_BANK_BRANCH_CODE.to_string(),
+        KEY_TO_BANK_BRANCH_NAME.to_string(),
+        KEY_TO_BANK_ACCOUNT_NUMBER.to_string(),
+        KEY_TO_BANK_ACCOUNT_HOLDER_NAME.to_string(),
     ]
 });
 
