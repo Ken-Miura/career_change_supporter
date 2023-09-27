@@ -1,5 +1,4 @@
 // Copyright 2022 Ken Miura
-// TODO: 後で全体修正
 
 use axum::async_trait;
 use axum::http::StatusCode;
@@ -16,9 +15,7 @@ use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     PaginatorTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use entity::{
-    consultant_rating, consultation, consultation_req, maintenance, settlement, user_rating,
-};
+use entity::{consultation, consultation_req, maintenance};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, warn};
@@ -123,7 +120,13 @@ async fn handle_consultation_request_acceptance(
     .await?;
 
     let consultation = op
-        .accept_consultation_req(consultation_req_id, meeting_date_time, room_name)
+        .accept_consultation_req(
+            consultation_req_id,
+            meeting_date_time,
+            room_name,
+            *current_date_time,
+            req.fee_per_hour_in_yen,
+        )
         .await?;
 
     let result = send_mail_to_user(
@@ -205,6 +208,8 @@ trait ConsultationRequestAcceptanceOperation {
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
         room_name: String,
+        current_date_time: DateTime<FixedOffset>,
+        fee_per_hour_in_yen: i32,
     ) -> Result<AcceptedConsultation, ErrResp>;
 }
 
@@ -354,6 +359,8 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
         consultation_req_id: i64,
         meeting_date_time: DateTime<FixedOffset>,
         room_name: String,
+        current_date_time: DateTime<FixedOffset>,
+        fee_per_hour_in_yen: i32,
     ) -> Result<AcceptedConsultation, ErrResp> {
         let consultation = self
             .pool
@@ -365,9 +372,13 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let consultation_id =
                         create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
                             .await?;
-                    create_user_rating(consultation_id, txn).await?;
-                    create_settlement(consultation_id, &req, txn).await?;
-                    create_consultant_rating(consultation_id, txn).await?;
+                    create_waiting_for_payment(
+                        consultation_id,
+                        current_date_time,
+                        fee_per_hour_in_yen,
+                        txn,
+                    )
+                    .await?;
 
                     delete_consultation_req_by_consultation_req_id(req.consultation_req_id, txn)
                         .await?;
@@ -475,70 +486,21 @@ async fn create_consultation(
     Ok(result.consultation_id)
 }
 
-async fn create_user_rating(
+async fn create_waiting_for_payment(
     consultation_id: i64,
+    current_date_time: DateTime<FixedOffset>,
+    fee_per_hour_in_yen: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let active_model = user_rating::ActiveModel {
-        user_rating_id: NotSet,
+    let active_model = entity::waiting_for_payment::ActiveModel {
+        waiting_for_payment_id: NotSet,
         consultation_id: Set(consultation_id),
-        rating: NotSet,
-        rated_at: NotSet,
+        fee_per_hour_in_yen: Set(fee_per_hour_in_yen),
+        created_at: Set(current_date_time),
     };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!(
-            "failed to insert user_rating (consultation_id: {}): {}",
-            consultation_id, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
-}
-
-async fn create_settlement(
-    consultation_id: i64,
-    req: &consultation_req::Model,
-    txn: &DatabaseTransaction,
-) -> Result<(), ErrRespStruct> {
-    let active_model = settlement::ActiveModel {
-        settlement_id: NotSet,
-        consultation_id: Set(consultation_id),
-        charge_id: Set("req.charge_id.clone()".to_string()),
-        fee_per_hour_in_yen: Set(req.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(
-            "req.platform_fee_rate_in_percentage.clone()".to_string()
-        ),
-        credit_facilities_expired_at: Set(chrono::Utc::now().with_timezone(&JAPANESE_TIME_ZONE)),
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!(
-            "failed to insert settlement (consultation_id: {}, req: {:?}): {}",
-            consultation_id, req, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
-}
-
-async fn create_consultant_rating(
-    consultation_id: i64,
-    txn: &DatabaseTransaction,
-) -> Result<(), ErrRespStruct> {
-    let active_model = consultant_rating::ActiveModel {
-        consultant_rating_id: NotSet,
-        consultation_id: Set(consultation_id),
-        rating: NotSet,
-        rated_at: NotSet,
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!(
-            "failed to insert consultant_rating (consultation_id: {}): {}",
-            consultation_id, e
-        );
+    let _ = active_model.insert(txn).await.map_err(|e|{
+        error!("failed to insert waiting_for_payment (consultation_id: {}, current_date_time: {}, fee_per_hour_in_yen: {}): {}", 
+            consultation_id, current_date_time, fee_per_hour_in_yen, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -1027,6 +989,8 @@ mod tests {
             consultation_req_id: i64,
             meeting_date_time: DateTime<FixedOffset>,
             room_name: String,
+            current_date_time: DateTime<FixedOffset>,
+            fee_per_hour_in_yen: i32,
         ) -> Result<AcceptedConsultation, ErrResp> {
             assert_eq!(
                 self.consultation_req.consultation_req_id,
@@ -1034,6 +998,11 @@ mod tests {
             );
             assert_eq!(self.meeting_date_time, meeting_date_time);
             assert_eq!(self.room_name, room_name);
+            assert_eq!(self.current_date_time, current_date_time);
+            assert_eq!(
+                self.consultation_req.fee_per_hour_in_yen,
+                fee_per_hour_in_yen
+            );
             Ok(self.consultation.clone())
         }
     }
