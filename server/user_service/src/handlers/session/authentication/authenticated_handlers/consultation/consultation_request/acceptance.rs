@@ -74,6 +74,9 @@ static BANK_BRANCH_NAME: Lazy<String> = Lazy::new(|| {
     })
 });
 
+// 普通のみ利用する想定。普通以外が必要になったときに環境変数として作成し直す。
+const BANK_ACCOUNT_TYPE: &str = "普通";
+
 pub(crate) const KEY_TO_BANK_ACCOUNT_NUMBER: &str = "BANK_ACCOUNT_NUMBER";
 /// 収納代行として相談料金を預かる口座の銀行口座番号
 static BANK_ACCOUNT_NUMBER: Lazy<String> = Lazy::new(|| {
@@ -93,6 +96,14 @@ static BANK_ACCOUNT_HOLDER_NAME: Lazy<String> = Lazy::new(|| {
         WEB_SITE_NAME.to_string()
     })
 });
+
+/// 収納代行の口座への入金期限（日）
+///
+/// [crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_IN_SECONDS]と[crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS]を関連する値だが、
+/// この値自体は、メールの文面に記載するだけでプログラム的に何か制約を課すわけでないため関係性を記載せず単独の定数として宣言している。
+/// これはユーザーに対して入金の目安を指示しているのみで、この期限を過ぎたから入金しても無駄であるということを意味するわけではない。
+/// 相談日時までに管理者が余裕を持って入金を確認したいため、ユーザーにそれまでに入金してほしいという意図で使っている。
+const DEADLINE_OF_PAYMENT_IN_DAYS: usize = 3;
 
 pub(crate) async fn post_consultation_request_acceptance(
     VerifiedUser { user_info }: VerifiedUser,
@@ -927,12 +938,32 @@ fn create_text_for_consultant(
 相談開始日時
   {}
 
+相談開始日時の{}日前までに下記の口座に入金をお願いいたします。入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
+
+銀行名: {} (銀行コード: {})
+支店名: {} (支店コード: {})
+口座種別: {}
+口座番号: {}
+口座名義人: {}
+
+入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
+
+（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
+
 【お問い合わせ先】
 Email: {}",
         consultation_req_id,
         user_account_id,
         fee_per_hour_in_yen,
         consultation_date_time,
+        DEADLINE_OF_PAYMENT_IN_DAYS,
+        *BANK_NAME,
+        *BANK_CODE,
+        *BANK_BRANCH_NAME,
+        *BANK_BRANCH_CODE,
+        BANK_ACCOUNT_TYPE,
+        *BANK_ACCOUNT_NUMBER,
+        *BANK_ACCOUNT_HOLDER_NAME,
         INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
@@ -3013,12 +3044,32 @@ Email: {}",
 相談開始日時
   {}
 
+相談開始日時の{}日前までに下記の口座に入金をお願いいたします。入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
+
+銀行名: {} (銀行コード: {})
+支店名: {} (支店コード: {})
+口座種別: {}
+口座番号: {}
+口座名義人: {}
+
+入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
+
+（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
+
 【お問い合わせ先】
 Email: {}",
             consultation_req_id,
             user_account_id,
             fee_per_hour_in_yen,
             consultation_date_time,
+            DEADLINE_OF_PAYMENT_IN_DAYS,
+            *BANK_NAME,
+            *BANK_CODE,
+            *BANK_BRANCH_NAME,
+            *BANK_BRANCH_CODE,
+            BANK_ACCOUNT_TYPE,
+            *BANK_ACCOUNT_NUMBER,
+            *BANK_ACCOUNT_HOLDER_NAME,
             INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
