@@ -27,6 +27,7 @@ mod reason_validator;
 pub(crate) mod refresh;
 pub(crate) mod user_account;
 mod user_account_operation;
+pub(crate) mod waiting_for_payment;
 
 async fn find_identity_by_user_account_id(
     pool: &DatabaseConnection,
