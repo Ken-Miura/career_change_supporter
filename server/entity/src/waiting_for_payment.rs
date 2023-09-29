@@ -5,9 +5,7 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
 #[sea_orm(schema_name = "ccs_schema", table_name = "waiting_for_payment")]
 pub struct Model {
-    #[sea_orm(primary_key)]
-    pub waiting_for_payment_id: i64,
-    #[sea_orm(unique)]
+    #[sea_orm(primary_key, auto_increment = false)]
     pub consultation_id: i64,
     pub fee_per_hour_in_yen: i32,
     pub created_at: DateTimeWithTimeZone,

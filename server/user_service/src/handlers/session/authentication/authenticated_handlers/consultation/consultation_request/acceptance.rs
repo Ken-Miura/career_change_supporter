@@ -564,7 +564,6 @@ async fn create_waiting_for_payment(
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = entity::waiting_for_payment::ActiveModel {
-        waiting_for_payment_id: NotSet,
         consultation_id: Set(consultation_id),
         fee_per_hour_in_yen: Set(fee_per_hour_in_yen),
         created_at: Set(current_date_time),
