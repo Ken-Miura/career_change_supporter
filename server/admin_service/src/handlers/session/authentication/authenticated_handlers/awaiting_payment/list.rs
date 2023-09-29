@@ -95,8 +95,8 @@ struct AwaitingPaymentAndConsultation {
 }
 
 struct Name {
-    first_name: String,
-    last_name: String,
+    first_name_furigana: String,
+    last_name_furigana: String,
 }
 
 #[async_trait]
@@ -157,7 +157,24 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
     }
 
     async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp> {
-        todo!()
+        let id = entity::identity::Entity::find_by_id(user_account_id)
+            .one(&self.pool)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find identity (user_account_id: {}): {}",
+                    user_account_id, e
+                );
+                unexpected_err_resp()
+            })?;
+        let id = id.ok_or_else(|| {
+            error!("no identity (user_account_id: {}) found", user_account_id);
+            unexpected_err_resp()
+        })?;
+        Ok(Name {
+            first_name_furigana: id.first_name_furigana,
+            last_name_furigana: id.last_name_furigana,
+        })
     }
 }
 
