@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(schema_name = "ccs_schema", table_name = "waiting_for_payment")]
+#[sea_orm(schema_name = "ccs_schema", table_name = "awaiting_payment")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub consultation_id: i64,

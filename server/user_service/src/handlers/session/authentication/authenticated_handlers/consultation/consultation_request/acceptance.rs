@@ -443,7 +443,7 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let consultation_id =
                         create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
                             .await?;
-                    create_waiting_for_payment(
+                    create_awaiting_payment(
                         consultation_id,
                         current_date_time,
                         fee_per_hour_in_yen,
@@ -557,19 +557,19 @@ async fn create_consultation(
     Ok(result.consultation_id)
 }
 
-async fn create_waiting_for_payment(
+async fn create_awaiting_payment(
     consultation_id: i64,
     current_date_time: DateTime<FixedOffset>,
     fee_per_hour_in_yen: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let active_model = entity::waiting_for_payment::ActiveModel {
+    let active_model = entity::awaiting_payment::ActiveModel {
         consultation_id: Set(consultation_id),
         fee_per_hour_in_yen: Set(fee_per_hour_in_yen),
         created_at: Set(current_date_time),
     };
     let _ = active_model.insert(txn).await.map_err(|e|{
-        error!("failed to insert waiting_for_payment (consultation_id: {}, current_date_time: {}, fee_per_hour_in_yen: {}): {}", 
+        error!("failed to insert awaiting_payment (consultation_id: {}, current_date_time: {}, fee_per_hour_in_yen: {}): {}", 
             consultation_id, current_date_time, fee_per_hour_in_yen, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),

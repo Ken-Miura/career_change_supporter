@@ -18,7 +18,7 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_one = "super::waiting_for_payment::Entity")]
+    #[sea_orm(has_one = "super::awaiting_payment::Entity")]
     WaitingForPayment,
     #[sea_orm(has_one = "super::user_rating::Entity")]
     UserRating,
@@ -34,7 +34,7 @@ pub enum Relation {
     Refund,
 }
 
-impl Related<super::waiting_for_payment::Entity> for Entity {
+impl Related<super::awaiting_payment::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::WaitingForPayment.def()
     }

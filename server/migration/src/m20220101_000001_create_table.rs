@@ -531,7 +531,7 @@ impl MigrationTrait for Migration {
              * NOTE: 削除されるケースに当てはまらない場合、サービスの運用期間を通じて存在し続けるが、それによりサービスが遅くなる場合は不要なものを選定して削除することを検討する。
              */
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.waiting_for_payment (
+                r"CREATE TABLE ccs_schema.awaiting_payment (
                   consultation_id BIGINT PRIMARY KEY,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
@@ -540,21 +540,21 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.awaiting_payment To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ =
+            conn.execute(sql.stmt(
+                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.awaiting_payment To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
             .execute(
-                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.waiting_for_payment To user_app;"),
+                sql.stmt(
+                    r"CREATE INDEX created_at_idx ON ccs_schema.awaiting_payment (created_at);",
+                ),
             )
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.waiting_for_payment To admin_app;",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"CREATE INDEX created_at_idx ON ccs_schema.waiting_for_payment (created_at);",
-            ))
             .await
             .map(|_| ())?;
 

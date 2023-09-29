@@ -15,6 +15,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 pub(crate) mod admin;
+pub(crate) mod awaiting_payment;
 pub(crate) mod career_request;
 pub(crate) mod consultation;
 mod document_operation;
@@ -27,7 +28,6 @@ mod reason_validator;
 pub(crate) mod refresh;
 pub(crate) mod user_account;
 mod user_account_operation;
-pub(crate) mod waiting_for_payment;
 
 async fn find_identity_by_user_account_id(
     pool: &DatabaseConnection,
