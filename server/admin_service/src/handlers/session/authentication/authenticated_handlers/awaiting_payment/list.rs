@@ -46,7 +46,7 @@ pub(crate) struct AwaitingPayment {
     user_account_id: i64,
     meeting_at: String, // RFC 3339形式の文字列
     fee_per_hour_in_yen: i32,
-    sender_name: String,
+    name: String,
 }
 
 async fn handle_awaiting_payments(
@@ -69,14 +69,13 @@ async fn handle_awaiting_payments(
         let name = op
             .find_name_by_user_account_id(result.user_account_id)
             .await?;
-        let sender_name = create_sender_name(name, result.meeting_at);
         awaiting_payments.push(AwaitingPayment {
             consultation_id: result.consultation_id,
             consultant_id: result.consultant_id,
             user_account_id: result.user_account_id,
             meeting_at: result.meeting_at.to_rfc3339(),
             fee_per_hour_in_yen: result.fee_per_hour_in_yen,
-            sender_name,
+            name: format!("{}　{}", name.last_name_furigana, name.first_name_furigana),
         })
     }
 
@@ -176,8 +175,4 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
             last_name_furigana: id.last_name_furigana,
         })
     }
-}
-
-fn create_sender_name(name: Name, meeting_at: DateTime<FixedOffset>) -> String {
-    todo!()
 }
