@@ -56,7 +56,7 @@ async fn handle_awaiting_payments(
     current_date_time: DateTime<FixedOffset>,
     op: impl AwaitingPaymentsOperation,
 ) -> RespResult<AwaitingPaymentResult> {
-    if per_page != VALID_PAGE_SIZE {
+    if per_page > VALID_PAGE_SIZE {
         error!("invalid per_page ({})", per_page);
         return Err(unexpected_err_resp());
     };
@@ -92,6 +92,7 @@ async fn handle_awaiting_payments(
     ))
 }
 
+#[derive(Clone)]
 struct AwaitingPaymentAndConsultation {
     consultation_id: i64,
     consultant_id: i64,
@@ -100,9 +101,10 @@ struct AwaitingPaymentAndConsultation {
     fee_per_hour_in_yen: i32,
 }
 
+#[derive(Clone)]
 struct Name {
-    first_name_furigana: String,
     last_name_furigana: String,
+    first_name_furigana: String,
 }
 
 #[async_trait]
@@ -181,5 +183,83 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
             first_name_furigana: id.first_name_furigana,
             last_name_furigana: id.last_name_furigana,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::collections::HashMap;
+
+    use chrono::TimeZone;
+
+    use super::*;
+
+    struct AwaitingPaymentsOperationMock {
+        page: u64,
+        per_page: u64,
+        current_date_time: DateTime<FixedOffset>,
+        awaiting_payment_and_consultations: Vec<AwaitingPaymentAndConsultation>,
+        names: HashMap<i64, Name>,
+    }
+
+    #[async_trait]
+    impl AwaitingPaymentsOperation for AwaitingPaymentsOperationMock {
+        async fn get_awaiting_payment_and_consultation(
+            &self,
+            page: u64,
+            per_page: u64,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp> {
+            assert_eq!(self.page, page);
+            assert_eq!(self.per_page, per_page);
+            assert_eq!(self.current_date_time, current_date_time);
+            Ok(self.awaiting_payment_and_consultations.clone())
+        }
+
+        async fn find_name_by_user_account_id(
+            &self,
+            user_account_id: i64,
+        ) -> Result<Name, ErrResp> {
+            let ids = self
+                .awaiting_payment_and_consultations
+                .clone()
+                .into_iter()
+                .map(|m| m.user_account_id)
+                .collect::<Vec<i64>>();
+            assert!(ids.contains(&user_account_id));
+            let name = self
+                .names
+                .get(&user_account_id)
+                .expect("failed to get Name");
+            Ok(name.clone())
+        }
+    }
+
+    #[tokio::test]
+    async fn handle_awaiting_payments_success_case1() {
+        let page = 0;
+        let per_page = 20;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = AwaitingPaymentsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_payment_and_consultations: vec![],
+            names: HashMap::with_capacity(0),
+        };
+
+        let result = handle_awaiting_payments(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            AwaitingPaymentResult {
+                awaiting_payments: vec![]
+            },
+            resp.1 .0
+        );
     }
 }
