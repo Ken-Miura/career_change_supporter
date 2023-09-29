@@ -532,8 +532,7 @@ impl MigrationTrait for Migration {
              */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.waiting_for_payment (
-                  waiting_for_payment_id BIGSERIAL PRIMARY KEY,
-                  consultation_id BIGINT NOT NULL UNIQUE,
+                  consultation_id BIGINT PRIMARY KEY,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
@@ -549,12 +548,6 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(sql.stmt(
                 r"GRANT SELECT, UPDATE, DELETE ON ccs_schema.waiting_for_payment To admin_app;",
-            ))
-            .await
-            .map(|_| ())?;
-        let _ = conn
-            .execute(sql.stmt(
-                r"GRANT USAGE ON SEQUENCE ccs_schema.waiting_for_payment_waiting_for_payment_id_seq TO user_app;",
             ))
             .await
             .map(|_| ())?;
