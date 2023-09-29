@@ -1,7 +1,11 @@
 // Copyright 2023 Ken Miura
 
 use async_session::async_trait;
-use axum::extract::{Query, State};
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    Json,
+};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::{
@@ -32,7 +36,6 @@ pub(crate) async fn get_awaiting_payments(
 
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct AwaitingPaymentResult {
-    total: i64,
     awaiting_payments: Vec<AwaitingPayment>,
 }
 
@@ -57,12 +60,30 @@ async fn handle_awaiting_payments(
         return Err(unexpected_err_resp());
     };
 
-    let a_and_c = op
+    let results = op
         .get_awaiting_payment_and_consultation(page, per_page, current_date_time)
         .await?;
-    // let mut awaiting_payments
+    let mut awaiting_payments = Vec::with_capacity(results.len());
+    for result in results {
+        // resultsの個数回分だけDBアクセスが発生してしまうが、per_page以下であることが保証されるため、許容する
+        let name = op
+            .find_name_by_user_account_id(result.user_account_id)
+            .await?;
+        let sender_name = create_sender_name(name, result.meeting_at);
+        awaiting_payments.push(AwaitingPayment {
+            consultation_id: result.consultation_id,
+            consultant_id: result.consultant_id,
+            user_account_id: result.user_account_id,
+            meeting_at: result.meeting_at.to_rfc3339(),
+            fee_per_hour_in_yen: result.fee_per_hour_in_yen,
+            sender_name,
+        })
+    }
 
-    todo!()
+    Ok((
+        StatusCode::OK,
+        Json(AwaitingPaymentResult { awaiting_payments }),
+    ))
 }
 
 struct AwaitingPaymentAndConsultation {
@@ -73,6 +94,11 @@ struct AwaitingPaymentAndConsultation {
     fee_per_hour_in_yen: i32,
 }
 
+struct Name {
+    first_name: String,
+    last_name: String,
+}
+
 #[async_trait]
 trait AwaitingPaymentsOperation {
     async fn get_awaiting_payment_and_consultation(
@@ -81,6 +107,8 @@ trait AwaitingPaymentsOperation {
         per_page: u64,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp>;
+
+    async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp>;
 }
 
 struct AwaitingPaymentsOperationImpl {
@@ -127,4 +155,12 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
             })
             .collect::<Result<Vec<AwaitingPaymentAndConsultation>, ErrResp>>()
     }
+
+    async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp> {
+        todo!()
+    }
+}
+
+fn create_sender_name(name: Name, meeting_at: DateTime<FixedOffset>) -> String {
+    todo!()
 }
