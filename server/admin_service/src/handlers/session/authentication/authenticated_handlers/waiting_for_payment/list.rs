@@ -14,7 +14,8 @@ pub(crate) async fn get_waiting_for_payments(
     query: Query<Pagination>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<WaitingForPaymentsResults> {
-    todo!()
+    let op = WaitingForPaymentsOperationImpl { pool };
+    handle_waiting_for_payments(query.page, query.per_page, op).await
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -32,3 +33,19 @@ pub(crate) struct WaitingForPayment {
     fee_per_hour_in_yen: i32,
     sender_name: String,
 }
+
+async fn handle_waiting_for_payments(
+    page: u64,
+    per_page: u64,
+    op: impl WaitingForPaymentsOperation,
+) -> RespResult<WaitingForPaymentsResults> {
+    todo!()
+}
+
+trait WaitingForPaymentsOperation {}
+
+struct WaitingForPaymentsOperationImpl {
+    pool: DatabaseConnection,
+}
+
+impl WaitingForPaymentsOperation for WaitingForPaymentsOperationImpl {}
