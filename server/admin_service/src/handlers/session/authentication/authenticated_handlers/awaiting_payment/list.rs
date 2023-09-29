@@ -148,7 +148,7 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
                     consultation_id: a.consultation_id,
                     consultant_id: c.consultant_id,
                     user_account_id: c.user_account_id,
-                    meeting_at: c.meeting_at,
+                    meeting_at: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
                     fee_per_hour_in_yen: a.fee_per_hour_in_yen,
                 })
             })
