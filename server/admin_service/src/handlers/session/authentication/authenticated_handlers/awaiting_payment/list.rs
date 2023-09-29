@@ -65,7 +65,7 @@ async fn handle_awaiting_payments(
         .await?;
     let mut awaiting_payments = Vec::with_capacity(results.len());
     for result in results {
-        // resultsの個数回分だけDBアクセスが発生してしまうが、per_page以下であることが保証されるため、許容する
+        // resultsの個数回分だけDBアクセスが発生してしまうが、per_page回以下であることが保証されるため、許容する
         let name = op
             .find_name_by_user_account_id(result.user_account_id)
             .await?;
