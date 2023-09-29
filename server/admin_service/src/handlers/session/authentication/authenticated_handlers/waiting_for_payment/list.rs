@@ -4,10 +4,17 @@ use axum::extract::{Query, State};
 use common::RespResult;
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
+use tracing::error;
 
-use crate::handlers::session::authentication::authenticated_handlers::{
-    admin::Admin, pagination::Pagination,
+use crate::{
+    err::unexpected_err_resp,
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, pagination::Pagination,
+    },
 };
+
+// DBテーブルの設計上、この回数分だけクエリを呼ぶようになるため、他より少なめな一方で運用上閲覧するのに十分な値を設定する
+const VALID_PAGE_SIZE: u64 = 20;
 
 pub(crate) async fn get_waiting_for_payments(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -39,6 +46,10 @@ async fn handle_waiting_for_payments(
     per_page: u64,
     op: impl WaitingForPaymentsOperation,
 ) -> RespResult<WaitingForPaymentsResults> {
+    if per_page != VALID_PAGE_SIZE {
+        error!("invalid per_page ({})", per_page);
+        return Err(unexpected_err_resp());
+    };
     todo!()
 }
 
