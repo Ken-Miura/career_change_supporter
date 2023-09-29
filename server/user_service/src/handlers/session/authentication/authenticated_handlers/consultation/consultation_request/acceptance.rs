@@ -870,7 +870,6 @@ fn create_text_for_user(
     fee_per_hour_in_yen: i32,
     consultation_date_time: &str,
 ) -> String {
-    // TODO: 振込先口座、振り込み期日、振り込み名義人の例を記載
     // TODO: 文面の調整
     format!(
         r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
@@ -884,12 +883,32 @@ fn create_text_for_user(
 相談開始日時
   {}
 
+相談開始日時の{}日前までに下記の口座に入金をお願いいたします（入金の際にかかる振込手数料はユーザーのご負担となります）入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
+
+  銀行名: {} (銀行コード: {})
+  支店名: {} (支店コード: {})
+  口座種別: {}
+  口座番号: {}
+  口座名義人: {}
+
+入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
+
+（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
+
 【お問い合わせ先】
 Email: {}",
         consultation_req_id,
         consultant_id,
         fee_per_hour_in_yen,
         consultation_date_time,
+        DEADLINE_OF_PAYMENT_IN_DAYS,
+        *BANK_NAME,
+        *BANK_CODE,
+        *BANK_BRANCH_NAME,
+        *BANK_BRANCH_CODE,
+        BANK_ACCOUNT_TYPE,
+        *BANK_ACCOUNT_NUMBER,
+        *BANK_ACCOUNT_HOLDER_NAME,
         INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
@@ -938,32 +957,12 @@ fn create_text_for_consultant(
 相談開始日時
   {}
 
-相談開始日時の{}日前までに下記の口座に入金をお願いいたします。入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
-
-銀行名: {} (銀行コード: {})
-支店名: {} (支店コード: {})
-口座種別: {}
-口座番号: {}
-口座名義人: {}
-
-入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
-
-（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
-
 【お問い合わせ先】
 Email: {}",
         consultation_req_id,
         user_account_id,
         fee_per_hour_in_yen,
         consultation_date_time,
-        DEADLINE_OF_PAYMENT_IN_DAYS,
-        *BANK_NAME,
-        *BANK_CODE,
-        *BANK_BRANCH_NAME,
-        *BANK_BRANCH_CODE,
-        BANK_ACCOUNT_TYPE,
-        *BANK_ACCOUNT_NUMBER,
-        *BANK_ACCOUNT_HOLDER_NAME,
         INQUIRY_EMAIL_ADDRESS.as_str()
     )
 }
@@ -3006,12 +3005,32 @@ mod tests {
 相談開始日時
   {}
 
+相談開始日時の{}日前までに下記の口座に入金をお願いいたします（入金の際にかかる振込手数料はユーザーのご負担となります）入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
+
+  銀行名: {} (銀行コード: {})
+  支店名: {} (支店コード: {})
+  口座種別: {}
+  口座番号: {}
+  口座名義人: {}
+
+入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
+
+（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
+
 【お問い合わせ先】
 Email: {}",
             consultation_req_id,
             consultant_id,
             fee_per_hour_in_yen,
             consultation_date_time,
+            DEADLINE_OF_PAYMENT_IN_DAYS,
+            *BANK_NAME,
+            *BANK_CODE,
+            *BANK_BRANCH_NAME,
+            *BANK_BRANCH_CODE,
+            BANK_ACCOUNT_TYPE,
+            *BANK_ACCOUNT_NUMBER,
+            *BANK_ACCOUNT_HOLDER_NAME,
             INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
@@ -3044,32 +3063,12 @@ Email: {}",
 相談開始日時
   {}
 
-相談開始日時の{}日前までに下記の口座に入金をお願いいたします。入金が確認できない場合、相談を行うことは出来ないため、期日に余裕を持って入金をするようお願いいたします。
-
-銀行名: {} (銀行コード: {})
-支店名: {} (支店コード: {})
-口座種別: {}
-口座番号: {}
-口座名義人: {}
-
-入金の際、依頼人名は姓名、空白、相談日時（6桁の数字）として下さい（例 相談日時が9月29日19時のとき、依頼人名は「タナカ　タロウ　０９２９１９」となります（※））お名前に加えて相談日時を確認できない場合、正しく入金確認出来ないことがありますので必ず前述の通りご入力をお願いします。
-
-（※）依頼人名に入力可能な文字数制限に達して全て入力出来ない場合、可能なところまで入力して振り込みを行って下さい。
-
 【お問い合わせ先】
 Email: {}",
             consultation_req_id,
             user_account_id,
             fee_per_hour_in_yen,
             consultation_date_time,
-            DEADLINE_OF_PAYMENT_IN_DAYS,
-            *BANK_NAME,
-            *BANK_CODE,
-            *BANK_BRANCH_NAME,
-            *BANK_BRANCH_CODE,
-            BANK_ACCOUNT_TYPE,
-            *BANK_ACCOUNT_NUMBER,
-            *BANK_ACCOUNT_HOLDER_NAME,
             INQUIRY_EMAIL_ADDRESS.as_str()
         );
 
