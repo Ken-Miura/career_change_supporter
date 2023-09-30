@@ -11,6 +11,7 @@
           <button v-on:click="moveToMaintenancesPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
           <button v-on:click="moveToNewsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">お知らせ作成</button>
           <button v-on:click="moveToAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金待ちリスト</button>
+          <button v-on:click="moveToExpiredAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">期限切れ入金待ちリスト</button>
         </div>
       </div>
     </main>
@@ -61,6 +62,10 @@ export default defineComponent({
       await router.push('/awaiting-payments?page=0&per-page=20')
     }
 
+    const moveToExpiredAwaitingPaymentsPage = async () => {
+      await router.push('/expired-awaiting-payments?page=0&per-page=20')
+    }
+
     return {
       moveToCreateIdentityRequestListPage,
       moveToUpdateIdentityRequestListPage,
@@ -68,7 +73,8 @@ export default defineComponent({
       moveToUserAccountSearchPage,
       moveToMaintenancesPage,
       moveToNewsPage,
-      moveToAwaitingPaymentsPage
+      moveToAwaitingPaymentsPage,
+      moveToExpiredAwaitingPaymentsPage
     }
   }
 })
