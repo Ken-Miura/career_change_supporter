@@ -193,6 +193,8 @@ mod tests {
 
     use chrono::TimeZone;
 
+    use crate::err::Code;
+
     use super::*;
 
     struct AwaitingPaymentsOperationMock {
@@ -250,7 +252,7 @@ mod tests {
     #[tokio::test]
     async fn handle_awaiting_payments_success_case1() {
         let page = 0;
-        let per_page = 20;
+        let per_page = VALID_PAGE_SIZE;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
@@ -277,7 +279,7 @@ mod tests {
     #[tokio::test]
     async fn handle_awaiting_payments_success_case2() {
         let page = 0;
-        let per_page = 20;
+        let per_page = VALID_PAGE_SIZE;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
@@ -339,7 +341,7 @@ mod tests {
     #[tokio::test]
     async fn handle_awaiting_payments_success_case3() {
         let page = 0;
-        let per_page = 20;
+        let per_page = VALID_PAGE_SIZE;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
@@ -685,5 +687,27 @@ mod tests {
             },
             resp.1 .0
         );
+    }
+
+    #[tokio::test]
+    async fn handle_awaiting_payments_fale_case1() {
+        let page = 0;
+        let per_page = VALID_PAGE_SIZE + 1;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = AwaitingPaymentsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_payment_and_consultations: vec![],
+            names: HashMap::with_capacity(0),
+        };
+
+        let result = handle_awaiting_payments(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::INTERNAL_SERVER_ERROR, resp.0);
+        assert_eq!(Code::UnexpectedErr as u32, resp.1.code);
     }
 }
