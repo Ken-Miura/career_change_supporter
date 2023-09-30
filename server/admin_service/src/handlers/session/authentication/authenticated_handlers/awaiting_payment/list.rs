@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-use super::AwaitingPayment;
+use super::{AwaitingPayment, AwaitingPaymentAndConsultation, Name};
 
 // DBテーブルの設計上、この回数分だけクエリを呼ぶようになるため、他より少なめな一方で運用上閲覧するのに十分な値を設定する
 const VALID_PAGE_SIZE: u64 = 20;
@@ -83,21 +83,6 @@ async fn handle_awaiting_payments(
     ))
 }
 
-#[derive(Clone)]
-struct AwaitingPaymentAndConsultation {
-    consultation_id: i64,
-    consultant_id: i64,
-    user_account_id: i64,
-    meeting_at: DateTime<FixedOffset>,
-    fee_per_hour_in_yen: i32,
-}
-
-#[derive(Clone)]
-struct Name {
-    last_name_furigana: String,
-    first_name_furigana: String,
-}
-
 #[async_trait]
 trait AwaitingPaymentsOperation {
     async fn get_awaiting_payment_and_consultation(
@@ -156,24 +141,7 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
     }
 
     async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp> {
-        let id = entity::identity::Entity::find_by_id(user_account_id)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find identity (user_account_id: {}): {}",
-                    user_account_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        let id = id.ok_or_else(|| {
-            error!("no identity (user_account_id: {}) found", user_account_id);
-            unexpected_err_resp()
-        })?;
-        Ok(Name {
-            first_name_furigana: id.first_name_furigana,
-            last_name_furigana: id.last_name_furigana,
-        })
+        super::find_name_by_user_account_id(&self.pool, user_account_id).await
     }
 }
 

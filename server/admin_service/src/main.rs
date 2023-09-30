@@ -5,6 +5,7 @@ mod handlers;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
+use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::expired_list::get_expired_awaiting_payments;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::career_images::get_career_images;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::approval::post_create_career_request_approval;
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::detail::get_create_career_request_detail;
@@ -493,6 +494,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/awaiting-payments",
                     get(get_awaiting_payments),
+                )
+                .route(
+                    "/expired-awaiting-payments",
+                    get(get_expired_awaiting_payments),
                 )
                 .with_state(state),
         )
