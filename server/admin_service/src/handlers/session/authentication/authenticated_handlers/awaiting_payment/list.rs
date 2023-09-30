@@ -133,7 +133,7 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
     ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp> {
         let models = entity::awaiting_payment::Entity::find()
             .find_also_related(entity::consultation::Entity)
-            .filter(entity::consultation::Column::MeetingAt.lt(current_date_time))
+            .filter(entity::consultation::Column::MeetingAt.gt(current_date_time))
             .order_by_asc(entity::consultation::Column::MeetingAt)
             .paginate(&self.pool, per_page)
             .fetch_page(page)
