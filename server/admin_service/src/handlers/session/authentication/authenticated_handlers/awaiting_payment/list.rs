@@ -214,7 +214,14 @@ mod tests {
             assert_eq!(self.page, page);
             assert_eq!(self.per_page, per_page);
             assert_eq!(self.current_date_time, current_date_time);
-            Ok(self.awaiting_payment_and_consultations.clone())
+            let length = self.awaiting_payment_and_consultations.len();
+            let page = page as usize;
+            let per_page = per_page as usize;
+            let start_index = page * per_page;
+            let num = if length > per_page { per_page } else { length };
+            let end_index = start_index + num;
+            let cloned = self.awaiting_payment_and_consultations.clone();
+            Ok(cloned[start_index..end_index].to_vec())
         }
 
         async fn find_name_by_user_account_id(
@@ -426,6 +433,93 @@ mod tests {
                         )
                     }
                 ]
+            },
+            resp.1 .0
+        );
+    }
+
+    #[tokio::test]
+    async fn handle_awaiting_payments_success_case4() {
+        let page = 0;
+        let per_page = 1;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+
+        let consultation_id1 = 1;
+        let consultant_id1 = 2;
+        let user_account_id1 = 3;
+        let meeting_at1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
+            .unwrap();
+        let fee_per_hour_in_yen1 = 5000;
+        let name1 = Name {
+            last_name_furigana: "タナカ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+        };
+
+        let consultation_id2 = 4;
+        let consultant_id2 = 5;
+        let user_account_id2 = 6;
+        let meeting_at2 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 29, 17, 0, 0)
+            .unwrap();
+        let fee_per_hour_in_yen2 = 7000;
+        let name2 = Name {
+            last_name_furigana: "スズキ".to_string(),
+            first_name_furigana: "ジロウ".to_string(),
+        };
+
+        let mut names = HashMap::with_capacity(2);
+        names.insert(user_account_id1, name1.clone());
+        names.insert(user_account_id2, name2.clone());
+
+        let op = AwaitingPaymentsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_payment_and_consultations: vec![
+                AwaitingPaymentAndConsultation {
+                    consultation_id: consultation_id1,
+                    consultant_id: consultant_id1,
+                    user_account_id: user_account_id1,
+                    meeting_at: meeting_at1,
+                    fee_per_hour_in_yen: fee_per_hour_in_yen1,
+                },
+                AwaitingPaymentAndConsultation {
+                    consultation_id: consultation_id2,
+                    consultant_id: consultant_id2,
+                    user_account_id: user_account_id2,
+                    meeting_at: meeting_at2,
+                    fee_per_hour_in_yen: fee_per_hour_in_yen2,
+                },
+            ],
+            names,
+        };
+
+        let result = handle_awaiting_payments(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            AwaitingPaymentResult {
+                awaiting_payments: vec![AwaitingPayment {
+                    consultation_id: consultation_id1,
+                    consultant_id: consultant_id1,
+                    user_account_id: user_account_id1,
+                    meeting_at: meeting_at1.to_rfc3339(),
+                    fee_per_hour_in_yen: fee_per_hour_in_yen1,
+                    sender_name: format!(
+                        "{}　{}",
+                        name1.last_name_furigana, name1.first_name_furigana
+                    ),
+                    sender_name_suffix: format!(
+                        "{:0>2}{:0>2}{:0>2}",
+                        meeting_at1.month(),
+                        meeting_at1.day(),
+                        meeting_at1.hour()
+                    )
+                }]
             },
             resp.1 .0
         );
