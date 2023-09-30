@@ -21,6 +21,8 @@ use crate::{
     },
 };
 
+use super::AwaitingPayment;
+
 // DBテーブルの設計上、この回数分だけクエリを呼ぶようになるため、他より少なめな一方で運用上閲覧するのに十分な値を設定する
 const VALID_PAGE_SIZE: u64 = 20;
 
@@ -37,17 +39,6 @@ pub(crate) async fn get_awaiting_payments(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct AwaitingPaymentResult {
     awaiting_payments: Vec<AwaitingPayment>,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-pub(crate) struct AwaitingPayment {
-    consultation_id: i64,
-    consultant_id: i64,
-    user_account_id: i64,
-    meeting_at: String, // RFC 3339形式の文字列
-    fee_per_hour_in_yen: i32,
-    sender_name: String,
-    sender_name_suffix: String,
 }
 
 async fn handle_awaiting_payments(
