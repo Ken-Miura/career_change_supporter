@@ -240,7 +240,7 @@ mod tests {
         let page = 0;
         let per_page = VALID_PAGE_SIZE;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .with_ymd_and_hms(2023, 9, 25, 21, 0, 40)
             .unwrap();
         let consultation_id = 1;
         let consultant_id = 2;
@@ -302,7 +302,7 @@ mod tests {
         let page = 0;
         let per_page = VALID_PAGE_SIZE;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .with_ymd_and_hms(2023, 10, 5, 21, 0, 40)
             .unwrap();
 
         let consultation_id1 = 1;
@@ -408,7 +408,7 @@ mod tests {
         let page = 0;
         let per_page = 1;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .with_ymd_and_hms(2023, 10, 5, 21, 0, 40)
             .unwrap();
 
         let consultation_id1 = 1;
@@ -495,7 +495,7 @@ mod tests {
         let page = 1;
         let per_page = 1;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .with_ymd_and_hms(2023, 10, 5, 21, 0, 40)
             .unwrap();
 
         let consultation_id1 = 1;
@@ -582,7 +582,7 @@ mod tests {
         let page = 2;
         let per_page = 1;
         let current_date_time = JAPANESE_TIME_ZONE
-            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .with_ymd_and_hms(2023, 10, 5, 21, 0, 40)
             .unwrap();
 
         let consultation_id1 = 1;
