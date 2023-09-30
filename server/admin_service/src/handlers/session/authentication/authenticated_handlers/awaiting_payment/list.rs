@@ -262,4 +262,68 @@ mod tests {
             resp.1 .0
         );
     }
+
+    #[tokio::test]
+    async fn handle_awaiting_payments_success_case2() {
+        let page = 0;
+        let per_page = 20;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let consultation_id = 1;
+        let consultant_id = 2;
+        let user_account_id = 3;
+        let meeting_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 25, 21, 0, 40)
+            .unwrap();
+        let fee_per_hour_in_yen = 5000;
+        let name = Name {
+            last_name_furigana: "タナカ".to_string(),
+            first_name_furigana: "タロウ".to_string(),
+        };
+        let mut names = HashMap::with_capacity(1);
+        names.insert(user_account_id, name.clone());
+        let op = AwaitingPaymentsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_payment_and_consultations: vec![AwaitingPaymentAndConsultation {
+                consultation_id,
+                consultant_id,
+                user_account_id,
+                meeting_at: JAPANESE_TIME_ZONE
+                    .with_ymd_and_hms(2023, 9, 25, 21, 0, 40)
+                    .unwrap(),
+                fee_per_hour_in_yen,
+            }],
+            names,
+        };
+
+        let result = handle_awaiting_payments(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            AwaitingPaymentResult {
+                awaiting_payments: vec![AwaitingPayment {
+                    consultation_id,
+                    consultant_id,
+                    user_account_id,
+                    meeting_at: meeting_at.to_rfc3339(),
+                    fee_per_hour_in_yen,
+                    sender_name: format!(
+                        "{}　{}",
+                        name.last_name_furigana, name.first_name_furigana
+                    ),
+                    sender_name_suffix: format!(
+                        "{:0>2}{:0>2}{:0>2}",
+                        meeting_at.month(),
+                        meeting_at.day(),
+                        meeting_at.hour()
+                    )
+                }]
+            },
+            resp.1 .0
+        );
+    }
 }
