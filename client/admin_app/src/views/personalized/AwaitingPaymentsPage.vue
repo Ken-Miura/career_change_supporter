@@ -12,22 +12,23 @@
       </div>
       <div v-else>
         <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-          <!-- <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
-            <div class="mt-2 justify-self-start col-span-2">依頼時刻</div>
-            <div class="mt-2 justify-self-start col-span-1">会社名</div>
-            <div class="mt-2 justify-self-start col-span-1"></div>
-          </div>
-          <ul data-test="items">
-            <li v-for="item in items" v-bind:key="item.create_career_req_id">
-              <div class="mt-4">
-                <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-4">
-                  <div class="mt-3 justify-self-start col-span-2">{{ item.requested_at.getFullYear() }}年{{ (item.requested_at.getMonth() + 1).toString().padStart(2, '0') }}月{{ item.requested_at.getDate().toString().padStart(2, '0') }}日{{ item.requested_at.getHours().toString().padStart(2, '0') }}時{{ item.requested_at.getMinutes().toString().padStart(2, '0') }}分{{ item.requested_at.getSeconds().toString().padStart(2, '0') }}秒</div>
-                  <div class="mt-3 justify-self-start col-span-1">{{ item.company_name }}</div>
-                  <button class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200" v-on:click="moveToCreateCareerRequestDetailPage(item.create_career_req_id)">詳細を確認する</button>
+          <h3 class="font-bold text-xl lg:text-2xl">入金待ちリスト</h3>
+            <ul>
+              <li v-for="item in items" v-bind:key="item.consultation_id">
+                <div class="mt-6">
+                  <div class="text-lg lg:text-xl bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談ID{{ item.consultation_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-lg lg:text-xl grid grid-cols-3">
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">ユーザーID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.user_account_id }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">コンサルタントID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.consultant_id }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">相談日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.meeting_at }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名サフィックス</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name_suffix }}</div>
+                  <button v-on:click="confirmPayment(item.consultation_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金が確認出来たので出金待ちへ移動</button>
                 </div>
               </div>
             </li>
-          </ul> -->
+          </ul>
           <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-2">
             <button data-test="prev-button" v-on:click="prev" v-bind:disabled="prevDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＜</button>
             <button data-test="next-button" v-on:click="next" v-bind:disabled="nextDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＞</button>
@@ -89,15 +90,9 @@ export default defineComponent({
       await router.push(`/awaiting-payments?page=${(page.value + 1)}&per-page=${perPage.value}`)
     }
 
-    watch(route, (newRoute) => {
-      const query = newRoute.query
-      page.value = parseInt(query.page as string)
-      perPage.value = parseInt(query['per-page'] as string)
-    })
-
-    onMounted(async () => {
+    const getItems = async (page: number, perPage: number) => {
       try {
-        const response = await getAwaitingPaymentsFunc(page.value, perPage.value)
+        const response = await getAwaitingPaymentsFunc(page, perPage)
         if (!(response instanceof GetAwaitingPaymentsResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
@@ -116,12 +111,28 @@ export default defineComponent({
         error.exists = true
         error.message = `${Message.UNEXPECTED_ERR}: ${e}`
       }
+    }
+
+    watch(route, async (newRoute) => {
+      const query = newRoute.query
+      page.value = parseInt(query.page as string)
+      perPage.value = parseInt(query['per-page'] as string)
+      await getItems(page.value, perPage.value)
     })
+
+    onMounted(async () => {
+      await getItems(page.value, perPage.value)
+    })
+
+    const confirmPayment = async (consultationId: number) => {
+      console.log(consultationId)
+    }
 
     return {
       error,
       getAwaitingPaymentsDone,
       items,
+      confirmPayment,
       prevDisabled,
       nextDisabled,
       prev,
