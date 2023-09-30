@@ -24,6 +24,7 @@ import ConsultationRelatedInfoPage from '../views/personalized/ConsultationRelat
 import MaintenancesPage from '../views/personalized/MaintenancesPage.vue'
 import NewsPage from '../views/personalized/NewsPage.vue'
 import NotFoundPage from '../views/NotFoundPage.vue'
+import AwaitingPaymentsPage from '../views/personalized/AwaitingPaymentsPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -150,6 +151,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/news',
     name: 'NewsPage',
     component: NewsPage
+  },
+  {
+    path: '/awaiting-payments',
+    name: 'AwaitingPaymentsPage',
+    component: AwaitingPaymentsPage
   },
   {
     path: '/:pathMatch(.*)*',
