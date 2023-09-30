@@ -43,7 +43,7 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, onMounted, reactive, ref } from 'vue'
+import { computed, defineComponent, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import TheHeader from '@/components/TheHeader.vue'
 import AlertMessage from '@/components/AlertMessage.vue'
@@ -88,6 +88,12 @@ export default defineComponent({
     const next = async () => {
       await router.push(`/awaiting-payments?page=${(page.value + 1)}&per-page=${perPage.value}`)
     }
+
+    watch(route, (newRoute) => {
+      const query = newRoute.query
+      page.value = parseInt(query.page as string)
+      perPage.value = parseInt(query['per-page'] as string)
+    })
 
     onMounted(async () => {
       try {
