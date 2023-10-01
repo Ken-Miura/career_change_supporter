@@ -334,4 +334,49 @@ mod tests {
         assert_eq!(StatusCode::BAD_REQUEST, resp.0);
         assert_eq!(Code::NonPositiveConsultationId as u32, resp.1.code);
     }
+
+    #[test]
+    fn test_reduce_ratings1() {
+        let ratings = vec![];
+
+        let result = reduce_ratings(ratings).expect("failed to get Ok");
+
+        assert_eq!(Vec::<i16>::with_capacity(0), result);
+    }
+
+    #[test]
+    fn test_reduce_ratings2() {
+        let ratings = vec![None];
+
+        let result = reduce_ratings(ratings).expect("failed to get Ok");
+
+        assert_eq!(Vec::<i16>::with_capacity(0), result);
+    }
+
+    #[test]
+    fn test_reduce_ratings3() {
+        let ratings = vec![Some(3)];
+
+        let result = reduce_ratings(ratings).expect("failed to get Ok");
+
+        assert_eq!(vec![3], result);
+    }
+
+    #[test]
+    fn test_reduce_ratings4() {
+        let ratings = vec![Some(3), Some(4)];
+
+        let result = reduce_ratings(ratings).expect("failed to get Ok");
+
+        assert_eq!(vec![3, 4], result);
+    }
+
+    #[test]
+    fn test_reduce_ratings5() {
+        let ratings = vec![None, Some(3), None, Some(4), None];
+
+        let result = reduce_ratings(ratings).expect("failed to get Ok");
+
+        assert_eq!(vec![3, 4], result);
+    }
 }
