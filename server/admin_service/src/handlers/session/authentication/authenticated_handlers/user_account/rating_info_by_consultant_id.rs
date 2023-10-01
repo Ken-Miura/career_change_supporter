@@ -75,6 +75,7 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
         models
             .into_iter()
             .map(|m| {
+                // TODO: 設計が変わったので修正、対策
                 // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
                 let ur = m.1.get(0).ok_or_else(|| {
                     error!(

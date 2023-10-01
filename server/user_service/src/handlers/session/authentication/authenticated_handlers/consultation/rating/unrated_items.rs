@@ -109,6 +109,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
             .into_iter()
             .map(|m| {
                 let c = m.0;
+                // TODO: 設計が変わったので修正、対策
                 // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
                 let cr = m.1.get(0).ok_or_else(|| {
                     error!(
@@ -157,6 +158,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
             .into_iter()
             .map(|m| {
                 let c = m.0;
+                // TODO: 設計が変わったので修正、対策
                 // consultationとuser_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
                 let ur = m.1.get(0).ok_or_else(|| {
                     error!(
