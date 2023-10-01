@@ -11,7 +11,7 @@ use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{
-    calculate_rating_and_count, validate_account_id_is_positive, ConsultantIdQuery,
+    calculate_rating_and_count, reduce_ratings, validate_account_id_is_positive, ConsultantIdQuery,
     RatingInfoResult,
 };
 
@@ -40,20 +40,6 @@ async fn get_rating_info_by_consultant_id_internal(
             count: rating_and_count.1,
         }),
     ))
-}
-
-fn reduce_ratings(ratings: Vec<Option<i16>>) -> Result<Vec<i16>, ErrResp> {
-    ratings
-        .into_iter()
-        .filter(|r| r.is_some())
-        .map(|m| {
-            let result = m.ok_or_else(|| {
-                error!("no rating found");
-                unexpected_err_resp()
-            })?;
-            Ok(result)
-        })
-        .collect()
 }
 
 #[async_trait]
@@ -90,14 +76,14 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
         models
             .into_iter()
             .map(|m| {
-                // consultationとuser_ratingは1対0、または1対1の設計
-                let ur_option = m.1.get(0);
-                if let Some(ur) = ur_option {
-                    let r = ur.rating.ok_or_else(|| {
+                // consultationとconsultant_ratingは1対0、または1対1の設計
+                let cr_option = m.1.get(0);
+                if let Some(cr) = cr_option {
+                    let r = cr.rating.ok_or_else(|| {
                         // NOT NULL 条件で検索しているのでNULLの場合（＝ない場合）はエラー
                         error!(
                             "rating is null (consultation_id: {}, consultant_id: {})",
-                            ur.consultation_id, m.0.consultant_id
+                            cr.consultation_id, m.0.consultant_id
                         );
                         unexpected_err_resp()
                     })?;
@@ -158,6 +144,23 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn get_rating_info_by_consultant_id_internal_success_no_result_with_none() {
+        let consultant_id = 64431;
+        let ratings = vec![None];
+        let op_mock = RatingInfoOperationMock {
+            consultant_id,
+            ratings,
+        };
+
+        let result = get_rating_info_by_consultant_id_internal(consultant_id, op_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(None, resp.1 .0.average_rating);
+        assert_eq!(0, resp.1 .0.count);
+    }
+
+    #[tokio::test]
 
     async fn get_rating_info_by_consultant_id_internal_success_1() {
         let consultant_id = 64431;
@@ -198,6 +201,24 @@ mod tests {
     async fn get_rating_info_by_consultant_id_internal_success_3() {
         let consultant_id = 64431;
         let ratings = vec![Some(3), Some(4), Some(1)];
+        let op_mock = RatingInfoOperationMock {
+            consultant_id,
+            ratings,
+        };
+
+        let result = get_rating_info_by_consultant_id_internal(consultant_id, op_mock).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(Some("2.7".to_string()), resp.1 .0.average_rating);
+        assert_eq!(3, resp.1 .0.count);
+    }
+
+    #[tokio::test]
+
+    async fn get_rating_info_by_consultant_id_internal_success_4() {
+        let consultant_id = 64431;
+        let ratings = vec![None, Some(3), None, Some(4), Some(1), None];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
