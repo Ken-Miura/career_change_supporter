@@ -528,7 +528,7 @@ impl MigrationTrait for Migration {
              * コンサルタントが相談申し込みを承認したときに生成される。
              * 管理者がユーザーからの支払いを確認したとき削除される。
              * 管理者がユーザーからの返金依頼を処理したときに削除される（返金を受け付けるのは、ユーザーが相談日時までに入金したにも関わらず、管理者が支払いの確認を出来なかった場合のみ）
-             * NOTE: 削除されるケースに当てはまらない場合、サービスの運用期間を通じて存在し続けるが、それによりサービスが遅くなる場合は不要なものを選定して削除することを検討する。
+             * 管理者が相談日時までにユーザーからの入金を確認できなかったときに削除される
              */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.awaiting_payment (
@@ -552,7 +552,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX created_at_idx ON ccs_schema.awaiting_payment (created_at);",
+                    r"CREATE INDEX awaiting_payment_created_at_idx ON ccs_schema.awaiting_payment (created_at);",
                 ),
             )
             .await
@@ -600,10 +600,129 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
 
-        // TODO: 下記を作成
-        // 出金待ち用テーブル
-        // 無視された支払いテーブル
-        // 返金テーブル
+        let _ = conn
+            /*
+             * 管理者がユーザーの入金を確認したときに生成される。
+             * 管理者がコンサルタントへプラットフォーム手数料と振込手数料を指し引いて出金したことを確認したときに削除される。
+             * 管理者が、ユーザーから苦情を受け、客観的な証拠を確認し、返金した後に削除される。
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.awaiting_withdrawal (
+                  consultation_id BIGINT PRIMARY KEY,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  payment_confirmed_by ccs_schema.email_address NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.awaiting_withdrawal To admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX awaiting_withdrawal_created_at_idx ON ccs_schema.awaiting_withdrawal (created_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /* 管理者が相談日時までにユーザーの入金を確認できなかったとき生成される。サービスの運用期間を通じて存在し続ける。 */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.neglected_payment (
+                  consultation_id BIGINT PRIMARY KEY,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  neglect_confirmed_by ccs_schema.email_address NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.neglected_payment To admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX neglected_payment_created_at_idx ON ccs_schema.neglected_payment (created_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
+             * 管理者がコンサルタントへプラットフォーム手数料と振込手数料を指し引いて出金したことを確認した後に生成される。
+             * サービスの運用期間を通じて存在し続ける。
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.receipt_of_consultation (
+                  consultation_id BIGINT PRIMARY KEY,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  transfer_fee_in_yen INTEGER NOT NULL,
+                  withdrawal_confirmed_by ccs_schema.email_address NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT ON ccs_schema.receipt_of_consultation To admin_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX receipt_of_consultation_created_at_idx ON ccs_schema.receipt_of_consultation (created_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
+             * 1. 管理者が、ユーザーが相談日時までに入金したにも関わらず支払いの確認を出来なかった場合、返金した後生成される。
+             * 2. 管理者が、ユーザーから苦情を受け、客観的な証拠を確認し、返金した後に生成される。
+             * (振込手数料は、1の場合管理者が負担し、2の場合はコンサルタントに負担させる（次回コンサルタントに入金する際に損害を差し引く）)
+             * サービスの運用期間を通じて存在し続ける。
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.refunded_payment (
+                  consultation_id BIGINT PRIMARY KEY,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  transfer_fee_in_yen INTEGER NOT NULL,
+                  reason TEXT NOT NULL,
+                  refund_confirmed_by ccs_schema.email_address NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.refunded_payment To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX refunded_payment_created_at_idx ON ccs_schema.refunded_payment (created_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
 
         let _ = conn
             /* ユーザーが管理者に新規に身分確認を依頼したときに生成される。
