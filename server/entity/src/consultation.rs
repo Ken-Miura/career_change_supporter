@@ -19,11 +19,19 @@ pub struct Model {
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
     #[sea_orm(has_one = "super::awaiting_payment::Entity")]
-    WaitingForPayment,
+    AwaitingPayment,
     #[sea_orm(has_one = "super::user_rating::Entity")]
     UserRating,
     #[sea_orm(has_one = "super::consultant_rating::Entity")]
     ConsultantRating,
+    #[sea_orm(has_one = "super::awaiting_withdrawal::Entity")]
+    AwaitingWithdrawal,
+    #[sea_orm(has_one = "super::neglected_payment::Entity")]
+    NeglectedPayment,
+    #[sea_orm(has_one = "super::receipt_of_consultation::Entity")]
+    ReceiptOfConsultation,
+    #[sea_orm(has_one = "super::refunded_payment::Entity")]
+    RefundedPayment,
     #[sea_orm(has_one = "super::settlement::Entity")]
     Settlement,
     #[sea_orm(has_one = "super::stopped_settlement::Entity")]
@@ -36,7 +44,7 @@ pub enum Relation {
 
 impl Related<super::awaiting_payment::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::WaitingForPayment.def()
+        Relation::AwaitingPayment.def()
     }
 }
 
@@ -49,6 +57,30 @@ impl Related<super::user_rating::Entity> for Entity {
 impl Related<super::consultant_rating::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::ConsultantRating.def()
+    }
+}
+
+impl Related<super::awaiting_withdrawal::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AwaitingWithdrawal.def()
+    }
+}
+
+impl Related<super::neglected_payment::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::NeglectedPayment.def()
+    }
+}
+
+impl Related<super::receipt_of_consultation::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::ReceiptOfConsultation.def()
+    }
+}
+
+impl Related<super::refunded_payment::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::RefundedPayment.def()
     }
 }
 

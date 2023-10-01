@@ -3,12 +3,16 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(schema_name = "ccs_schema", table_name = "user_rating")]
+#[sea_orm(schema_name = "ccs_schema", table_name = "refunded_payment")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub consultation_id: i64,
-    pub rating: Option<i16>,
-    pub rated_at: Option<DateTimeWithTimeZone>,
+    pub fee_per_hour_in_yen: i32,
+    pub transfer_fee_in_yen: i32,
+    #[sea_orm(column_type = "Text")]
+    pub reason: String,
+    pub refund_confirmed_by: String,
+    pub created_at: DateTimeWithTimeZone,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
