@@ -592,6 +592,62 @@ mod tests {
                 )),
             },
             TestCase {
+                name: "success case 5 (no user rating found but there is None)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 5, 7, 0, 0)
+                            .unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 5, 23, 0, 0)
+                            .unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
+                            .unwrap(),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
+                            .unwrap(),
+                    }),
+                    vec![None],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: None,
+                        num_of_rated_of_user: 0,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
                 name: "fail NonPositiveConsultationReqId (id: 0)".to_string(),
                 input: Input::new(
                     account_id_of_consultant,
