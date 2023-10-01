@@ -5,7 +5,6 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::Consultation;
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
     TransactionTrait,
@@ -15,11 +14,12 @@ use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::validate_consultation_id_is_positive;
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
 use super::{
-    ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
-    ensure_rating_is_in_valid_range, ConsultationInfo,
+    ensure_end_of_consultation_date_time_has_passed, ensure_rating_is_in_valid_range,
+    ConsultationInfo,
 };
 
 pub(crate) async fn post_user_rating(
@@ -31,7 +31,7 @@ pub(crate) async fn post_user_rating(
     let op = UserRatingOperationImpl { pool };
     handle_user_rating(
         user_info.account_id,
-        req.user_rating_id,
+        req.consultation_id,
         req.rating,
         &current_date_time,
         op,
@@ -41,7 +41,7 @@ pub(crate) async fn post_user_rating(
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct UserRatingParam {
-    user_rating_id: i64,
+    consultation_id: i64,
     rating: i16,
 }
 
@@ -50,15 +50,15 @@ pub(crate) struct UserRatingResult {}
 
 #[async_trait]
 trait UserRatingOperation {
-    async fn find_consultation_info_from_user_rating(
+    async fn find_consultation_info(
         &self,
-        user_rating_id: i64,
+        consultation_id: i64,
     ) -> Result<Option<ConsultationInfo>, ErrResp>;
 
     async fn update_user_rating(
         &self,
         user_account_id: i64,
-        user_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
@@ -70,46 +70,17 @@ struct UserRatingOperationImpl {
 
 #[async_trait]
 impl UserRatingOperation for UserRatingOperationImpl {
-    async fn find_consultation_info_from_user_rating(
+    async fn find_consultation_info(
         &self,
-        user_rating_id: i64,
+        consultation_id: i64,
     ) -> Result<Option<ConsultationInfo>, ErrResp> {
-        let model = entity::user_rating::Entity::find_by_id(user_rating_id)
-            .find_also_related(Consultation)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find user_rating and consultation (user_rating_id: {}): {}",
-                    user_rating_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        let converted_result = model.map(|m| {
-            let c = m.1.ok_or_else(|| {
-                error!(
-                    "failed to find consultation (user_rating_id: {}, consultation_id: {})",
-                    user_rating_id, m.0.consultation_id
-                );
-                unexpected_err_resp()
-            })?;
-            Ok(ConsultationInfo {
-                consultation_id: c.consultation_id,
-                user_account_id: c.user_account_id,
-                consultant_id: c.consultant_id,
-                consultation_date_time_in_jst: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-            })
-        });
-        Ok(match converted_result {
-            Some(r) => Some(r?),
-            None => None,
-        })
+        super::find_consultation_info(&self.pool, consultation_id).await
     }
 
     async fn update_user_rating(
         &self,
         user_account_id: i64,
-        user_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
@@ -131,13 +102,13 @@ impl UserRatingOperation for UserRatingOperationImpl {
                         );
                         return Ok(());
                     }
-                    let model_option = entity::user_rating::Entity::find_by_id(user_rating_id)
+                    let model_option = entity::user_rating::Entity::find_by_id(consultation_id)
                         .one(txn)
                         .await
                         .map_err(|e| {
                             error!(
-                                "failed to find user_rating (user_rating_id: {}): {}",
-                                user_rating_id, e
+                                "failed to find user_rating (consultation_id: {}): {}",
+                                consultation_id, e
                             );
                             ErrRespStruct {
                                 err_resp: unexpected_err_resp(),
@@ -147,8 +118,8 @@ impl UserRatingOperation for UserRatingOperationImpl {
                         Some(m) => m,
                         None => {
                             error!(
-                                "no user_rating (user_rating_id: {}) found on rating",
-                                user_rating_id
+                                "no user_rating (consultation_id: {}) found on rating",
+                                consultation_id
                             );
                             return Err(ErrRespStruct {
                                 err_resp: unexpected_err_resp(),
@@ -190,14 +161,14 @@ async fn update_user_rating(
     rating: i16,
     current_date_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
-    let user_rating_id = model.user_rating_id;
+    let consultation_id = model.consultation_id;
     let mut active_model: entity::user_rating::ActiveModel = model.into();
     active_model.rating = Set(Some(rating));
     active_model.rated_at = Set(Some(current_date_time));
     let _ = active_model.update(txn).await.map_err(|e| {
         error!(
-            "failed to update user_rating (user_rating_id: {}, rating: {}, current_date_time: {}): {}",
-            user_rating_id, rating, current_date_time, e
+            "failed to update user_rating (consultation_id: {}, rating: {}, current_date_time: {}): {}",
+            consultation_id, rating, current_date_time, e
         );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
@@ -208,15 +179,15 @@ async fn update_user_rating(
 
 async fn handle_user_rating(
     consultant_id: i64,
-    user_rating_id: i64,
+    consultation_id: i64,
     rating: i16,
     current_date_time: &DateTime<FixedOffset>,
     op: impl UserRatingOperation,
 ) -> RespResult<UserRatingResult> {
-    ensure_rating_id_is_positive(user_rating_id)?;
+    validate_consultation_id_is_positive(consultation_id)?;
     ensure_rating_is_in_valid_range(rating)?;
 
-    let cl = get_consultation_info_from_user_rating(user_rating_id, &op).await?;
+    let cl = get_consultation_info(consultation_id, &op).await?;
     ensure_consultant_ids_are_same(consultant_id, cl.consultant_id)?;
     ensure_end_of_consultation_date_time_has_passed(
         &cl.consultation_date_time_in_jst,
@@ -225,7 +196,7 @@ async fn handle_user_rating(
 
     op.update_user_rating(
         cl.user_account_id,
-        user_rating_id,
+        consultation_id,
         rating,
         *current_date_time,
     )
@@ -234,13 +205,11 @@ async fn handle_user_rating(
     Ok((StatusCode::OK, Json(UserRatingResult {})))
 }
 
-async fn get_consultation_info_from_user_rating(
-    user_rating_id: i64,
+async fn get_consultation_info(
+    consultation_id: i64,
     op: &impl UserRatingOperation,
 ) -> Result<ConsultationInfo, ErrResp> {
-    let cl = op
-        .find_consultation_info_from_user_rating(user_rating_id)
-        .await?;
+    let cl = op.find_consultation_info(consultation_id).await?;
     match cl {
         Some(c) => Ok(c),
         None => Err((
@@ -289,7 +258,7 @@ mod tests {
     #[derive(Debug)]
     struct Input {
         consultant_id: i64,
-        user_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
         op: UserRatingOperationMock,
@@ -297,7 +266,7 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct UserRatingOperationMock {
-        user_rating_id: i64,
+        consultation_id: i64,
         consultation_info: ConsultationInfo,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
@@ -306,11 +275,11 @@ mod tests {
 
     #[async_trait]
     impl UserRatingOperation for UserRatingOperationMock {
-        async fn find_consultation_info_from_user_rating(
+        async fn find_consultation_info(
             &self,
-            user_rating_id: i64,
+            consultation_id: i64,
         ) -> Result<Option<ConsultationInfo>, ErrResp> {
-            if self.user_rating_id != user_rating_id {
+            if self.consultation_id != consultation_id {
                 return Ok(None);
             }
             Ok(Some(self.consultation_info.clone()))
@@ -319,7 +288,7 @@ mod tests {
         async fn update_user_rating(
             &self,
             user_account_id: i64,
-            user_rating_id: i64,
+            consultation_id: i64,
             rating: i16,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
@@ -332,7 +301,7 @@ mod tests {
                 ));
             }
             assert_eq!(self.consultation_info.user_account_id, user_account_id);
-            assert_eq!(self.user_rating_id, user_rating_id);
+            assert_eq!(self.consultation_id, consultation_id);
             assert_eq!(self.rating, rating);
             assert_eq!(self.current_date_time, current_date_time);
             Ok(())
@@ -341,9 +310,8 @@ mod tests {
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let consultant_id = 5123;
-        let user_rating_id = 51604;
+        let consultation_id = 51604;
         let rating = 3;
-        let consultation_id = 515;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 5, 17, 53, 12)
             .unwrap();
@@ -356,11 +324,11 @@ mod tests {
                 name: "success".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -375,14 +343,14 @@ mod tests {
                 expected: Ok((StatusCode::OK, Json(UserRatingResult {}))),
             },
             TestCase {
-                name: "fail RatingIdIsNotPositive".to_string(),
+                name: "fail NonPositiveConsultationId".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id: -1,
+                    consultation_id: -1,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -397,7 +365,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::RatingIdIsNotPositive as u32,
+                        code: Code::NonPositiveConsultationId as u32,
                     }),
                 )),
             },
@@ -405,11 +373,11 @@ mod tests {
                 name: "fail InvalidRating".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating: 0,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -432,11 +400,11 @@ mod tests {
                 name: "fail NoUserRatingFound (really not found)".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id: user_rating_id + 3,
+                        consultation_id: consultation_id + 3,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -459,11 +427,11 @@ mod tests {
                 name: "fail NoUserRatingFound (consultant id does not match)".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -486,11 +454,11 @@ mod tests {
                 name: "fail EndOfConsultationDateTimeHasNotPassedYet".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -513,11 +481,11 @@ mod tests {
                 name: "fail UserAccountHasAlreadyBeenRated".to_string(),
                 input: Input {
                     consultant_id,
-                    user_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: UserRatingOperationMock {
-                        user_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -543,7 +511,7 @@ mod tests {
     async fn handle_user_rating_tests() {
         for test_case in TEST_CASE_SET.iter() {
             let consultant_id = test_case.input.consultant_id;
-            let user_rating_id = test_case.input.user_rating_id;
+            let user_rating_id = test_case.input.consultation_id;
             let rating = test_case.input.rating;
             let current_date_time = test_case.input.current_date_time;
             let op = test_case.input.op.clone();

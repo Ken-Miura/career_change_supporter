@@ -19,13 +19,14 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::validate_consultation_id_is_positive;
 use crate::handlers::session::authentication::user_operation::{FindUserInfoOperationImpl, UserInfo};
 
 use super::{
     create_sky_way_auth_token, create_sky_way_auth_token_payload, ensure_audio_test_is_done,
-    ensure_consultation_room_can_be_opened, get_consultation_with_exclusive_lock,
-    validate_consultation_id_is_positive, Consultation, SkyWayIdentification,
-    SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY, VALID_TOKEN_DURATION_IN_SECONDS,
+    ensure_consultation_room_can_be_opened, get_consultation_with_exclusive_lock, Consultation,
+    SkyWayIdentification, SKY_WAY_APPLICATION_ID, SKY_WAY_SECRET_KEY,
+    VALID_TOKEN_DURATION_IN_SECONDS,
 };
 
 pub(crate) async fn get_consultant_side_info(

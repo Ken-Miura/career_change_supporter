@@ -29,7 +29,6 @@
         <h3 class="font-bold text-2xl">コンサルタントからのユーザーに対する評価</h3>
         <div v-if="!userRatingErrMessage">
           <div v-if="userRating" class="m-4 text-2xl grid grid-cols-7">
-            <div class="mt-2 justify-self-start col-span-3">ユーザー評価番号</div><div class="mt-2 justify-self-start col-span-4">{{ userRating.user_rating_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ userRating.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">評価</div><div v-if="userRating.rating" class="mt-2 justify-self-start col-span-4">{{ userRating.rating }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
             <div class="mt-2 justify-self-start col-span-3">評価日時</div><div v-if="userRating.rated_at" class="mt-2 justify-self-start col-span-4">{{ userRating.rated_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
@@ -46,7 +45,6 @@
         <h3 class="font-bold text-2xl">ユーザーからのコンサルタントに対する評価</h3>
         <div v-if="!consultantRatingErrMessage">
           <div v-if="consultantRating" class="m-4 text-2xl grid grid-cols-7">
-            <div class="mt-2 justify-self-start col-span-3">コンサルタント評価番号</div><div class="mt-2 justify-self-start col-span-4">{{ consultantRating.consultant_rating_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ consultantRating.consultation_id }}</div>
             <div class="mt-2 justify-self-start col-span-3">評価</div><div v-if="consultantRating.rating" class="mt-2 justify-self-start col-span-4">{{ consultantRating.rating }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>
             <div class="mt-2 justify-self-start col-span-3">評価日時</div><div v-if="consultantRating.rated_at" class="mt-2 justify-self-start col-span-4">{{ consultantRating.rated_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">未評価</div>

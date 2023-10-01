@@ -30,7 +30,6 @@ pub(crate) struct UserRatingResult {
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct UserRating {
-    user_rating_id: i64,
     consultation_id: i64,
     rating: Option<i16>,
     rated_at: Option<String>, // RFC 3339形式の文字列
@@ -88,7 +87,6 @@ impl UserRatingOperation for UserRatingOperationImpl {
         Ok(models
             .into_iter()
             .map(|m| UserRating {
-                user_rating_id: m.user_rating_id,
                 consultation_id: m.consultation_id,
                 rating: m.rating,
                 rated_at: m
@@ -129,7 +127,6 @@ mod tests {
 
     fn create_dummy_user_rating1(consultation_id: i64) -> UserRating {
         UserRating {
-            user_rating_id: 10,
             consultation_id,
             rating: Some(3),
             rated_at: Some("2023-04-13T14:00:00.0000+09:00 ".to_string()),
@@ -138,7 +135,6 @@ mod tests {
 
     fn create_dummy_user_rating2(consultation_id: i64) -> UserRating {
         UserRating {
-            user_rating_id: 12,
             consultation_id,
             rating: Some(3),
             rated_at: Some("2023-04-15T14:00:00.0000+09:00 ".to_string()),

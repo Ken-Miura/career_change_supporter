@@ -128,6 +128,19 @@ fn consultation_req_exists(
     Ok(req)
 }
 
+fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {
+    if !consultation_id.is_positive() {
+        error!("consultation_id ({}) is not positive", consultation_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::NonPositiveConsultationId as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -275,5 +288,36 @@ mod tests {
             .expect("failed to get Ok");
 
         assert_eq!(ret, Some(user_info));
+    }
+
+    #[test]
+    fn test_validate_consultation_id_is_positive_success() {
+        let consultation_id = 1;
+
+        let result = validate_consultation_id_is_positive(consultation_id);
+
+        result.expect("failed to get Ok");
+    }
+
+    #[test]
+    fn test_validate_consultation_id_is_positive_fail1() {
+        let consultation_id = 0;
+
+        let result = validate_consultation_id_is_positive(consultation_id);
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NonPositiveConsultationId as u32, resp.1.code);
+    }
+
+    #[test]
+    fn test_validate_consultation_id_is_positive_fail2() {
+        let consultation_id = -1;
+
+        let result = validate_consultation_id_is_positive(consultation_id);
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NonPositiveConsultationId as u32, resp.1.code);
     }
 }

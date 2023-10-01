@@ -2,9 +2,14 @@
 
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Duration, FixedOffset};
-use common::{ApiError, ErrResp};
+use common::{ApiError, ErrResp, JAPANESE_TIME_ZONE};
+use entity::sea_orm::{DatabaseConnection, EntityTrait};
+use tracing::error;
 
-use crate::{err::Code, handlers::session::authentication::LENGTH_OF_MEETING_IN_MINUTE};
+use crate::{
+    err::{unexpected_err_resp, Code},
+    handlers::session::authentication::LENGTH_OF_MEETING_IN_MINUTE,
+};
 
 pub(crate) mod consultant_rating;
 pub(crate) mod unrated_items;
@@ -18,16 +23,26 @@ struct ConsultationInfo {
     consultation_date_time_in_jst: DateTime<FixedOffset>,
 }
 
-fn ensure_rating_id_is_positive(rating_id: i64) -> Result<(), ErrResp> {
-    if !rating_id.is_positive() {
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::RatingIdIsNotPositive as u32,
-            }),
-        ));
-    }
-    Ok(())
+async fn find_consultation_info(
+    pool: &DatabaseConnection,
+    consultation_id: i64,
+) -> Result<Option<ConsultationInfo>, ErrResp> {
+    let model_option = entity::consultation::Entity::find_by_id(consultation_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find consultation (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model_option.map(|m| ConsultationInfo {
+        consultation_id: m.consultation_id,
+        user_account_id: m.user_account_id,
+        consultant_id: m.consultant_id,
+        consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+    }))
 }
 
 const MIN_RATING: i16 = 1;
@@ -68,37 +83,6 @@ mod tests {
     use common::JAPANESE_TIME_ZONE;
 
     use super::*;
-
-    #[test]
-    fn test_succsess_ensure_rating_id_is_positive() {
-        ensure_rating_id_is_positive(1).expect("failed to get Ok");
-    }
-
-    #[test]
-    fn test_fail_zero_ensure_rating_id_is_positive() {
-        let result = ensure_rating_id_is_positive(0).expect_err("failed to get Err");
-
-        assert_eq!(result.0, StatusCode::BAD_REQUEST);
-        assert_eq!(
-            result.1 .0,
-            ApiError {
-                code: Code::RatingIdIsNotPositive as u32
-            }
-        );
-    }
-
-    #[test]
-    fn test_fail_negative_value_ensure_rating_id_is_positive() {
-        let result = ensure_rating_id_is_positive(-1).expect_err("failed to get Err");
-
-        assert_eq!(result.0, StatusCode::BAD_REQUEST);
-        assert_eq!(
-            result.1 .0,
-            ApiError {
-                code: Code::RatingIdIsNotPositive as u32
-            }
-        );
-    }
 
     #[test]
     fn test_succsess_lower_bound_ensure_rating_is_in_valid_range() {

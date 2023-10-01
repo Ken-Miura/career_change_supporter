@@ -321,12 +321,12 @@ const routes: Array<RouteRecordRaw> = [
     component: UnratedItemListPage
   },
   {
-    path: '/rate-consultant/:consultant_rating_id',
+    path: '/rate-consultant/:consultation_id',
     name: 'RateConsultantPage',
     component: RateConsultantPage
   },
   {
-    path: '/rate-user/:user_rating_id',
+    path: '/rate-user/:consultation_id',
     name: 'RateUserPage',
     component: RateUserPage
   },

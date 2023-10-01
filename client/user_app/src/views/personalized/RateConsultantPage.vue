@@ -60,7 +60,7 @@ export default defineComponent({
   setup () {
     const router = useRouter()
     const route = useRoute()
-    const consultantRatingId = route.params.consultant_rating_id as string
+    const consultationId = route.params.consultation_id as string
     const query = route.query
     const consultantId = query['consultant-id']
     const year = query.year
@@ -84,7 +84,7 @@ export default defineComponent({
           errMessage.value = Message.INVALID_RATING_MESSAGE
           return
         }
-        const resp = await postConsultantRatingFunc(parseInt(consultantRatingId), r)
+        const resp = await postConsultantRatingFunc(parseInt(consultationId), r)
         if (!(resp instanceof PostConsultantRatingResp)) {
           if (!(resp instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${resp}`)

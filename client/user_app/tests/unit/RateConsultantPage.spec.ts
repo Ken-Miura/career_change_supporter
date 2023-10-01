@@ -19,7 +19,7 @@ jest.mock('@/util/personalized/rate-consultant/usePostConsultantRating', () => (
   })
 }))
 
-let consultantRatingId = ''
+let consultationId = ''
 let consultantId = ''
 let year = ''
 let month = ''
@@ -29,7 +29,7 @@ const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
   useRoute: () => ({
     params: {
-      consultant_rating_id: consultantRatingId
+      consultation_id: consultationId
     },
     query: {
       'consultant-id': consultantId,
@@ -49,7 +49,7 @@ describe('RateConsultantPage.vue', () => {
     postConsultantRatingDoneMock.value = true
     postConsultantRatingFuncMock.mockReset()
     routerPushMock.mockClear()
-    consultantRatingId = ''
+    consultationId = ''
     consultantId = ''
     year = ''
     month = ''
@@ -79,7 +79,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it('displays infomation for rating on opening', async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -120,7 +120,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it('enables submit button after selecting rate', async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -168,7 +168,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it('moves /rate-success if 評価する is clicked', async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -199,7 +199,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it('displays AlertMessage when error has happened', async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -237,7 +237,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`moves to login if request returns ${Code.UNAUTHORIZED}`, async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -268,7 +268,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`moves to login if request returns ${Code.NOT_TERMS_OF_USE_AGREED_YET}`, async () => {
-    consultantRatingId = '511'
+    consultationId = '511'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -298,14 +298,14 @@ describe('RateConsultantPage.vue', () => {
     expect(routerPushMock).toHaveBeenCalledWith('/terms-of-use')
   })
 
-  it(`displays ${Message.RATING_ID_IS_NOT_POSITIVE_MESSAGE} if ${Code.RATING_ID_IS_NOT_POSITIVE} is returned`, async () => {
-    consultantRatingId = '-1'
+  it(`displays ${Message.NON_POSITIVE_CONSULTATION_ID_MESSAGE} if ${Code.NON_POSITIVE_CONSULTATION_ID} is returned`, async () => {
+    consultationId = '-1'
     consultantId = '701'
     year = '2023'
     month = '3'
     day = '3'
     hour = '21'
-    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.RATING_ID_IS_NOT_POSITIVE))
+    const apiErrResp = ApiErrorResp.create(400, ApiError.create(Code.NON_POSITIVE_CONSULTATION_ID))
     postConsultantRatingFuncMock.mockResolvedValue(apiErrResp)
     const wrapper = mount(RateConsultantPage, {
       global: {
@@ -332,12 +332,12 @@ describe('RateConsultantPage.vue', () => {
     const alertMessage = alertMessages[0]
     expect(alertMessage).not.toContain('hidden')
     const resultMessage = alertMessage.text()
-    expect(resultMessage).toContain(`${Message.RATING_ID_IS_NOT_POSITIVE_MESSAGE} (${Code.RATING_ID_IS_NOT_POSITIVE})`)
+    expect(resultMessage).toContain(`${Message.NON_POSITIVE_CONSULTATION_ID_MESSAGE} (${Code.NON_POSITIVE_CONSULTATION_ID})`)
   })
 
   // UI上、不正な値の入力は許可していないが、仕様のためテストを用意しておく
   it(`displays ${Message.INVALID_RATING_MESSAGE} if ${Code.INVALID_RATING} is returned`, async () => {
-    consultantRatingId = '21'
+    consultationId = '21'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -374,7 +374,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`displays ${Message.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET_MESSAGE} if ${Code.END_OF_CONSULTATION_DATE_TIME_HAS_NOT_PASSED_YET} is returned`, async () => {
-    consultantRatingId = '21'
+    consultationId = '21'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -411,7 +411,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`displays ${Message.NO_CONSULTANT_RATING_FOUND_MESSAGE} if ${Code.NO_CONSULTANT_RATING_FOUND} is returned`, async () => {
-    consultantRatingId = '21'
+    consultationId = '21'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -448,7 +448,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`displays ${Message.CONSULTANT_HAS_ALREADY_BEEN_RATED_MESSAGE} if ${Code.CONSULTANT_HAS_ALREADY_BEEN_RATED} is returned`, async () => {
-    consultantRatingId = '21'
+    consultationId = '21'
     consultantId = '701'
     year = '2023'
     month = '3'
@@ -485,7 +485,7 @@ describe('RateConsultantPage.vue', () => {
   })
 
   it(`displays ${Message.REACH_PAYMENT_PLATFORM_RATE_LIMIT_MESSAGE} if ${Code.REACH_PAYMENT_PLATFORM_RATE_LIMIT} is returned`, async () => {
-    consultantRatingId = '21'
+    consultationId = '21'
     consultantId = '701'
     year = '2023'
     month = '3'

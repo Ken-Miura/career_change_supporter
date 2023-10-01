@@ -85,8 +85,8 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
                 })?;
                 let r = ur.rating.ok_or_else(|| {
                     error!(
-                        "rating is null (consultant_rating_id: {}, consultant_id: {})",
-                        ur.consultant_rating_id, m.0.consultant_id
+                        "rating is null (consultation_id: {}, consultant_id: {})",
+                        ur.consultation_id, m.0.consultant_id
                     );
                     unexpected_err_resp()
                 })?;

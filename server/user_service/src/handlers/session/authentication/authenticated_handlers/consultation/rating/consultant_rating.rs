@@ -9,7 +9,7 @@ use common::opensearch::{update_document, INDEX_NAME};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl};
 use common::rating::calculate_average_rating;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::{ConsultantRating, Consultation};
+use entity::prelude::ConsultantRating;
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
+use crate::handlers::session::authentication::authenticated_handlers::consultation::validate_consultation_id_is_positive;
 use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
@@ -28,8 +29,8 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
 use super::{
-    ensure_end_of_consultation_date_time_has_passed, ensure_rating_id_is_positive,
-    ensure_rating_is_in_valid_range, ConsultationInfo,
+    ensure_end_of_consultation_date_time_has_passed, ensure_rating_is_in_valid_range,
+    ConsultationInfo,
 };
 
 pub(crate) async fn post_consultant_rating(
@@ -42,7 +43,7 @@ pub(crate) async fn post_consultant_rating(
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
     handle_consultant_rating(
         user_info.account_id,
-        req.consultant_rating_id,
+        req.consultation_id,
         req.rating,
         &current_date_time,
         op,
@@ -52,7 +53,7 @@ pub(crate) async fn post_consultant_rating(
 
 #[derive(Clone, Debug, Deserialize)]
 pub(crate) struct ConsultantRatingParam {
-    consultant_rating_id: i64,
+    consultation_id: i64,
     rating: i16,
 }
 
@@ -61,15 +62,15 @@ pub(crate) struct ConsultantRatingResult {}
 
 #[async_trait]
 trait ConsultantRatingOperation {
-    async fn find_consultation_info_from_consultant_rating(
+    async fn find_consultation_info(
         &self,
-        consultant_rating_id: i64,
+        consultation_id: i64,
     ) -> Result<Option<ConsultationInfo>, ErrResp>;
 
     async fn update_consultant_rating(
         &self,
         consultant_id: i64,
-        consultant_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
@@ -100,46 +101,17 @@ struct ConsultantRatingOperationImpl {
 
 #[async_trait]
 impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
-    async fn find_consultation_info_from_consultant_rating(
+    async fn find_consultation_info(
         &self,
-        consultant_rating_id: i64,
+        consultation_id: i64,
     ) -> Result<Option<ConsultationInfo>, ErrResp> {
-        let model = entity::consultant_rating::Entity::find_by_id(consultant_rating_id)
-            .find_also_related(Consultation)
-            .one(&self.pool)
-            .await
-            .map_err(|e| {
-                error!(
-                    "failed to find consultant_rating and consultation (consultant_rating_id: {}): {}",
-                    consultant_rating_id, e
-                );
-                unexpected_err_resp()
-            })?;
-        let converted_result = model.map(|m| {
-            let c = m.1.ok_or_else(|| {
-                error!(
-                    "failed to find consultation (consultant_rating_id: {}, consultation_id: {})",
-                    consultant_rating_id, m.0.consultation_id
-                );
-                unexpected_err_resp()
-            })?;
-            Ok(ConsultationInfo {
-                consultation_id: c.consultation_id,
-                user_account_id: c.user_account_id,
-                consultant_id: c.consultant_id,
-                consultation_date_time_in_jst: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-            })
-        });
-        Ok(match converted_result {
-            Some(r) => Some(r?),
-            None => None,
-        })
+        super::find_consultation_info(&self.pool, consultation_id).await
     }
 
     async fn update_consultant_rating(
         &self,
         consultant_id: i64,
-        consultant_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp> {
@@ -162,14 +134,14 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                         return Ok(());
                     }
                     let model_option =
-                        entity::consultant_rating::Entity::find_by_id(consultant_rating_id)
+                        entity::consultant_rating::Entity::find_by_id(consultation_id)
                             .one(txn)
                             .await
                             .map_err(|e| {
                                 error!(
-                                "failed to find consultant_rating (consultant_rating_id: {}): {}",
-                                consultant_rating_id, e
-                            );
+                                    "failed to find consultant_rating (consultation_id: {}): {}",
+                                    consultation_id, e
+                                );
                                 ErrRespStruct {
                                     err_resp: unexpected_err_resp(),
                                 }
@@ -178,8 +150,8 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                         Some(m) => m,
                         None => {
                             error!(
-                                "no consultant_rating (consultant_rating_id: {}) found on rating",
-                                consultant_rating_id
+                                "no consultant_rating (consultation_id: {}) found on rating",
+                                consultation_id
                             );
                             return Err(ErrRespStruct {
                                 err_resp: unexpected_err_resp(),
@@ -247,8 +219,8 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                 })?;
                 let r = cr.rating.ok_or_else(|| {
                     error!(
-                        "rating is null (consultant_rating_id: {}, consultant_id: {})",
-                        cr.consultant_rating_id, m.0.consultant_id
+                        "rating is null (consultation_id: {}, consultant_id: {})",
+                        cr.consultation_id, m.0.consultant_id
                     );
                     unexpected_err_resp()
                 })?;
@@ -399,14 +371,14 @@ async fn update_consultant_rating(
     rating: i16,
     current_date_time: DateTime<FixedOffset>,
 ) -> Result<(), ErrRespStruct> {
-    let consultant_rating_id = model.consultant_rating_id;
+    let consultation_id = model.consultation_id;
     let mut active_model: entity::consultant_rating::ActiveModel = model.into();
     active_model.rating = Set(Some(rating));
     active_model.rated_at = Set(Some(current_date_time));
     let _ = active_model.update(txn).await.map_err(|e| {
         error!(
-            "failed to update consultant_rating (consultant_rating_id: {}, rating: {}, current_date_time: {}): {}",
-            consultant_rating_id, rating, current_date_time, e
+            "failed to update consultant_rating (consultation_id: {}, rating: {}, current_date_time: {}): {}",
+            consultation_id, rating, current_date_time, e
         );
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
@@ -489,15 +461,15 @@ async fn insert_receipt(
 
 async fn handle_consultant_rating(
     account_id: i64,
-    consultant_rating_id: i64,
+    consultation_id: i64,
     rating: i16,
     current_date_time: &DateTime<FixedOffset>,
     op: impl ConsultantRatingOperation,
 ) -> RespResult<ConsultantRatingResult> {
-    ensure_rating_id_is_positive(consultant_rating_id)?;
+    validate_consultation_id_is_positive(consultation_id)?;
     ensure_rating_is_in_valid_range(rating)?;
 
-    let cl = get_consultation_info_from_consultation_rating(consultant_rating_id, &op).await?;
+    let cl = get_consultation_info(consultation_id, &op).await?;
     ensure_user_account_ids_are_same(account_id, cl.user_account_id)?;
     ensure_end_of_consultation_date_time_has_passed(
         &cl.consultation_date_time_in_jst,
@@ -506,7 +478,7 @@ async fn handle_consultant_rating(
 
     op.update_consultant_rating(
         cl.consultant_id,
-        consultant_rating_id,
+        consultation_id,
         rating,
         *current_date_time,
     )
@@ -528,13 +500,11 @@ async fn handle_consultant_rating(
     Ok((StatusCode::OK, Json(ConsultantRatingResult {})))
 }
 
-async fn get_consultation_info_from_consultation_rating(
+async fn get_consultation_info(
     consultation_rating_id: i64,
     op: &impl ConsultantRatingOperation,
 ) -> Result<ConsultationInfo, ErrResp> {
-    let cl = op
-        .find_consultation_info_from_consultant_rating(consultation_rating_id)
-        .await?;
+    let cl = op.find_consultation_info(consultation_rating_id).await?;
     match cl {
         Some(c) => Ok(c),
         None => Err((
@@ -583,7 +553,7 @@ mod tests {
     #[derive(Debug)]
     struct Input {
         account_id: i64,
-        consultant_rating_id: i64,
+        consultation_id: i64,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
         op: ConsultantRatingOperationMock,
@@ -591,7 +561,7 @@ mod tests {
 
     #[derive(Clone, Debug)]
     struct ConsultantRatingOperationMock {
-        consultant_rating_id: i64,
+        consultation_id: i64,
         consultation_info: ConsultationInfo,
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
@@ -602,11 +572,11 @@ mod tests {
 
     #[async_trait]
     impl ConsultantRatingOperation for ConsultantRatingOperationMock {
-        async fn find_consultation_info_from_consultant_rating(
+        async fn find_consultation_info(
             &self,
-            consultant_rating_id: i64,
+            consultation_id: i64,
         ) -> Result<Option<ConsultationInfo>, ErrResp> {
-            if self.consultant_rating_id != consultant_rating_id {
+            if self.consultation_id != consultation_id {
                 return Ok(None);
             }
             Ok(Some(self.consultation_info.clone()))
@@ -615,7 +585,7 @@ mod tests {
         async fn update_consultant_rating(
             &self,
             consultant_id: i64,
-            consultant_rating_id: i64,
+            consultation_id: i64,
             rating: i16,
             current_date_time: DateTime<FixedOffset>,
         ) -> Result<(), ErrResp> {
@@ -628,7 +598,7 @@ mod tests {
                 ));
             }
             assert_eq!(self.consultation_info.consultant_id, consultant_id);
-            assert_eq!(self.consultant_rating_id, consultant_rating_id);
+            assert_eq!(self.consultation_id, consultation_id);
             assert_eq!(self.rating, rating);
             assert_eq!(self.current_date_time, current_date_time);
             Ok(())
@@ -678,12 +648,11 @@ mod tests {
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
         let account_id = 166;
-        let consultant_rating_id = 5701;
+        let consultation_id = 5701;
         let rating = 4;
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 16, 17, 53, 12)
             .unwrap();
-        let consultation_id = 515;
         let user_account_id = account_id;
         let consultant_id = user_account_id + 9761;
         let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
@@ -695,11 +664,11 @@ mod tests {
                 name: "success 1".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -719,11 +688,11 @@ mod tests {
                 name: "success 2".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -743,11 +712,11 @@ mod tests {
                 name: "success 3".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -764,14 +733,14 @@ mod tests {
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
             },
             TestCase {
-                name: "fail RatingIdIsNotPositive".to_string(),
+                name: "fail NonPositiveConsultationId".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id: -1,
+                    consultation_id: -1,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -788,7 +757,7 @@ mod tests {
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
-                        code: Code::RatingIdIsNotPositive as u32,
+                        code: Code::NonPositiveConsultationId as u32,
                     }),
                 )),
             },
@@ -796,11 +765,11 @@ mod tests {
                 name: "fail InvalidRating".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating: 6,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -825,11 +794,11 @@ mod tests {
                 name: "fail NoConsultantRatingFound (really not found)".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id: consultant_rating_id + 68,
+                        consultation_id: consultation_id + 68,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -854,11 +823,11 @@ mod tests {
                 name: "fail NoConsultantRatingFound (user account id does not match)".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id: user_account_id + 65010,
@@ -883,11 +852,11 @@ mod tests {
                 name: "fail EndOfConsultationDateTimeHasNotPassedYet".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -912,11 +881,11 @@ mod tests {
                 name: "fail ConsultantHasAlreadyBeenRated".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -944,11 +913,11 @@ mod tests {
                 name: "fail ReachPaymentPlatformRateLimit".to_string(),
                 input: Input {
                     account_id,
-                    consultant_rating_id,
+                    consultation_id,
                     rating,
                     current_date_time,
                     op: ConsultantRatingOperationMock {
-                        consultant_rating_id,
+                        consultation_id,
                         consultation_info: ConsultationInfo {
                             consultation_id,
                             user_account_id,
@@ -976,14 +945,14 @@ mod tests {
     async fn handle_consultant_rating_tests() {
         for test_case in TEST_CASE_SET.iter() {
             let account_id = test_case.input.account_id;
-            let consultant_rating_id = test_case.input.consultant_rating_id;
+            let consultation_id = test_case.input.consultation_id;
             let rating = test_case.input.rating;
             let current_date_time = test_case.input.current_date_time;
             let op = test_case.input.op.clone();
 
             let result = handle_consultant_rating(
                 account_id,
-                consultant_rating_id,
+                consultation_id,
                 rating,
                 &current_date_time,
                 op,

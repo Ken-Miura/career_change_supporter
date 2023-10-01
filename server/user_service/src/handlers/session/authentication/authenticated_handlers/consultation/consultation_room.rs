@@ -208,19 +208,6 @@ fn create_sky_way_auth_token(
     Ok(token)
 }
 
-fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {
-    if !consultation_id.is_positive() {
-        error!("consultation_id ({}) is not positive", consultation_id);
-        return Err((
-            StatusCode::BAD_REQUEST,
-            Json(ApiError {
-                code: Code::NonPositiveConsultationId as u32,
-            }),
-        ));
-    }
-    Ok(())
-}
-
 fn ensure_audio_test_is_done(audio_test_done: bool) -> Result<(), ErrResp> {
     if !audio_test_done {
         return Err((

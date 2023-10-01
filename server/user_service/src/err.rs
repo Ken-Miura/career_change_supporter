@@ -131,7 +131,6 @@ pub(crate) enum Code {
     ConsultationRoomHasNotOpenedYet = 20124,
     AudioTestIsNotDone = 20125,
     ConsultationRoomHasAlreadyClosed = 20126,
-    RatingIdIsNotPositive = 20127,
     InvalidRating = 20128,
     EndOfConsultationDateTimeHasNotPassedYet = 20129,
     NoUserRatingFound = 20130,

@@ -159,8 +159,8 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
                 })?;
                 let r = ur.rating.ok_or_else(|| {
                     error!(
-                        "rating is null (user_rating_id: {}, user_account_id: {})",
-                        ur.user_rating_id, m.0.user_account_id
+                        "rating is null (consultation_id: {}, user_account_id: {})",
+                        ur.consultation_id, m.0.user_account_id
                     );
                     unexpected_err_resp()
                 })?;

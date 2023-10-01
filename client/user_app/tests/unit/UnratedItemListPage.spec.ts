@@ -32,7 +32,7 @@ jest.mock('vue-router', () => ({
 
 function createDummyUnratedConsultant1 (): UnratedConsultant {
   return {
-    consultant_rating_id: 234,
+    consultation_id: 234,
     consultant_id: 889,
     meeting_date_time_in_jst: {
       year: 2023,
@@ -45,7 +45,7 @@ function createDummyUnratedConsultant1 (): UnratedConsultant {
 
 function createDummyUnratedConsultant2 (): UnratedConsultant {
   return {
-    consultant_rating_id: 325,
+    consultation_id: 325,
     consultant_id: 1033,
     meeting_date_time_in_jst: {
       year: 2022,
@@ -58,7 +58,7 @@ function createDummyUnratedConsultant2 (): UnratedConsultant {
 
 function createDummyUnratedUser1 (): UnratedUser {
   return {
-    user_rating_id: 10,
+    consultation_id: 10,
     user_account_id: 53,
     meeting_date_time_in_jst: {
       year: 2023,
@@ -71,7 +71,7 @@ function createDummyUnratedUser1 (): UnratedUser {
 
 function createDummyUnratedUser2 (): UnratedUser {
   return {
-    user_rating_id: 11,
+    consultation_id: 11,
     user_account_id: 760,
     meeting_date_time_in_jst: {
       year: 2023,
@@ -208,7 +208,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedConsultantsDescription = wrapper.find('[data-test="unrated-consultants-description"]')
     expect(unratedConsultantsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_CONSULTANTS}件分表示されます。${MAX_NUM_OF_UNRATED_CONSULTANTS}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
 
-    const unratedConsultant1 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant1.consultant_rating_id}"]`)
+    const unratedConsultant1 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant1.consultation_id}"]`)
     const consultantIdLabel1 = unratedConsultant1.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUnratedConsultant1.consultant_id}）`)
     const unratedConsultant1ConsultationDateTime = unratedConsultant1.find('[data-test="consultation-date-time"]')
@@ -243,7 +243,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedConsultantsDescription = wrapper.find('[data-test="unrated-consultants-description"]')
     expect(unratedConsultantsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_CONSULTANTS}件分表示されます。${MAX_NUM_OF_UNRATED_CONSULTANTS}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
 
-    const unratedConsultant1 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant1.consultant_rating_id}"]`)
+    const unratedConsultant1 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant1.consultation_id}"]`)
     const consultantIdLabel1 = unratedConsultant1.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUnratedConsultant1.consultant_id}）`)
     const unratedConsultant1ConsultationDateTime = unratedConsultant1.find('[data-test="consultation-date-time"]')
@@ -251,7 +251,7 @@ describe('UnratedItemListPage.vue', () => {
     const moveToRateConsultantPageBtn1 = unratedConsultant1.find('[data-test="move-to-rate-consultant-page"]')
     expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
 
-    const unratedConsultant2 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant2.consultant_rating_id}"]`)
+    const unratedConsultant2 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant2.consultation_id}"]`)
     const consultantIdLabel2 = unratedConsultant2.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel2.text()).toContain(`コンサルタントID（${dummyUnratedConsultant2.consultant_id}）`)
     const unratedConsultant2ConsultationDateTime = unratedConsultant2.find('[data-test="consultation-date-time"]')
@@ -292,7 +292,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedUsersDescription = wrapper.find('[data-test="unrated-users-description"]')
     expect(unratedUsersDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_USERS}件分表示されます。${MAX_NUM_OF_UNRATED_USERS}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
 
-    const unratedUser1 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser1.user_rating_id}"]`)
+    const unratedUser1 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser1.consultation_id}"]`)
     const userAccountIdLabel1 = unratedUser1.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyUnratedUser1.user_account_id}）`)
     const unratedUser1ConsultationDateTime = unratedUser1.find('[data-test="consultation-date-time"]')
@@ -327,7 +327,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedUsersDescription = wrapper.find('[data-test="unrated-users-description"]')
     expect(unratedUsersDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_USERS}件分表示されます。${MAX_NUM_OF_UNRATED_USERS}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
 
-    const unratedUser1 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser1.user_rating_id}"]`)
+    const unratedUser1 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser1.consultation_id}"]`)
     const userAccountIdLabel1 = unratedUser1.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyUnratedUser1.user_account_id}）`)
     const unratedUser1ConsultationDateTime = unratedUser1.find('[data-test="consultation-date-time"]')
@@ -335,7 +335,7 @@ describe('UnratedItemListPage.vue', () => {
     const moveToRateUserPageBtn1 = unratedUser1.find('[data-test="move-to-rate-user-page"]')
     expect(moveToRateUserPageBtn1.exists()).toBe(true)
 
-    const unratedUser2 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser2.user_rating_id}"]`)
+    const unratedUser2 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser2.consultation_id}"]`)
     const userAccountIdLabel2 = unratedUser2.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${dummyUnratedUser2.user_account_id}）`)
     const unratedUser2ConsultationDateTime = unratedUser2.find('[data-test="consultation-date-time"]')
@@ -363,7 +363,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedConsultantsDescription = wrapper.find('[data-test="unrated-consultants-description"]')
     expect(unratedConsultantsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_CONSULTANTS}件分表示されます。${MAX_NUM_OF_UNRATED_CONSULTANTS}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
 
-    const unratedConsultant1 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant1.consultant_rating_id}"]`)
+    const unratedConsultant1 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant1.consultation_id}"]`)
     const consultantIdLabel1 = unratedConsultant1.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUnratedConsultant1.consultant_id}）`)
     const unratedConsultant1ConsultationDateTime = unratedConsultant1.find('[data-test="consultation-date-time"]')
@@ -376,7 +376,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedUsersDescription = wrapper.find('[data-test="unrated-users-description"]')
     expect(unratedUsersDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_USERS}件分表示されます。${MAX_NUM_OF_UNRATED_USERS}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
 
-    const unratedUser1 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser1.user_rating_id}"]`)
+    const unratedUser1 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser1.consultation_id}"]`)
     const userAccountIdLabel1 = unratedUser1.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyUnratedUser1.user_account_id}）`)
     const unratedUser1ConsultationDateTime = unratedUser1.find('[data-test="consultation-date-time"]')
@@ -406,7 +406,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedConsultantsDescription = wrapper.find('[data-test="unrated-consultants-description"]')
     expect(unratedConsultantsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_CONSULTANTS}件分表示されます。${MAX_NUM_OF_UNRATED_CONSULTANTS}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
 
-    const unratedConsultant1 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant1.consultant_rating_id}"]`)
+    const unratedConsultant1 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant1.consultation_id}"]`)
     const consultantIdLabel1 = unratedConsultant1.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel1.text()).toContain(`コンサルタントID（${dummyUnratedConsultant1.consultant_id}）`)
     const unratedConsultant1ConsultationDateTime = unratedConsultant1.find('[data-test="consultation-date-time"]')
@@ -414,7 +414,7 @@ describe('UnratedItemListPage.vue', () => {
     const moveToRateConsultantPageBtn1 = unratedConsultant1.find('[data-test="move-to-rate-consultant-page"]')
     expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
 
-    const unratedConsultant2 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant2.consultant_rating_id}"]`)
+    const unratedConsultant2 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant2.consultation_id}"]`)
     const consultantIdLabel2 = unratedConsultant2.find('[data-test="consultant-id-label"]')
     expect(consultantIdLabel2.text()).toContain(`コンサルタントID（${dummyUnratedConsultant2.consultant_id}）`)
     const unratedConsultant2ConsultationDateTime = unratedConsultant2.find('[data-test="consultation-date-time"]')
@@ -427,7 +427,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedUsersDescription = wrapper.find('[data-test="unrated-users-description"]')
     expect(unratedUsersDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_USERS}件分表示されます。${MAX_NUM_OF_UNRATED_USERS}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
 
-    const unratedUser1 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser1.user_rating_id}"]`)
+    const unratedUser1 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser1.consultation_id}"]`)
     const userAccountIdLabel1 = unratedUser1.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel1.text()).toContain(`ユーザーID（${dummyUnratedUser1.user_account_id}）`)
     const unratedUser1ConsultationDateTime = unratedUser1.find('[data-test="consultation-date-time"]')
@@ -435,7 +435,7 @@ describe('UnratedItemListPage.vue', () => {
     const moveToRateUserPageBtn1 = unratedUser1.find('[data-test="move-to-rate-user-page"]')
     expect(moveToRateUserPageBtn1.exists()).toBe(true)
 
-    const unratedUser2 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser2.user_rating_id}"]`)
+    const unratedUser2 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser2.consultation_id}"]`)
     const userAccountIdLabel2 = unratedUser2.find('[data-test="user-account-id-label"]')
     expect(userAccountIdLabel2.text()).toContain(`ユーザーID（${dummyUnratedUser2.user_account_id}）`)
     const unratedUser2ConsultationDateTime = unratedUser2.find('[data-test="consultation-date-time"]')
@@ -462,7 +462,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedConsultantsDescription = wrapper.find('[data-test="unrated-consultants-description"]')
     expect(unratedConsultantsDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_CONSULTANTS}件分表示されます。${MAX_NUM_OF_UNRATED_CONSULTANTS}件を超えた分は表示されているコンサルタントの評価を終えると表示されます。`)
 
-    const unratedConsultant1 = wrapper.find(`[data-test="consultant-rating-id-${dummyUnratedConsultant1.consultant_rating_id}"]`)
+    const unratedConsultant1 = wrapper.find(`[data-test="unrated-consultant-consultation-id-${dummyUnratedConsultant1.consultation_id}"]`)
     const moveToRateConsultantPageBtn1 = unratedConsultant1.find('[data-test="move-to-rate-consultant-page"]')
     expect(moveToRateConsultantPageBtn1.exists()).toBe(true)
     await moveToRateConsultantPageBtn1.trigger('click')
@@ -470,7 +470,7 @@ describe('UnratedItemListPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     const dateTime = dummyUnratedConsultant1.meeting_date_time_in_jst
-    const data = `/rate-consultant/${dummyUnratedConsultant1.consultant_rating_id}?consultant-id=${dummyUnratedConsultant1.consultant_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
+    const data = `/rate-consultant/${dummyUnratedConsultant1.consultation_id}?consultant-id=${dummyUnratedConsultant1.consultant_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 
@@ -492,7 +492,7 @@ describe('UnratedItemListPage.vue', () => {
     const unratedUsersDescription = wrapper.find('[data-test="unrated-users-description"]')
     expect(unratedUsersDescription.text()).toContain(`相談日時が古い方から最大${MAX_NUM_OF_UNRATED_USERS}件分表示されます。${MAX_NUM_OF_UNRATED_USERS}件を超えた分は表示されているユーザーの評価を終えると表示されます。`)
 
-    const unratedUser1 = wrapper.find(`[data-test="user-rating-id-${dummyUnratedUser1.user_rating_id}"]`)
+    const unratedUser1 = wrapper.find(`[data-test="unrated-user-consultation-id-${dummyUnratedUser1.consultation_id}"]`)
     const moveToRateUserPageBtn1 = unratedUser1.find('[data-test="move-to-rate-user-page"]')
     expect(moveToRateUserPageBtn1.exists()).toBe(true)
     await moveToRateUserPageBtn1.trigger('click')
@@ -500,7 +500,7 @@ describe('UnratedItemListPage.vue', () => {
 
     expect(routerPushMock).toHaveBeenCalledTimes(1)
     const dateTime = dummyUnratedUser1.meeting_date_time_in_jst
-    const data = `/rate-user/${dummyUnratedUser1.user_rating_id}?user-id=${dummyUnratedUser1.user_account_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
+    const data = `/rate-user/${dummyUnratedUser1.consultation_id}?user-id=${dummyUnratedUser1.user_account_id}&year=${dateTime.year}&month=${dateTime.month}&day=${dateTime.day}&hour=${dateTime.hour}`
     expect(routerPushMock).toHaveBeenCalledWith(data)
   })
 })

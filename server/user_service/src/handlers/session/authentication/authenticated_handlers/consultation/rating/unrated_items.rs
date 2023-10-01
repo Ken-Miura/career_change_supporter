@@ -42,7 +42,7 @@ pub(crate) struct UnratedItemsResult {
 /// 未評価のコンサルタント
 #[derive(Clone, Debug, Serialize, PartialEq)]
 struct UnratedConsultant {
-    consultant_rating_id: i64,
+    consultation_id: i64,
     consultant_id: i64,
     meeting_date_time_in_jst: ConsultationDateTime, // （ユーザーとして）このコンサルタントと相談した日時
 }
@@ -50,7 +50,7 @@ struct UnratedConsultant {
 /// 未評価のユーザー
 #[derive(Clone, Debug, Serialize, PartialEq)]
 struct UnratedUser {
-    user_rating_id: i64,
+    consultation_id: i64,
     user_account_id: i64,
     meeting_date_time_in_jst: ConsultationDateTime, // （コンサルタントとして）このユーザーと相談した日時
 }
@@ -119,7 +119,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                 })?;
                 let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
                 Ok(UnratedConsultant {
-                    consultant_rating_id: cr.consultant_rating_id,
+                    consultation_id: cr.consultation_id,
                     consultant_id: c.consultant_id,
                     meeting_date_time_in_jst: ConsultationDateTime {
                         year: meeting_at_in_jst.year(),
@@ -167,7 +167,7 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
                 })?;
                 let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
                 Ok(UnratedUser {
-                    user_rating_id: ur.user_rating_id,
+                    consultation_id: ur.consultation_id,
                     user_account_id: c.user_account_id,
                     meeting_date_time_in_jst: ConsultationDateTime {
                         year: meeting_at_in_jst.year(),
@@ -437,7 +437,7 @@ mod tests {
 
     fn create_dummy_unrated_consultant1() -> UnratedConsultant {
         UnratedConsultant {
-            consultant_rating_id: 70671,
+            consultation_id: 70671,
             consultant_id: 234,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2023,
@@ -450,7 +450,7 @@ mod tests {
 
     fn create_dummy_unrated_consultant2() -> UnratedConsultant {
         UnratedConsultant {
-            consultant_rating_id: 670,
+            consultation_id: 670,
             consultant_id: 111,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2022,
@@ -463,7 +463,7 @@ mod tests {
 
     fn create_dummy_unrated_user1() -> UnratedUser {
         UnratedUser {
-            user_rating_id: 5761,
+            consultation_id: 5761,
             user_account_id: 10,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2023,
@@ -476,7 +476,7 @@ mod tests {
 
     fn create_dummy_unrated_user2() -> UnratedUser {
         UnratedUser {
-            user_rating_id: 4107,
+            consultation_id: 4107,
             user_account_id: 12,
             meeting_date_time_in_jst: ConsultationDateTime {
                 year: 2023,
