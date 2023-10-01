@@ -72,6 +72,7 @@ async fn handle_consultation_request_detail(
     let user_ratings = op
         .filter_user_rating_by_user_account_id(req.user_account_id)
         .await?;
+    let user_ratings = reduce_user_ratings(user_ratings)?;
     let (rating, count) = calculate_rating_and_count(user_ratings)?;
     Ok((
         StatusCode::OK,
@@ -103,6 +104,20 @@ async fn handle_consultation_request_detail(
     ))
 }
 
+fn reduce_user_ratings(user_ratings: Vec<Option<i16>>) -> Result<Vec<i16>, ErrResp> {
+    user_ratings
+        .into_iter()
+        .filter(|u| u.is_some())
+        .map(|m| {
+            let result = m.ok_or_else(|| {
+                error!("no rating found");
+                unexpected_err_resp()
+            })?;
+            Ok(result)
+        })
+        .collect()
+}
+
 #[async_trait]
 trait ConsultationRequestDetailOperation {
     async fn find_consultation_req_by_consultation_req_id(
@@ -112,7 +127,7 @@ trait ConsultationRequestDetailOperation {
     async fn filter_user_rating_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<i16>, ErrResp>;
+    ) -> Result<Vec<Option<i16>>, ErrResp>;
 }
 
 struct ConsultationRequestDetailOperationImpl {
@@ -132,7 +147,7 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
     async fn filter_user_rating_by_user_account_id(
         &self,
         user_account_id: i64,
-    ) -> Result<Vec<i16>, ErrResp> {
+    ) -> Result<Vec<Option<i16>>, ErrResp> {
         let models = consultation::Entity::find()
             .filter(consultation::Column::UserAccountId.eq(user_account_id))
             .find_with_related(UserRating)
@@ -149,25 +164,23 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         models
             .into_iter()
             .map(|m| {
-                // TODO: 設計が変わったので修正、対策
-                // consultationとuser_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
-                let ur = m.1.get(0).ok_or_else(|| {
-                    error!(
-                        "failed to find user_rating (consultation_id: {})",
-                        m.0.consultation_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                let r = ur.rating.ok_or_else(|| {
-                    error!(
-                        "rating is null (consultation_id: {}, user_account_id: {})",
-                        ur.consultation_id, m.0.user_account_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                Ok(r)
+                // consultationとuser_ratingは1対0、または1対1の設計
+                let ur_option = m.1.get(0);
+                if let Some(ur) = ur_option {
+                    let r = ur.rating.ok_or_else(|| {
+                        // NOT NULL 条件で検索しているのでNULLの場合（＝ない場合）はエラー
+                        error!(
+                            "rating is null (consultation_id: {}, user_account_id: {})",
+                            ur.consultation_id, m.0.user_account_id
+                        );
+                        unexpected_err_resp()
+                    })?;
+                    Ok(Some(r))
+                } else {
+                    Ok(None)
+                }
             })
-            .collect::<Result<Vec<i16>, ErrResp>>()
+            .collect::<Result<Vec<Option<i16>>, ErrResp>>()
     }
 }
 
@@ -246,7 +259,7 @@ mod tests {
             consultation_req_id: i64,
             current_date_time: DateTime<FixedOffset>,
             req: Option<ConsultationRequest>,
-            user_ratings: Vec<i16>,
+            user_ratings: Vec<Option<i16>>,
         ) -> Self {
             Input {
                 user_account_id: account_id_of_consultant,
@@ -267,7 +280,7 @@ mod tests {
         account_id_of_user: i64,
         consultation_req_id: i64,
         req: Option<ConsultationRequest>,
-        user_ratings: Vec<i16>,
+        user_ratings: Vec<Option<i16>>,
     }
 
     #[async_trait]
@@ -283,7 +296,7 @@ mod tests {
         async fn filter_user_rating_by_user_account_id(
             &self,
             user_account_id: i64,
-        ) -> Result<Vec<i16>, ErrResp> {
+        ) -> Result<Vec<Option<i16>>, ErrResp> {
             assert_eq!(self.account_id_of_user, user_account_id);
             Ok(self.user_ratings.clone())
         }
@@ -379,7 +392,7 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5],
+                    vec![Some(5)],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -435,7 +448,7 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5, 2],
+                    vec![Some(5), Some(2)],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -491,7 +504,63 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
+                ),
+                expected: Ok((
+                    StatusCode::OK,
+                    Json(ConsultationRequestDetail {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        user_rating: Some("3.3".to_string()),
+                        num_of_rated_of_user: 3,
+                        fee_per_hour_in_yen,
+                        first_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 7,
+                        },
+                        second_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 5,
+                            hour: 23,
+                        },
+                        third_candidate_in_jst: ConsultationDateTime {
+                            year: 2022,
+                            month: 12,
+                            day: 11,
+                            hour: 7,
+                        },
+                    }),
+                )),
+            },
+            TestCase {
+                name: "success case 4 (3 user ratings found with Nones)".to_string(),
+                input: Input::new(
+                    account_id_of_consultant,
+                    account_id_of_user,
+                    consultation_req_id,
+                    current_date_time,
+                    Some(ConsultationRequest {
+                        consultation_req_id,
+                        user_account_id: account_id_of_user,
+                        consultant_id: account_id_of_consultant,
+                        fee_per_hour_in_yen,
+                        first_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 5, 7, 0, 0)
+                            .unwrap(),
+                        second_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 5, 23, 0, 0)
+                            .unwrap(),
+                        third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
+                            .unwrap(),
+                        latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE
+                            .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
+                            .unwrap(),
+                    }),
+                    vec![None, Some(5), Some(2), None, Some(3), None],
                 ),
                 expected: Ok((
                     StatusCode::OK,
@@ -547,7 +616,7 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -581,7 +650,7 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -598,7 +667,7 @@ mod tests {
                     consultation_req_id,
                     current_date_time,
                     None,
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -632,7 +701,7 @@ mod tests {
                             .with_ymd_and_hms(2022, 12, 11, 7, 0, 0)
                             .unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -658,7 +727,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Err((
                     StatusCode::BAD_REQUEST,
@@ -684,7 +753,7 @@ mod tests {
                         third_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                         latest_candidate_date_time_in_jst: JAPANESE_TIME_ZONE.with_ymd_and_hms(2022, 12, 11, 7, 0, 0).unwrap(),
                     }),
-                    vec![5, 2, 3],
+                    vec![Some(5), Some(2), Some(3)],
                 ),
                 expected: Ok((
                     StatusCode::OK,
