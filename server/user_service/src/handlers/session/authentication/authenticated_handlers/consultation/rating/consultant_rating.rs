@@ -9,19 +9,18 @@ use common::opensearch::{update_document, INDEX_NAME};
 use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl};
 use common::rating::calculate_average_rating;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::ConsultantRating;
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use entity::{consultant_rating, consultation, receipt, settlement};
+use entity::{receipt, settlement};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
 
 use crate::err::{unexpected_err_resp, Code};
-use crate::handlers::session::authentication::authenticated_handlers::consultation::validate_consultation_id_is_positive;
+use crate::handlers::session::authentication::authenticated_handlers::consultation::{validate_consultation_id_is_positive, reduce_ratings};
 use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
 use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
@@ -78,7 +77,7 @@ trait ConsultantRatingOperation {
     async fn filter_consultant_rating_by_consultant_id(
         &self,
         consultant_id: i64,
-    ) -> Result<Vec<i16>, ErrResp>;
+    ) -> Result<Vec<Option<i16>>, ErrResp>;
 
     async fn update_rating_on_document_if_not_disabled(
         &self,
@@ -189,14 +188,14 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
     async fn filter_consultant_rating_by_consultant_id(
         &self,
         consultant_id: i64,
-    ) -> Result<Vec<i16>, ErrResp> {
+    ) -> Result<Vec<Option<i16>>, ErrResp> {
         // 評価するためには相談が必要 => 相談のためにはユーザー、コンサルタントの同意が必要
         // そのため、評価数がメモリ容量を圧迫するほど貯まるとは考えづらく、複数回に分けてフェッチするような実装とはしていない
         // NOTE: 実際に問題（特定のコンサルタントへの評価に時間がかかる問題）が発生した際、ここを確認して必要なら修正する
-        let models = consultation::Entity::find()
-            .filter(consultation::Column::ConsultantId.eq(consultant_id))
-            .find_with_related(ConsultantRating)
-            .filter(consultant_rating::Column::Rating.is_not_null())
+        let models = entity::consultation::Entity::find()
+            .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
+            .find_with_related(entity::consultant_rating::Entity)
+            .filter(entity::consultant_rating::Column::Rating.is_not_null())
             .all(&self.pool)
             .await
             .map_err(|e| {
@@ -209,25 +208,23 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
         models
             .into_iter()
             .map(|m| {
-                // TODO: 設計が変わったので修正、対策
-                // consultationとconsultant_ratingは1対1の設計なので取れない場合は想定外エラーとして扱う
-                let cr = m.1.get(0).ok_or_else(|| {
-                    error!(
-                        "failed to find consultant_rating (consultation_id: {})",
-                        m.0.consultation_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                let r = cr.rating.ok_or_else(|| {
-                    error!(
-                        "rating is null (consultation_id: {}, consultant_id: {})",
-                        cr.consultation_id, m.0.consultant_id
-                    );
-                    unexpected_err_resp()
-                })?;
-                Ok(r)
+                // consultationとconsultant_ratingは1対0、または1対1の設計
+                let cr_option = m.1.get(0);
+                if let Some(cr) = cr_option {
+                    let r = cr.rating.ok_or_else(|| {
+                        // NOT NULL 条件で検索しているのでNULLの場合（＝ない場合）はエラー
+                        error!(
+                            "rating is null (consultation_id: {}, consultant_id: {})",
+                            cr.consultation_id, m.0.consultant_id
+                        );
+                        unexpected_err_resp()
+                    })?;
+                    Ok(Some(r))
+                } else {
+                    Ok(None)
+                }
             })
-            .collect::<Result<Vec<i16>, ErrResp>>()
+            .collect::<Result<Vec<Option<i16>>, ErrResp>>()
     }
 
     async fn update_rating_on_document_if_not_disabled(
@@ -488,6 +485,7 @@ async fn handle_consultant_rating(
     let ratings = op
         .filter_consultant_rating_by_consultant_id(cl.consultant_id)
         .await?;
+    let ratings = reduce_ratings(ratings)?;
     let num_of_rated = ratings.len() as i32;
     // Noneの場合は評価数0を意味するので、現在の評価は0として扱う
     let average_rating = calculate_average_rating(ratings).unwrap_or(0.0);
@@ -567,7 +565,7 @@ mod tests {
         rating: i16,
         current_date_time: DateTime<FixedOffset>,
         already_exists: bool,
-        ratings: Vec<i16>,
+        ratings: Vec<Option<i16>>,
         over_capacity: bool,
     }
 
@@ -608,7 +606,7 @@ mod tests {
         async fn filter_consultant_rating_by_consultant_id(
             &self,
             consultant_id: i64,
-        ) -> Result<Vec<i16>, ErrResp> {
+        ) -> Result<Vec<Option<i16>>, ErrResp> {
             assert_eq!(self.consultation_info.consultant_id, consultant_id);
             Ok(self.ratings.clone())
         }
@@ -621,6 +619,7 @@ mod tests {
         ) -> Result<(), ErrResp> {
             assert_eq!(self.consultation_info.consultant_id, consultant_id);
             let ratings = self.ratings.clone();
+            let ratings = reduce_ratings(ratings)?;
             assert_eq!(ratings.len() as i32, num_of_rated);
             let average = calculate_average_rating(ratings).unwrap_or(0.0);
             let diff = (averate_rating - average).abs();
@@ -679,7 +678,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -703,7 +702,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating + 3],
+                        ratings: vec![Some(rating + 3)],
                         over_capacity,
                     },
                 },
@@ -727,7 +726,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating + 3 + 2],
+                        ratings: vec![Some(rating + 3 + 2)],
                         over_capacity,
                     },
                 },
@@ -751,7 +750,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -780,7 +779,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -809,7 +808,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -838,7 +837,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -867,7 +866,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -896,7 +895,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: true,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity,
                     },
                 },
@@ -928,7 +927,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![rating],
+                        ratings: vec![Some(rating)],
                         over_capacity: true,
                     },
                 },

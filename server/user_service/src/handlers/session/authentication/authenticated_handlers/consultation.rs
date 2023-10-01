@@ -141,6 +141,20 @@ fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrR
     Ok(())
 }
 
+fn reduce_ratings(ratings: Vec<Option<i16>>) -> Result<Vec<i16>, ErrResp> {
+    ratings
+        .into_iter()
+        .filter(|r| r.is_some())
+        .map(|m| {
+            let result = m.ok_or_else(|| {
+                error!("no rating found");
+                unexpected_err_resp()
+            })?;
+            Ok(result)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
 

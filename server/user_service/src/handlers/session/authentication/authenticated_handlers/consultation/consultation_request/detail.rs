@@ -13,7 +13,7 @@ use tracing::error;
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{
-    consultation_req_exists, ConsultationDateTime, ConsultationRequest,
+    consultation_req_exists, ConsultationDateTime, ConsultationRequest, reduce_ratings,
 };
 use crate::optional_env_var::MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS;
 
@@ -70,7 +70,7 @@ async fn handle_consultation_request_detail(
     let user_ratings = op
         .filter_user_rating_by_user_account_id(req.user_account_id)
         .await?;
-    let user_ratings = reduce_user_ratings(user_ratings)?;
+    let user_ratings = reduce_ratings(user_ratings)?;
     let (rating, count) = calculate_rating_and_count(user_ratings)?;
     Ok((
         StatusCode::OK,
@@ -100,20 +100,6 @@ async fn handle_consultation_request_detail(
             },
         }),
     ))
-}
-
-fn reduce_user_ratings(user_ratings: Vec<Option<i16>>) -> Result<Vec<i16>, ErrResp> {
-    user_ratings
-        .into_iter()
-        .filter(|u| u.is_some())
-        .map(|m| {
-            let result = m.ok_or_else(|| {
-                error!("no rating found");
-                unexpected_err_resp()
-            })?;
-            Ok(result)
-        })
-        .collect()
 }
 
 #[async_trait]
