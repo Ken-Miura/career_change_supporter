@@ -518,6 +518,18 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
+                r"CREATE INDEX consultation_user_account_id_idx ON ccs_schema.consultation (user_account_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX consultation_consultant_id_idx ON ccs_schema.consultation (consultant_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
                 r"CREATE INDEX consultation_meeting_at_idx ON ccs_schema.consultation (meeting_at);",
             ))
             .await

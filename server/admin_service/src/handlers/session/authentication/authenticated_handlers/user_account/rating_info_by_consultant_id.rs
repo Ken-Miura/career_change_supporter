@@ -60,6 +60,7 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
         &self,
         consultant_id: i64,
     ) -> Result<Vec<Option<i16>>, ErrResp> {
+        // consultationの方に検索時の計算量を削減できるインデックスを貼っているため、consultationのLEFT JOINとする
         let models = entity::consultation::Entity::find()
             .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
             .find_with_related(entity::consultant_rating::Entity)

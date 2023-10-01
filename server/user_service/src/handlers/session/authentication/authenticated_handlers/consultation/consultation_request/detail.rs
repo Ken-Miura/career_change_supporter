@@ -6,9 +6,7 @@ use axum::{async_trait, Json};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, Timelike, Utc};
 use common::rating::{calculate_average_rating, round_rating_to_one_decimal_places};
 use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
-use entity::prelude::UserRating;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
-use entity::{consultation, user_rating};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -148,10 +146,11 @@ impl ConsultationRequestDetailOperation for ConsultationRequestDetailOperationIm
         &self,
         user_account_id: i64,
     ) -> Result<Vec<Option<i16>>, ErrResp> {
-        let models = consultation::Entity::find()
-            .filter(consultation::Column::UserAccountId.eq(user_account_id))
-            .find_with_related(UserRating)
-            .filter(user_rating::Column::Rating.is_not_null())
+        // consultationの方に検索時の計算量を削減できるインデックスを貼っているため、consultationのLEFT JOINとする
+        let models = entity::consultation::Entity::find()
+            .filter(entity::consultation::Column::UserAccountId.eq(user_account_id))
+            .find_with_related(entity::user_rating::Entity)
+            .filter(entity::user_rating::Column::Rating.is_not_null())
             .all(&self.pool)
             .await
             .map_err(|e| {
