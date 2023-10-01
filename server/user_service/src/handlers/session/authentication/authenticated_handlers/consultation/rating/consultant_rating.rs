@@ -661,6 +661,30 @@ mod tests {
         let over_capacity = false;
         vec![
             TestCase {
+                name: "success 0".to_string(),
+                input: Input {
+                    account_id,
+                    consultation_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        consultation_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![None],
+                        over_capacity,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
+            },
+            TestCase {
                 name: "success 1".to_string(),
                 input: Input {
                     account_id,
@@ -702,7 +726,7 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![Some(rating + 3)],
+                        ratings: vec![Some(rating), Some(3)],
                         over_capacity,
                     },
                 },
@@ -726,7 +750,31 @@ mod tests {
                         rating,
                         current_date_time,
                         already_exists: false,
-                        ratings: vec![Some(rating + 3 + 2)],
+                        ratings: vec![Some(rating), Some(3), Some(2)],
+                        over_capacity,
+                    },
+                },
+                expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
+            },
+            TestCase {
+                name: "success 4".to_string(),
+                input: Input {
+                    account_id,
+                    consultation_id,
+                    rating,
+                    current_date_time,
+                    op: ConsultantRatingOperationMock {
+                        consultation_id,
+                        consultation_info: ConsultationInfo {
+                            consultation_id,
+                            user_account_id,
+                            consultant_id,
+                            consultation_date_time_in_jst,
+                        },
+                        rating,
+                        current_date_time,
+                        already_exists: false,
+                        ratings: vec![None, Some(rating), None, Some(3), Some(2), None],
                         over_capacity,
                     },
                 },
