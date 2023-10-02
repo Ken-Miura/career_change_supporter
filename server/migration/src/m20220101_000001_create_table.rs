@@ -841,7 +841,7 @@ impl MigrationTrait for Migration {
              *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
              */
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.receipt (
+                r"CREATE TABLE ccs_schema.receipt_of_payment (
                   consultation_id BIGINT PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
@@ -856,27 +856,29 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt To admin_app;"))
+            .execute(
+                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt_of_payment To admin_app;"),
+            )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_user_account_id_idx ON ccs_schema.receipt (user_account_id);",
+                    r"CREATE INDEX receipt_of_payment_user_account_id_idx ON ccs_schema.receipt_of_payment (user_account_id);",
                 ),
             )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX receipt_consultant_id_idx ON ccs_schema.receipt (consultant_id);",
+                r"CREATE INDEX receipt_of_payment_consultant_id_idx ON ccs_schema.receipt_of_payment (consultant_id);",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_meeting_at_idx ON ccs_schema.receipt (meeting_at);",
+                    r"CREATE INDEX receipt_of_payment_meeting_at_idx ON ccs_schema.receipt_of_payment (meeting_at);",
                 ),
             )
             .await
@@ -884,7 +886,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_created_at_idx ON ccs_schema.receipt (created_at);",
+                    r"CREATE INDEX receipt_of_payment_created_at_idx ON ccs_schema.receipt_of_payment (created_at);",
                 ),
             )
             .await
@@ -902,7 +904,7 @@ impl MigrationTrait for Migration {
              *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
              */
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.refund (
+                r"CREATE TABLE ccs_schema.refunded_payment (
                   consultation_id BIGINT PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
@@ -917,30 +919,30 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
         let _ = conn
-            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.refund To admin_app;"))
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.refunded_payment To admin_app;"))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX refund_user_account_id_idx ON ccs_schema.refund (user_account_id);",
+                r"CREATE INDEX refunded_payment_user_account_id_idx ON ccs_schema.refunded_payment (user_account_id);",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX refund_consultant_id_idx ON ccs_schema.refund (consultant_id);",
+                r"CREATE INDEX refunded_payment_consultant_id_idx ON ccs_schema.refunded_payment (consultant_id);",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"CREATE INDEX refund_meeting_at_idx ON ccs_schema.refund (meeting_at);"),
+                sql.stmt(r"CREATE INDEX refunded_payment_meeting_at_idx ON ccs_schema.refunded_payment (meeting_at);"),
             )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"CREATE INDEX refund_created_at_idx ON ccs_schema.refund (created_at);"),
+                sql.stmt(r"CREATE INDEX refunded_payment_created_at_idx ON ccs_schema.refunded_payment (created_at);"),
             )
             .await
             .map(|_| ())?;
@@ -1689,113 +1691,113 @@ impl MigrationTrait for Migration {
             .await
             .map(|_| ())?;
 
-        // let _ = conn
-        //     /* 下記のタイミングで決済テーブルの情報を元に生成される。
-        //      *   - ユーザーがコンサルタントの評価をしたとき（=決済をしたとき）
-        //      *   - 生成されてから一定期間後（ユーザーが評価せずに放置し続けた場合）(定期実行ツールにより削除される)
-        //      *
-        //      * ユーザーからの返金要求が正当であり、かつ返金可能な期間の場合、管理者により削除される（返金テーブルへ情報が移動される）
-        //      */
-        //     // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
-        //     // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
-        //     // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
-        //     .execute(sql.stmt(
-        //         r"CREATE TABLE ccs_schema.receipt (
-        //           receipt_id BIGSERIAL PRIMARY KEY,
-        //           consultation_id BIGINT NOT NULL UNIQUE,
-        //           charge_id TEXT NOT NULL UNIQUE,
-        //           fee_per_hour_in_yen INTEGER NOT NULL,
-        //           platform_fee_rate_in_percentage TEXT NOT NULL,
-        //           settled_at TIMESTAMP WITH TIME ZONE NOT NULL
-        //         );",
-        //     ))
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt To user_app;"))
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(
-        //             r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.receipt To admin_app;",
-        //         ),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.receipt_receipt_id_seq TO user_app;"),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(
-        //             r"GRANT USAGE ON SEQUENCE ccs_schema.receipt_receipt_id_seq TO admin_app;",
-        //         ),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(
-        //             r"CREATE INDEX receipt_consultation_id_idx ON ccs_schema.receipt (consultation_id);",
-        //         ),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(
-        //             r"CREATE INDEX receipt_settled_at_idx ON ccs_schema.receipt (settled_at);",
-        //         ),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
+        let _ = conn
+            /* 下記のタイミングで決済テーブルの情報を元に生成される。
+             *   - ユーザーがコンサルタントの評価をしたとき（=決済をしたとき）
+             *   - 生成されてから一定期間後（ユーザーが評価せずに放置し続けた場合）(定期実行ツールにより削除される)
+             *
+             * ユーザーからの返金要求が正当であり、かつ返金可能な期間の場合、管理者により削除される（返金テーブルへ情報が移動される）
+             */
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.receipt (
+                  receipt_id BIGSERIAL PRIMARY KEY,
+                  consultation_id BIGINT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  settled_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt To user_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT SELECT, INSERT, UPDATE, DELETE ON ccs_schema.receipt To admin_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.receipt_receipt_id_seq TO user_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"GRANT USAGE ON SEQUENCE ccs_schema.receipt_receipt_id_seq TO admin_app;",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX receipt_consultation_id_idx ON ccs_schema.receipt (consultation_id);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX receipt_settled_at_idx ON ccs_schema.receipt (settled_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
 
-        // let _ = conn
-        //     /* 管理者がユーザーからの返金要求に対応したときに生成される。サービスの運用期間を通じて存在し続ける */
-        //     // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
-        //     // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
-        //     // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
-        //     .execute(sql.stmt(
-        //         r"CREATE TABLE ccs_schema.refund (
-        //           refund_id BIGSERIAL PRIMARY KEY,
-        //           consultation_id BIGINT NOT NULL UNIQUE,
-        //           charge_id TEXT NOT NULL UNIQUE,
-        //           fee_per_hour_in_yen INTEGER NOT NULL,
-        //           platform_fee_rate_in_percentage TEXT NOT NULL,
-        //           settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
-        //           refunded_at TIMESTAMP WITH TIME ZONE NOT NULL
-        //         );",
-        //     ))
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.refund To admin_app;"))
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.refund_refund_id_seq TO admin_app;"),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(sql.stmt(
-        //         r"CREATE INDEX refund_consultation_id_idx ON ccs_schema.refund (consultation_id);",
-        //     ))
-        //     .await
-        //     .map(|_| ())?;
-        // let _ = conn
-        //     .execute(
-        //         sql.stmt(
-        //             r"CREATE INDEX refund_refunded_at_idx ON ccs_schema.refund (refunded_at);",
-        //         ),
-        //     )
-        //     .await
-        //     .map(|_| ())?;
+        let _ = conn
+            /* 管理者がユーザーからの返金要求に対応したときに生成される。サービスの運用期間を通じて存在し続ける */
+            // charge_idには、ch_fa990a4c10672a93053a774730b0aのような32文字の文字列が入ることが推定されるが、
+            // PAY.JPの実装の変更がある場合に備えてVACHARでなく、TEXTで受ける
+            // platform_fee_rate_in_percentageには少数を示す文字列を含む（金額の計算に使うので浮動小数点は使わず、処理に時間をかけないようにnumericも使わない）
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.refund (
+                  refund_id BIGSERIAL PRIMARY KEY,
+                  consultation_id BIGINT NOT NULL UNIQUE,
+                  charge_id TEXT NOT NULL UNIQUE,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  platform_fee_rate_in_percentage TEXT NOT NULL,
+                  settled_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  refunded_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(r"GRANT SELECT, INSERT, UPDATE ON ccs_schema.refund To admin_app;"))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(r"GRANT USAGE ON SEQUENCE ccs_schema.refund_refund_id_seq TO admin_app;"),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(sql.stmt(
+                r"CREATE INDEX refund_consultation_id_idx ON ccs_schema.refund (consultation_id);",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX refund_refunded_at_idx ON ccs_schema.refund (refunded_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
 
         Ok(())
     }
