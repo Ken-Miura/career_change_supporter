@@ -841,7 +841,7 @@ impl MigrationTrait for Migration {
              *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
              */
             .execute(sql.stmt(
-                r"CREATE TABLE ccs_schema.receipt_of_payment (
+                r"CREATE TABLE ccs_schema.receipt_of_consultation (
                   consultation_id BIGINT PRIMARY KEY,
                   user_account_id BIGINT NOT NULL,
                   consultant_id BIGINT NOT NULL,
@@ -857,28 +857,28 @@ impl MigrationTrait for Migration {
             .map(|_| ())?;
         let _ = conn
             .execute(
-                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt_of_payment To admin_app;"),
+                sql.stmt(r"GRANT SELECT, INSERT ON ccs_schema.receipt_of_consultation To admin_app;"),
             )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_of_payment_user_account_id_idx ON ccs_schema.receipt_of_payment (user_account_id);",
+                    r"CREATE INDEX receipt_of_consultation_user_account_id_idx ON ccs_schema.receipt_of_consultation (user_account_id);",
                 ),
             )
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(sql.stmt(
-                r"CREATE INDEX receipt_of_payment_consultant_id_idx ON ccs_schema.receipt_of_payment (consultant_id);",
+                r"CREATE INDEX receipt_of_consultation_consultant_id_idx ON ccs_schema.receipt_of_consultation (consultant_id);",
             ))
             .await
             .map(|_| ())?;
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_of_payment_meeting_at_idx ON ccs_schema.receipt_of_payment (meeting_at);",
+                    r"CREATE INDEX receipt_of_consultation_meeting_at_idx ON ccs_schema.receipt_of_consultation (meeting_at);",
                 ),
             )
             .await
@@ -886,7 +886,7 @@ impl MigrationTrait for Migration {
         let _ = conn
             .execute(
                 sql.stmt(
-                    r"CREATE INDEX receipt_of_payment_created_at_idx ON ccs_schema.receipt_of_payment (created_at);",
+                    r"CREATE INDEX receipt_of_consultation_created_at_idx ON ccs_schema.receipt_of_consultation (created_at);",
                 ),
             )
             .await
