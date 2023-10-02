@@ -440,11 +440,13 @@ impl ConsultationRequestAcceptanceOperation for ConsultationRequestAcceptanceOpe
                     let req =
                         get_consultation_req_with_exclusive_lock(consultation_req_id, txn).await?;
 
-                    let consultation_id =
-                        create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
-                            .await?;
+                    let c = create_consultation(&req, &meeting_date_time, room_name.as_str(), txn)
+                        .await?;
                     create_awaiting_payment(
-                        consultation_id,
+                        c.consultation_id,
+                        c.user_account_id,
+                        c.consultant_id,
+                        c.meeting_at,
                         current_date_time,
                         fee_per_hour_in_yen,
                         txn,
@@ -537,7 +539,7 @@ async fn create_consultation(
     meeting_date_time: &DateTime<FixedOffset>,
     room_name: &str,
     txn: &DatabaseTransaction,
-) -> Result<i64, ErrRespStruct> {
+) -> Result<entity::consultation::Model, ErrRespStruct> {
     let active_model = consultation::ActiveModel {
         consultation_id: NotSet,
         user_account_id: Set(req.user_account_id),
@@ -554,17 +556,23 @@ async fn create_consultation(
             err_resp: unexpected_err_resp(),
         }
     })?;
-    Ok(result.consultation_id)
+    Ok(result)
 }
 
 async fn create_awaiting_payment(
     consultation_id: i64,
+    user_account_id: i64,
+    consultant_id: i64,
+    meeting_at: DateTime<FixedOffset>,
     current_date_time: DateTime<FixedOffset>,
     fee_per_hour_in_yen: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let active_model = entity::awaiting_payment::ActiveModel {
         consultation_id: Set(consultation_id),
+        user_account_id: Set(user_account_id),
+        consultant_id: Set(consultant_id),
+        meeting_at: Set(meeting_at),
         fee_per_hour_in_yen: Set(fee_per_hour_in_yen),
         created_at: Set(current_date_time),
     };

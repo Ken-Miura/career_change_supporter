@@ -63,7 +63,7 @@ trait UnratedItemsOperation {
         &self,
         user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
-    ) -> Result<Vec<Option<UnratedConsultant>>, ErrResp>;
+    ) -> Result<Vec<UnratedConsultant>, ErrResp>;
 
     /// ユーザーに対する未評価のレコードを取得する
     /// 取得するレコードは、最大[MAX_NUM_OF_UNRATED_USERS]件で相談日時で昇順にソート済
@@ -72,7 +72,7 @@ trait UnratedItemsOperation {
         &self,
         consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
-    ) -> Result<Vec<Option<UnratedUser>>, ErrResp>;
+    ) -> Result<Vec<UnratedUser>, ErrResp>;
 }
 
 struct UnratedItemsOperationImpl {
@@ -85,65 +85,54 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
         &self,
         user_account_id: i64,
         start_criteria: DateTime<FixedOffset>,
-    ) -> Result<Vec<Option<UnratedConsultant>>, ErrResp> {
-        // consultationの方に検索時の計算量を削減できるインデックスを貼っているため、consultationのLEFT JOINとする
-        let results = entity::consultation::Entity::find()
-            .filter(entity::consultation::Column::MeetingAt.lt(start_criteria))
-            .filter(entity::consultation::Column::UserAccountId.eq(user_account_id))
-            .find_with_related(entity::consultant_rating::Entity)
+    ) -> Result<Vec<UnratedConsultant>, ErrResp> {
+        let results = entity::consultant_rating::Entity::find()
+            .filter(entity::consultant_rating::Column::MeetingAt.lt(start_criteria))
+            .filter(entity::consultant_rating::Column::UserAccountId.eq(user_account_id))
             .filter(entity::consultant_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
             .limit(MAX_NUM_OF_UNRATED_CONSULTANTS)
-            .order_by_asc(entity::consultation::Column::MeetingAt)
+            .order_by_asc(entity::consultant_rating::Column::MeetingAt)
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                "failed to filter consultation and consultant_rating (user_account_id: {}, start_criteria: {}): {}", user_account_id, start_criteria, e);
+                "failed to filter consultant_rating (user_account_id: {}, start_criteria: {}): {}", user_account_id, start_criteria, e);
                 unexpected_err_resp()
             })?;
         results
             .into_iter()
             .map(|m| {
-                let c = m.0;
-                // consultationとconsultant_ratingは1対0、または1対1の設計
-                let cr_option = m.1.get(0);
-                if let Some(cr) = cr_option {
-                    let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
-                    Ok(Some(UnratedConsultant {
-                        consultation_id: cr.consultation_id,
-                        consultant_id: c.consultant_id,
-                        meeting_date_time_in_jst: ConsultationDateTime {
-                            year: meeting_at_in_jst.year(),
-                            month: meeting_at_in_jst.month(),
-                            day: meeting_at_in_jst.day(),
-                            hour: meeting_at_in_jst.hour(),
-                        },
-                    }))
-                } else {
-                    Ok(None)
-                }
+                let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                Ok(UnratedConsultant {
+                    consultation_id: m.consultation_id,
+                    consultant_id: m.consultant_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                })
             })
-            .collect::<Result<Vec<Option<UnratedConsultant>>, ErrResp>>()
+            .collect::<Result<Vec<UnratedConsultant>, ErrResp>>()
     }
 
     async fn filter_unrated_users_by_consultant_id(
         &self,
         consultant_id: i64,
         start_criteria: DateTime<FixedOffset>,
-    ) -> Result<Vec<Option<UnratedUser>>, ErrResp> {
-        // consultationの方に検索時の計算量を削減できるインデックスを貼っているため、consultationのLEFT JOINとする
-        let results = entity::consultation::Entity::find()
-            .filter(entity::consultation::Column::MeetingAt.lt(start_criteria))
-            .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
-            .find_with_related(entity::user_rating::Entity)
+    ) -> Result<Vec<UnratedUser>, ErrResp> {
+        let results = entity::user_rating::Entity::find()
+            .filter(entity::user_rating::Column::MeetingAt.lt(start_criteria))
+            .filter(entity::user_rating::Column::ConsultantId.eq(consultant_id))
             .filter(entity::user_rating::Column::Rating.is_null()) // null -> まだ未評価であるもの
             .limit(MAX_NUM_OF_UNRATED_USERS)
-            .order_by_asc(entity::consultation::Column::MeetingAt)
+            .order_by_asc(entity::user_rating::Column::MeetingAt)
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter consultation and user_rating (consultant_id: {}, start_criteria: {}): {}",
+                    "failed to filter user_rating (consultant_id: {}, start_criteria: {}): {}",
                     consultant_id, start_criteria, e
                 );
                 unexpected_err_resp()
@@ -151,26 +140,19 @@ impl UnratedItemsOperation for UnratedItemsOperationImpl {
         results
             .into_iter()
             .map(|m| {
-                let c = m.0;
-                // consultationとuser_ratingは1対0、または1対1の設計
-                let ur_option = m.1.get(0);
-                if let Some(ur) = ur_option {
-                    let meeting_at_in_jst = c.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
-                    Ok(Some(UnratedUser {
-                        consultation_id: ur.consultation_id,
-                        user_account_id: c.user_account_id,
-                        meeting_date_time_in_jst: ConsultationDateTime {
-                            year: meeting_at_in_jst.year(),
-                            month: meeting_at_in_jst.month(),
-                            day: meeting_at_in_jst.day(),
-                            hour: meeting_at_in_jst.hour(),
-                        },
-                    }))
-                } else {
-                    Ok(None)
-                }
+                let meeting_at_in_jst = m.meeting_at.with_timezone(&*JAPANESE_TIME_ZONE);
+                Ok(UnratedUser {
+                    consultation_id: m.consultation_id,
+                    user_account_id: m.user_account_id,
+                    meeting_date_time_in_jst: ConsultationDateTime {
+                        year: meeting_at_in_jst.year(),
+                        month: meeting_at_in_jst.month(),
+                        day: meeting_at_in_jst.day(),
+                        hour: meeting_at_in_jst.hour(),
+                    },
+                })
             })
-            .collect::<Result<Vec<Option<UnratedUser>>, ErrResp>>()
+            .collect::<Result<Vec<UnratedUser>, ErrResp>>()
     }
 }
 
@@ -185,12 +167,10 @@ async fn handle_unrated_items(
     let unrated_users = op
         .filter_unrated_users_by_consultant_id(account_id, criteria)
         .await?;
-    let unrated_users = reduce_unrated_users(unrated_users)?;
 
     let unrated_consultants = op
         .filter_unrated_consultants_by_user_account_id(account_id, criteria)
         .await?;
-    let unrated_consultants = reduce_unrated_consultants(unrated_consultants)?;
 
     Ok((
         StatusCode::OK,
@@ -199,38 +179,6 @@ async fn handle_unrated_items(
             unrated_consultants,
         }),
     ))
-}
-
-fn reduce_unrated_users(
-    unrated_users: Vec<Option<UnratedUser>>,
-) -> Result<Vec<UnratedUser>, ErrResp> {
-    unrated_users
-        .into_iter()
-        .filter(|p| p.is_some())
-        .map(|m| {
-            let result = m.ok_or_else(|| {
-                error!("no unrated_users found");
-                unexpected_err_resp()
-            })?;
-            Ok(result)
-        })
-        .collect()
-}
-
-fn reduce_unrated_consultants(
-    unrated_consultants: Vec<Option<UnratedConsultant>>,
-) -> Result<Vec<UnratedConsultant>, ErrResp> {
-    unrated_consultants
-        .into_iter()
-        .filter(|p| p.is_some())
-        .map(|m| {
-            let result = m.ok_or_else(|| {
-                error!("no unrated_consultants found");
-                unexpected_err_resp()
-            })?;
-            Ok(result)
-        })
-        .collect()
 }
 
 #[cfg(test)]
@@ -259,8 +207,8 @@ mod tests {
     struct UnratedItemsOperationMock {
         account_id: i64,
         current_date_time: DateTime<FixedOffset>,
-        unrated_consultants: Vec<Option<UnratedConsultant>>,
-        unrated_users: Vec<Option<UnratedUser>>,
+        unrated_consultants: Vec<UnratedConsultant>,
+        unrated_users: Vec<UnratedUser>,
     }
 
     #[async_trait]
@@ -269,7 +217,7 @@ mod tests {
             &self,
             user_account_id: i64,
             start_criteria: DateTime<FixedOffset>,
-        ) -> Result<Vec<Option<UnratedConsultant>>, ErrResp> {
+        ) -> Result<Vec<UnratedConsultant>, ErrResp> {
             assert_eq!(self.account_id, user_account_id);
             let criteria =
                 self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
@@ -281,7 +229,7 @@ mod tests {
             &self,
             consultant_id: i64,
             start_criteria: DateTime<FixedOffset>,
-        ) -> Result<Vec<Option<UnratedUser>>, ErrResp> {
+        ) -> Result<Vec<UnratedUser>, ErrResp> {
             assert_eq!(self.account_id, consultant_id);
             let criteria =
                 self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
@@ -317,26 +265,6 @@ mod tests {
                 )),
             },
             TestCase {
-                name: "empty results none".to_string(),
-                input: Input {
-                    account_id,
-                    current_date_time,
-                    op: UnratedItemsOperationMock {
-                        account_id,
-                        current_date_time,
-                        unrated_consultants: vec![None],
-                        unrated_users: vec![None],
-                    },
-                },
-                expected: Ok((
-                    StatusCode::OK,
-                    Json(UnratedItemsResult {
-                        unrated_consultants: vec![],
-                        unrated_users: vec![],
-                    }),
-                )),
-            },
-            TestCase {
                 name: "1 unrated consultant, no unrated users".to_string(),
                 input: Input {
                     account_id,
@@ -344,7 +272,7 @@ mod tests {
                     op: UnratedItemsOperationMock {
                         account_id,
                         current_date_time,
-                        unrated_consultants: vec![Some(create_dummy_unrated_consultant1())],
+                        unrated_consultants: vec![create_dummy_unrated_consultant1()],
                         unrated_users: vec![],
                     },
                 },
@@ -365,8 +293,8 @@ mod tests {
                         account_id,
                         current_date_time,
                         unrated_consultants: vec![
-                            Some(create_dummy_unrated_consultant1()),
-                            Some(create_dummy_unrated_consultant2()),
+                            create_dummy_unrated_consultant1(),
+                            create_dummy_unrated_consultant2(),
                         ],
                         unrated_users: vec![],
                     },
@@ -391,9 +319,8 @@ mod tests {
                         account_id,
                         current_date_time,
                         unrated_consultants: vec![
-                            Some(create_dummy_unrated_consultant1()),
-                            None,
-                            Some(create_dummy_unrated_consultant2()),
+                            create_dummy_unrated_consultant1(),
+                            create_dummy_unrated_consultant2(),
                         ],
                         unrated_users: vec![],
                     },
@@ -418,7 +345,7 @@ mod tests {
                         account_id,
                         current_date_time,
                         unrated_consultants: vec![],
-                        unrated_users: vec![Some(create_dummy_unrated_user1())],
+                        unrated_users: vec![create_dummy_unrated_user1()],
                     },
                 },
                 expected: Ok((
@@ -439,8 +366,8 @@ mod tests {
                         current_date_time,
                         unrated_consultants: vec![],
                         unrated_users: vec![
-                            Some(create_dummy_unrated_user1()),
-                            Some(create_dummy_unrated_user2()),
+                            create_dummy_unrated_user1(),
+                            create_dummy_unrated_user2(),
                         ],
                     },
                 },
@@ -465,9 +392,8 @@ mod tests {
                         current_date_time,
                         unrated_consultants: vec![],
                         unrated_users: vec![
-                            Some(create_dummy_unrated_user1()),
-                            None,
-                            Some(create_dummy_unrated_user2()),
+                            create_dummy_unrated_user1(),
+                            create_dummy_unrated_user2(),
                         ],
                     },
                 },
@@ -490,8 +416,8 @@ mod tests {
                     op: UnratedItemsOperationMock {
                         account_id,
                         current_date_time,
-                        unrated_consultants: vec![Some(create_dummy_unrated_consultant1())],
-                        unrated_users: vec![Some(create_dummy_unrated_user1())],
+                        unrated_consultants: vec![create_dummy_unrated_consultant1()],
+                        unrated_users: vec![create_dummy_unrated_user1()],
                     },
                 },
                 expected: Ok((
@@ -511,12 +437,12 @@ mod tests {
                         account_id,
                         current_date_time,
                         unrated_consultants: vec![
-                            Some(create_dummy_unrated_consultant1()),
-                            Some(create_dummy_unrated_consultant2()),
+                            create_dummy_unrated_consultant1(),
+                            create_dummy_unrated_consultant2(),
                         ],
                         unrated_users: vec![
-                            Some(create_dummy_unrated_user1()),
-                            Some(create_dummy_unrated_user2()),
+                            create_dummy_unrated_user1(),
+                            create_dummy_unrated_user2(),
                         ],
                     },
                 },
