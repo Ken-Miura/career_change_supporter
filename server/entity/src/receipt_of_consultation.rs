@@ -7,6 +7,9 @@ use sea_orm::entity::prelude::*;
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub consultation_id: i64,
+    pub user_account_id: i64,
+    pub consultant_id: i64,
+    pub meeting_at: DateTimeWithTimeZone,
     pub fee_per_hour_in_yen: i32,
     #[sea_orm(column_type = "Text")]
     pub platform_fee_rate_in_percentage: String,
@@ -16,19 +19,6 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {
-    #[sea_orm(
-        belongs_to = "super::consultation::Entity",
-        from = "Column::ConsultationId",
-        to = "super::consultation::Column::ConsultationId"
-    )]
-    Consultation,
-}
-
-impl Related<super::consultation::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Consultation.def()
-    }
-}
+pub enum Relation {}
 
 impl ActiveModelBehavior for ActiveModel {}
