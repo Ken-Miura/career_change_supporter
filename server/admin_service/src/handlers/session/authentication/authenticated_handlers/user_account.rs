@@ -31,7 +31,7 @@ use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::{unexpected_err_resp, Code};
+use crate::err::Code;
 
 use super::Consultation;
 
@@ -134,18 +134,4 @@ async fn update_disabled_on_document(
             ErrRespStruct { err_resp: e }
         })?;
     Ok(())
-}
-
-fn reduce_ratings(ratings: Vec<Option<i16>>) -> Result<Vec<i16>, ErrResp> {
-    ratings
-        .into_iter()
-        .filter(|r| r.is_some())
-        .map(|m| {
-            let result = m.ok_or_else(|| {
-                error!("no rating found");
-                unexpected_err_resp()
-            })?;
-            Ok(result)
-        })
-        .collect()
 }

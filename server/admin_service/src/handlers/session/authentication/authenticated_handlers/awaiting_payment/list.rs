@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-use super::{AwaitingPayment, AwaitingPaymentAndConsultation, Name};
+use super::{AwaitingPayment, AwaitingPaymentModel, Name};
 
 // DBテーブルの設計上、この回数分だけクエリを呼ぶようになるため、他より少なめな一方で運用上閲覧するのに十分な値を設定する
 const VALID_PAGE_SIZE: u64 = 20;
@@ -90,7 +90,7 @@ trait AwaitingPaymentsOperation {
         page: u64,
         per_page: u64,
         current_date_time: DateTime<FixedOffset>,
-    ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp>;
+    ) -> Result<Vec<AwaitingPaymentModel>, ErrResp>;
 
     async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp>;
 }
@@ -106,38 +106,30 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
         page: u64,
         per_page: u64,
         current_date_time: DateTime<FixedOffset>,
-    ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp> {
+    ) -> Result<Vec<AwaitingPaymentModel>, ErrResp> {
         let models = entity::awaiting_payment::Entity::find()
-            .find_also_related(entity::consultation::Entity)
-            .filter(entity::consultation::Column::MeetingAt.gt(current_date_time))
-            .order_by_asc(entity::consultation::Column::MeetingAt)
+            .filter(entity::awaiting_payment::Column::MeetingAt.gt(current_date_time))
+            .order_by_asc(entity::awaiting_payment::Column::MeetingAt)
             .paginate(&self.pool, per_page)
             .fetch_page(page)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find awaiting_payment and consultation (page: {}, per_page: {}, current_date_time: {}): {}",
+                    "failed to find awaiting_payment (page: {}, per_page: {}, current_date_time: {}): {}",
                     page, per_page, current_date_time, e
                 );
                 unexpected_err_resp()
             })?;
-        models
+        Ok(models
             .into_iter()
-            .map(|m| {
-                let a = m.0;
-                let c = m.1.ok_or_else(|| {
-                    error!("failed to get consultation");
-                    unexpected_err_resp()
-                })?;
-                Ok(AwaitingPaymentAndConsultation {
-                    consultation_id: a.consultation_id,
-                    consultant_id: c.consultant_id,
-                    user_account_id: c.user_account_id,
-                    meeting_at: c.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
-                    fee_per_hour_in_yen: a.fee_per_hour_in_yen,
-                })
+            .map(|m| AwaitingPaymentModel {
+                consultation_id: m.consultation_id,
+                consultant_id: m.consultant_id,
+                user_account_id: m.user_account_id,
+                meeting_at: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
+                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
             })
-            .collect::<Result<Vec<AwaitingPaymentAndConsultation>, ErrResp>>()
+            .collect::<Vec<AwaitingPaymentModel>>())
     }
 
     async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp> {
@@ -160,7 +152,7 @@ mod tests {
         page: u64,
         per_page: u64,
         current_date_time: DateTime<FixedOffset>,
-        awaiting_payment_and_consultations: Vec<AwaitingPaymentAndConsultation>,
+        awaiting_payment_and_consultations: Vec<AwaitingPaymentModel>,
         names: HashMap<i64, Name>,
     }
 
@@ -171,7 +163,7 @@ mod tests {
             page: u64,
             per_page: u64,
             current_date_time: DateTime<FixedOffset>,
-        ) -> Result<Vec<AwaitingPaymentAndConsultation>, ErrResp> {
+        ) -> Result<Vec<AwaitingPaymentModel>, ErrResp> {
             assert_eq!(self.page, page);
             assert_eq!(self.per_page, per_page);
             assert_eq!(self.current_date_time, current_date_time);
@@ -259,7 +251,7 @@ mod tests {
             page,
             per_page,
             current_date_time,
-            awaiting_payment_and_consultations: vec![AwaitingPaymentAndConsultation {
+            awaiting_payment_and_consultations: vec![AwaitingPaymentModel {
                 consultation_id,
                 consultant_id,
                 user_account_id,
@@ -338,14 +330,14 @@ mod tests {
             per_page,
             current_date_time,
             awaiting_payment_and_consultations: vec![
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id1,
                     consultant_id: consultant_id1,
                     user_account_id: user_account_id1,
                     meeting_at: meeting_at1,
                     fee_per_hour_in_yen: fee_per_hour_in_yen1,
                 },
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id2,
                     consultant_id: consultant_id2,
                     user_account_id: user_account_id2,
@@ -444,14 +436,14 @@ mod tests {
             per_page,
             current_date_time,
             awaiting_payment_and_consultations: vec![
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id1,
                     consultant_id: consultant_id1,
                     user_account_id: user_account_id1,
                     meeting_at: meeting_at1,
                     fee_per_hour_in_yen: fee_per_hour_in_yen1,
                 },
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id2,
                     consultant_id: consultant_id2,
                     user_account_id: user_account_id2,
@@ -531,14 +523,14 @@ mod tests {
             per_page,
             current_date_time,
             awaiting_payment_and_consultations: vec![
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id1,
                     consultant_id: consultant_id1,
                     user_account_id: user_account_id1,
                     meeting_at: meeting_at1,
                     fee_per_hour_in_yen: fee_per_hour_in_yen1,
                 },
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id2,
                     consultant_id: consultant_id2,
                     user_account_id: user_account_id2,
@@ -618,14 +610,14 @@ mod tests {
             per_page,
             current_date_time,
             awaiting_payment_and_consultations: vec![
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id1,
                     consultant_id: consultant_id1,
                     user_account_id: user_account_id1,
                     meeting_at: meeting_at1,
                     fee_per_hour_in_yen: fee_per_hour_in_yen1,
                 },
-                AwaitingPaymentAndConsultation {
+                AwaitingPaymentModel {
                     consultation_id: consultation_id2,
                     consultant_id: consultant_id2,
                     user_account_id: user_account_id2,

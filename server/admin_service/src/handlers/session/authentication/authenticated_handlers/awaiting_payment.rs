@@ -23,7 +23,7 @@ struct AwaitingPayment {
 }
 
 #[derive(Clone)]
-struct AwaitingPaymentAndConsultation {
+struct AwaitingPaymentModel {
     consultation_id: i64,
     consultant_id: i64,
     user_account_id: i64,

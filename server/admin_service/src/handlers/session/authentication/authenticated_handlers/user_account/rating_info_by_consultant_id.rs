@@ -11,7 +11,7 @@ use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
 use super::{
-    calculate_rating_and_count, reduce_ratings, validate_account_id_is_positive, ConsultantIdQuery,
+    calculate_rating_and_count, validate_account_id_is_positive, ConsultantIdQuery,
     RatingInfoResult,
 };
 
@@ -31,7 +31,6 @@ async fn get_rating_info_by_consultant_id_internal(
 ) -> RespResult<RatingInfoResult> {
     validate_account_id_is_positive(consultant_id)?;
     let ratings = op.get_rating_info_by_consultant_id(consultant_id).await?;
-    let ratings = reduce_ratings(ratings)?;
     let rating_and_count = calculate_rating_and_count(ratings);
     Ok((
         StatusCode::OK,
@@ -47,7 +46,7 @@ trait RatingInfoOperation {
     async fn get_rating_info_by_consultant_id(
         &self,
         consultant_id: i64,
-    ) -> Result<Vec<Option<i16>>, ErrResp>;
+    ) -> Result<Vec<i16>, ErrResp>;
 }
 
 struct RatingInfoOperationImpl {
@@ -59,11 +58,9 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
     async fn get_rating_info_by_consultant_id(
         &self,
         consultant_id: i64,
-    ) -> Result<Vec<Option<i16>>, ErrResp> {
-        // consultationの方に検索時の計算量を削減できるインデックスを貼っているため、consultationのLEFT JOINとする
-        let models = entity::consultation::Entity::find()
-            .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
-            .find_with_related(entity::consultant_rating::Entity)
+    ) -> Result<Vec<i16>, ErrResp> {
+        let models = entity::consultant_rating::Entity::find()
+            .filter(entity::consultant_rating::Column::ConsultantId.eq(consultant_id))
             .filter(entity::consultant_rating::Column::Rating.is_not_null())
             .all(&self.pool)
             .await
@@ -77,24 +74,17 @@ impl RatingInfoOperation for RatingInfoOperationImpl {
         models
             .into_iter()
             .map(|m| {
-                // consultationとconsultant_ratingは1対0、または1対1の設計
-                let cr_option = m.1.get(0);
-                if let Some(cr) = cr_option {
-                    let r = cr.rating.ok_or_else(|| {
-                        // NOT NULL 条件で検索しているのでNULLの場合（＝ない場合）はエラー
-                        error!(
-                            "rating is null (consultation_id: {}, consultant_id: {})",
-                            cr.consultation_id, m.0.consultant_id
-                        );
-                        unexpected_err_resp()
-                    })?;
-
-                    Ok(Some(r))
-                } else {
-                    Ok(None)
-                }
+                let r = m.rating.ok_or_else(|| {
+                    // NOT NULL 条件で検索しているのでNULLの場合（＝ない場合）はエラー
+                    error!(
+                        "rating is null (consultation_id: {}, consultant_id: {})",
+                        m.consultation_id, m.consultant_id
+                    );
+                    unexpected_err_resp()
+                })?;
+                Ok(r)
             })
-            .collect::<Result<Vec<Option<i16>>, ErrResp>>()
+            .collect::<Result<Vec<i16>, ErrResp>>()
     }
 }
 
@@ -110,7 +100,7 @@ mod tests {
 
     struct RatingInfoOperationMock {
         consultant_id: i64,
-        ratings: Vec<Option<i16>>,
+        ratings: Vec<i16>,
     }
 
     #[async_trait]
@@ -118,7 +108,7 @@ mod tests {
         async fn get_rating_info_by_consultant_id(
             &self,
             consultant_id: i64,
-        ) -> Result<Vec<Option<i16>>, ErrResp> {
+        ) -> Result<Vec<i16>, ErrResp> {
             if self.consultant_id != consultant_id {
                 panic!("never reach here");
             }
@@ -145,27 +135,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn get_rating_info_by_consultant_id_internal_success_no_result_with_none() {
-        let consultant_id = 64431;
-        let ratings = vec![None];
-        let op_mock = RatingInfoOperationMock {
-            consultant_id,
-            ratings,
-        };
-
-        let result = get_rating_info_by_consultant_id_internal(consultant_id, op_mock).await;
-
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(None, resp.1 .0.average_rating);
-        assert_eq!(0, resp.1 .0.count);
-    }
-
-    #[tokio::test]
 
     async fn get_rating_info_by_consultant_id_internal_success_1() {
         let consultant_id = 64431;
-        let ratings = vec![Some(3)];
+        let ratings = vec![3];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
@@ -183,7 +156,7 @@ mod tests {
 
     async fn get_rating_info_by_consultant_id_internal_success_2() {
         let consultant_id = 64431;
-        let ratings = vec![Some(3), Some(4)];
+        let ratings = vec![3, 4];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
@@ -201,25 +174,7 @@ mod tests {
 
     async fn get_rating_info_by_consultant_id_internal_success_3() {
         let consultant_id = 64431;
-        let ratings = vec![Some(3), Some(4), Some(1)];
-        let op_mock = RatingInfoOperationMock {
-            consultant_id,
-            ratings,
-        };
-
-        let result = get_rating_info_by_consultant_id_internal(consultant_id, op_mock).await;
-
-        let resp = result.expect("failed to get Ok");
-        assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(Some("2.7".to_string()), resp.1 .0.average_rating);
-        assert_eq!(3, resp.1 .0.count);
-    }
-
-    #[tokio::test]
-
-    async fn get_rating_info_by_consultant_id_internal_success_4() {
-        let consultant_id = 64431;
-        let ratings = vec![None, Some(3), None, Some(4), Some(1), None];
+        let ratings = vec![3, 4, 1];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
@@ -236,7 +191,7 @@ mod tests {
     #[tokio::test]
     async fn get_rating_info_by_consultant_id_internal_fail_consultant_id_is_zero() {
         let consultant_id = 0;
-        let ratings = vec![Some(3), Some(4), Some(1)];
+        let ratings = vec![3, 4, 1];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
@@ -252,7 +207,7 @@ mod tests {
     #[tokio::test]
     async fn get_rating_info_by_consultant_id_internal_fail_consultant_id_is_negative() {
         let consultant_id = -1;
-        let ratings = vec![Some(3), Some(4), Some(1)];
+        let ratings = vec![3, 4, 1];
         let op_mock = RatingInfoOperationMock {
             consultant_id,
             ratings,
