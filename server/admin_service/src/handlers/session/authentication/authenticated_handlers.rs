@@ -1,33 +1,54 @@
 // Copyright 2023 Ken Miura
 
+use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Datelike, FixedOffset};
 use common::{
     util::{Identity, Ymd},
-    ErrResp, ErrRespStruct,
+    ApiError, ErrResp, ErrRespStruct,
 };
 use entity::sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, DatabaseConnection, DatabaseTransaction, EntityTrait,
     QuerySelect, Set, TransactionError, TransactionTrait,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::error;
 
-use crate::err::unexpected_err_resp;
+use crate::err::{unexpected_err_resp, Code};
 
 pub(crate) mod admin;
 pub(crate) mod awaiting_payment;
+pub(crate) mod awaiting_withdrawal;
 pub(crate) mod career_request;
 pub(crate) mod consultation;
 mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
 pub(crate) mod maintenance;
+pub(crate) mod name;
 pub(crate) mod news;
 pub(crate) mod pagination;
 mod reason_validator;
 pub(crate) mod refresh;
 pub(crate) mod user_account;
 mod user_account_operation;
+
+#[derive(Deserialize)]
+pub(crate) struct ConsultationIdQuery {
+    consultation_id: i64,
+}
+
+fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {
+    if !consultation_id.is_positive() {
+        error!("consultation_id is not positive: {}", consultation_id);
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::ConsultationIdIsNotPositive as u32,
+            }),
+        ));
+    }
+    Ok(())
+}
 
 async fn find_identity_by_user_account_id(
     pool: &DatabaseConnection,

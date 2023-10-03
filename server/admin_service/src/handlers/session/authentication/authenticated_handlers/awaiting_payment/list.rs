@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-use super::{AwaitingPayment, AwaitingPaymentModel, Name};
+use super::{super::name::Name, AwaitingPayment, AwaitingPaymentModel};
 
 // DBテーブルの設計上、この回数分だけクエリを呼ぶようになるため、他より少なめな一方で運用上閲覧するのに十分な値を設定する
 const VALID_PAGE_SIZE: u64 = 20;
@@ -133,7 +133,7 @@ impl AwaitingPaymentsOperation for AwaitingPaymentsOperationImpl {
     }
 
     async fn find_name_by_user_account_id(&self, user_account_id: i64) -> Result<Name, ErrResp> {
-        super::find_name_by_user_account_id(&self.pool, user_account_id).await
+        super::super::name::find_name_by_user_account_id(&self.pool, user_account_id).await
     }
 }
 

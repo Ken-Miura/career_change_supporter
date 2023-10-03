@@ -11,7 +11,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::{validate_consultation_id_is_positive, ConsultationIdQuery};
+use super::super::{validate_consultation_id_is_positive, ConsultationIdQuery};
 
 pub(crate) async fn get_user_rating_by_consultation_id(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ

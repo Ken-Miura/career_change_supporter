@@ -11,7 +11,7 @@ use tracing::error;
 use crate::err::unexpected_err_resp;
 
 use super::super::admin::Admin;
-use super::{validate_consultation_id_is_positive, ConsultationIdQuery};
+use super::super::{validate_consultation_id_is_positive, ConsultationIdQuery};
 use crate::handlers::session::authentication::authenticated_handlers::Consultation;
 
 pub(crate) async fn get_consultation_by_consultation_id(
