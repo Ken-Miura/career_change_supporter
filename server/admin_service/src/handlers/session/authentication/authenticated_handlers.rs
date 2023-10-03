@@ -37,6 +37,11 @@ pub(crate) struct ConsultationIdQuery {
     consultation_id: i64,
 }
 
+#[derive(Deserialize)]
+pub(crate) struct ConsultationIdBody {
+    consultation_id: i64,
+}
+
 fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrResp> {
     if !consultation_id.is_positive() {
         error!("consultation_id is not positive: {}", consultation_id);
