@@ -55,6 +55,45 @@ fn validate_consultation_id_is_positive(consultation_id: i64) -> Result<(), ErrR
     Ok(())
 }
 
+async fn find_awaiting_payment_with_exclusive_lock(
+    consultation_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<Option<entity::awaiting_payment::Model>, ErrRespStruct> {
+    let model_option = entity::awaiting_payment::Entity::find_by_id(consultation_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find awaiting_payment (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
+
+async fn delete_awaiting_payment(
+    consultation_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let _ = entity::awaiting_payment::Entity::delete_by_id(consultation_id)
+        .exec(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete awaiting_payment (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(())
+}
+
 async fn find_identity_by_user_account_id(
     pool: &DatabaseConnection,
     user_account_id: i64,
