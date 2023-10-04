@@ -3,7 +3,10 @@
 use async_session::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
 use chrono::{DateTime, FixedOffset, Utc};
-use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
+use common::{
+    util::validator::email_address_validator::validate_email_address, ApiError, ErrResp,
+    ErrRespStruct, RespResult, JAPANESE_TIME_ZONE,
+};
 use entity::sea_orm::{
     ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
     TransactionTrait,
@@ -15,7 +18,7 @@ use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, delete_awaiting_payment, find_awaiting_payment_with_exclusive_lock,
-        ConsultationIdBody,
+        validate_consultation_id_is_positive, ConsultationIdBody,
     },
 };
 
@@ -45,6 +48,11 @@ async fn handle_awaiting_withdrawal(
     current_date_time: DateTime<FixedOffset>,
     op: impl AwaitingWithdrawalOperation,
 ) -> RespResult<PostAwaitingWithdrawalResult> {
+    validate_consultation_id_is_positive(consultation_id)?;
+    validate_email_address(&admin_email_address).map_err(|e| {
+        error!("invalid email address ({}): {}", admin_email_address, e);
+        unexpected_err_resp()
+    })?;
     op.prepare_for_awaiting_withdrawal(consultation_id, admin_email_address, current_date_time)
         .await?;
     Ok((StatusCode::OK, Json(PostAwaitingWithdrawalResult {})))
@@ -141,4 +149,67 @@ async fn insert_awaiting_withdrawal(
         }
     })?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+
+    use chrono::TimeZone;
+
+    use crate::err::Code;
+
+    use super::*;
+
+    struct AwaitingWithdrawalOperationMock {
+        consultation_id: i64,
+        admin_email_address: String,
+        current_date_time: DateTime<FixedOffset>,
+        no_awaiting_payment_found: bool,
+    }
+
+    #[async_trait]
+    impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationMock {
+        async fn prepare_for_awaiting_withdrawal(
+            &self,
+            consultation_id: i64,
+            admin_email_address: String,
+            current_date_time: DateTime<FixedOffset>,
+        ) -> Result<(), ErrResp> {
+            assert_eq!(consultation_id, self.consultation_id);
+            assert_eq!(admin_email_address, self.admin_email_address);
+            assert_eq!(current_date_time, self.current_date_time);
+            if self.no_awaiting_payment_found {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::NoAwaitingPaymentFound as u32,
+                    }),
+                ));
+            };
+            Ok(())
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_awaiting_withdrawal_success() {
+        let consultation_id = 512;
+        let admin_email_address = "admin@test.com".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = AwaitingWithdrawalOperationMock {
+            consultation_id,
+            admin_email_address: admin_email_address.clone(),
+            current_date_time,
+            no_awaiting_payment_found: false,
+        };
+
+        let result =
+            handle_awaiting_withdrawal(consultation_id, admin_email_address, current_date_time, op)
+                .await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(PostAwaitingWithdrawalResult {}, resp.1 .0);
+    }
 }
