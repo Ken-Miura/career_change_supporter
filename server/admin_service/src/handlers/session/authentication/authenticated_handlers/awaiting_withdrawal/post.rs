@@ -138,6 +138,7 @@ async fn insert_awaiting_withdrawal(
         consultant_id: Set(ap.consultant_id),
         meeting_at: Set(ap.meeting_at),
         fee_per_hour_in_yen: Set(ap.fee_per_hour_in_yen),
+        sender_name: todo!(),
         payment_confirmed_by: Set(payment_confirmed_by.clone()),
         created_at: Set(created_at),
     };

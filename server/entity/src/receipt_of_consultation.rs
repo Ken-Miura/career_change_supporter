@@ -14,6 +14,18 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub platform_fee_rate_in_percentage: String,
     pub transfer_fee_in_yen: i32,
+    #[sea_orm(column_type = "Text")]
+    pub sender_name: String,
+    #[sea_orm(column_type = "Text")]
+    pub bank_code: String,
+    #[sea_orm(column_type = "Text")]
+    pub branch_code: String,
+    #[sea_orm(column_type = "Text")]
+    pub account_type: String,
+    #[sea_orm(column_type = "Text")]
+    pub account_number: String,
+    #[sea_orm(column_type = "Text")]
+    pub account_holder_name: String,
     pub withdrawal_confirmed_by: String,
     pub created_at: DateTimeWithTimeZone,
 }

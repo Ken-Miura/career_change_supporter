@@ -11,6 +11,8 @@ pub struct Model {
     pub consultant_id: i64,
     pub meeting_at: DateTimeWithTimeZone,
     pub fee_per_hour_in_yen: i32,
+    #[sea_orm(column_type = "Text")]
+    pub sender_name: String,
     pub payment_confirmed_by: String,
     pub created_at: DateTimeWithTimeZone,
 }

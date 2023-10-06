@@ -13,6 +13,8 @@ pub struct Model {
     pub fee_per_hour_in_yen: i32,
     pub transfer_fee_in_yen: i32,
     #[sea_orm(column_type = "Text")]
+    pub sender_name: String,
+    #[sea_orm(column_type = "Text")]
     pub reason: String,
     pub refund_confirmed_by: String,
     pub created_at: DateTimeWithTimeZone,
