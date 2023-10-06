@@ -20,6 +20,19 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::awaiting_payment::Entity",
+        from = "Column::UserAccountId",
+        to = "super::awaiting_payment::Column::UserAccountId"
+    )]
+    AwaitingPayment,
+}
+
+impl Related<super::awaiting_payment::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AwaitingPayment.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}

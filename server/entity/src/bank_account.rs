@@ -20,6 +20,19 @@ pub struct Model {
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
-pub enum Relation {}
+pub enum Relation {
+    #[sea_orm(
+        belongs_to = "super::awaiting_withdrawal::Entity",
+        from = "Column::UserAccountId",
+        to = "super::awaiting_withdrawal::Column::ConsultantId" // コンサルタントに報酬として振込を行いたいので、関連付けるカラムはConsultantIdであっている
+    )]
+    AwaitingWithdrawal,
+}
+
+impl Related<super::awaiting_withdrawal::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::AwaitingWithdrawal.def()
+    }
+}
 
 impl ActiveModelBehavior for ActiveModel {}
