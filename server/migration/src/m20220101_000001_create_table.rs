@@ -718,6 +718,9 @@ impl MigrationTrait for Migration {
              * user_account_id、consultant_id、meeting_atは非正規化し、consultationと同じ値を保持する。
              * それらがないと仮定し、結合を使う場合、下記の点で問題があるため非正規化することしている。
              *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
+             *
+             * sender_nameは入金時に確認できた振込依頼人（身分情報にある姓名）のこと。
+             * 身分情報にある姓名はユーザーによって更新が可能なので確認時の情報は変更されても残るように別途保管しておく。
              */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.awaiting_withdrawal (
@@ -726,6 +729,7 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   fee_per_hour_in_yen INTEGER NOT NULL,
+                  sender_name TEXT NOT NULL,
                   payment_confirmed_by ccs_schema.email_address NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
@@ -786,6 +790,7 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   fee_per_hour_in_yen INTEGER NOT NULL,
+                  sender_name TEXT NOT NULL,
                   neglect_confirmed_by ccs_schema.email_address NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
@@ -839,6 +844,8 @@ impl MigrationTrait for Migration {
              * user_account_id、consultant_id、meeting_atは非正規化し、consultationと同じ値を保持する。
              * それらがないと仮定し、結合を使う場合、下記の点で問題があるため非正規化することしている。
              *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
+             *
+             * 口座情報はユーザーによって更新が可能なので、確認時の情報は変更されても残るように別途保管しておく。
              */
             .execute(sql.stmt(
                 r"CREATE TABLE ccs_schema.receipt_of_consultation (
@@ -849,6 +856,12 @@ impl MigrationTrait for Migration {
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
                   transfer_fee_in_yen INTEGER NOT NULL,
+                  sender_name TEXT NOT NULL,
+                  bank_code TEXT NOT NULL,
+                  branch_code TEXT NOT NULL,
+                  account_type TEXT NOT NULL,
+                  account_number TEXT NOT NULL,
+                  account_holder_name TEXT NOT NULL,
                   withdrawal_confirmed_by ccs_schema.email_address NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
@@ -913,6 +926,7 @@ impl MigrationTrait for Migration {
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   transfer_fee_in_yen INTEGER NOT NULL,
+                  sender_name TEXT NOT NULL,
                   reason TEXT NOT NULL,
                   refund_confirmed_by ccs_schema.email_address NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
