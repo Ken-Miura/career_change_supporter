@@ -17,7 +17,7 @@ use tracing::error;
 use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin, pagination::Pagination,
+        admin::Admin, convert_date_time_to_rfc3339_string, pagination::Pagination,
         WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS,
     },
 };
@@ -49,11 +49,11 @@ struct AwaitingWithdrawal {
     sender_name: String,
     payment_confirmed_by: String,
     created_at: String, // RFC 3339形式の文字列
-    bank_code: String,
-    branch_code: String,
-    account_type: String,
-    account_number: String,
-    account_holder_name: String,
+    bank_code: Option<String>,
+    branch_code: Option<String>,
+    account_type: Option<String>,
+    account_number: Option<String>,
+    account_holder_name: Option<String>,
 }
 
 #[async_trait]
@@ -92,7 +92,40 @@ impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        todo!()
+        Ok(models
+            .into_iter()
+            .map(|m| {
+                let aw = m.0;
+                let ba_option = m.1;
+                let (bank_code, branch_code, account_type, account_number, account_holder_name) =
+                    if let Some(ba) = ba_option {
+                        (
+                            Some(ba.bank_code),
+                            Some(ba.branch_code),
+                            Some(ba.account_type),
+                            Some(ba.account_number),
+                            Some(ba.account_holder_name),
+                        )
+                    } else {
+                        (None, None, None, None, None)
+                    };
+                AwaitingWithdrawal {
+                    consultation_id: aw.consultation_id,
+                    user_account_id: aw.user_account_id,
+                    consultant_id: aw.consultant_id,
+                    meeting_at: convert_date_time_to_rfc3339_string(aw.meeting_at),
+                    fee_per_hour_in_yen: aw.fee_per_hour_in_yen,
+                    sender_name: aw.sender_name,
+                    payment_confirmed_by: aw.payment_confirmed_by,
+                    created_at: convert_date_time_to_rfc3339_string(aw.created_at),
+                    bank_code,
+                    branch_code,
+                    account_type,
+                    account_number,
+                    account_holder_name,
+                }
+            })
+            .collect())
     }
 }
 
