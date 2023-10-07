@@ -17,11 +17,11 @@ use tracing::error;
 use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin, pagination::Pagination,
+        admin::Admin, generate_sender_name, pagination::Pagination,
     },
 };
 
-use super::{convert_date_time_to_rfc3339_string, generate_sender_name, AwaitingPayment};
+use super::{convert_date_time_to_rfc3339_string, AwaitingPayment};
 
 const VALID_PAGE_SIZE: u64 = 20;
 

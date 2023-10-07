@@ -18,6 +18,7 @@ use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, delete_awaiting_payment, find_awaiting_payment_with_exclusive_lock,
+        find_identity_by_user_account_id_in_transaction, generate_sender_name,
         validate_consultation_id_is_positive, ConsultationIdBody,
     },
 };
@@ -100,7 +101,28 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
                         }
                     })?;
 
-                    insert_awaiting_withdrawal(ap, admin_email_address, current_date_time, txn)
+                    let id =
+                        find_identity_by_user_account_id_in_transaction(txn, ap.user_account_id)
+                            .await?;
+                    let id = id.ok_or_else(|| {
+                        error!(
+                            "no identity (user_account_id: {}) found",
+                            ap.user_account_id
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+                    let sender_name = generate_sender_name(id.last_name_furigana.to_string(), id.first_name_furigana.to_string(), ap.meeting_at)
+                        .map_err(|e| {
+                            error!("failed to generate_sender_name (last_name_furigana: {}, first_name_furigana: {}, meeting_at: {})",
+                                id.last_name_furigana, id.first_name_furigana, ap.meeting_at);
+                            ErrRespStruct {
+                                err_resp: e,
+                            }
+                        })?;
+
+                    insert_awaiting_withdrawal(ap, sender_name, admin_email_address, current_date_time, txn)
                         .await?;
 
                     delete_awaiting_payment(consultation_id, txn).await?;
@@ -128,6 +150,7 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
 
 async fn insert_awaiting_withdrawal(
     ap: entity::awaiting_payment::Model,
+    sender_name: String,
     payment_confirmed_by: String,
     created_at: DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
@@ -138,7 +161,7 @@ async fn insert_awaiting_withdrawal(
         consultant_id: Set(ap.consultant_id),
         meeting_at: Set(ap.meeting_at),
         fee_per_hour_in_yen: Set(ap.fee_per_hour_in_yen),
-        sender_name: todo!(),
+        sender_name: Set(sender_name),
         payment_confirmed_by: Set(payment_confirmed_by.clone()),
         created_at: Set(created_at),
     };

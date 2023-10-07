@@ -1,7 +1,7 @@
 // Copyright 2023 Ken Miura
 
 use axum::{http::StatusCode, Json};
-use chrono::{DateTime, Datelike, FixedOffset};
+use chrono::{DateTime, Datelike, FixedOffset, Timelike};
 use common::{
     util::{Identity, Ymd},
     ApiError, ErrResp, ErrRespStruct,
@@ -131,6 +131,66 @@ fn convert_identity(identity_model: entity::identity::Model) -> Identity {
     }
 }
 
+async fn find_identity_by_user_account_id_in_transaction(
+    txn: &DatabaseTransaction,
+    user_account_id: i64,
+) -> Result<Option<Identity>, ErrRespStruct> {
+    let model = entity::identity::Entity::find_by_id(user_account_id)
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find identity (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model.map(convert_identity))
+}
+
+fn generate_sender_name(
+    last_name_furigana: String,
+    first_name_furigana: String,
+    meeting_at: DateTime<FixedOffset>,
+) -> Result<String, ErrResp> {
+    let name = format!("{}　{}", last_name_furigana, first_name_furigana);
+    let suffix = generate_suffix(meeting_at)?;
+    Ok(format!("{}　{}", name, suffix))
+}
+
+fn generate_suffix(meeting_at: DateTime<FixedOffset>) -> Result<String, ErrResp> {
+    let suffix: Vec<char> = format!(
+        "{:0>2}{:0>2}{:0>2}",
+        meeting_at.month(),
+        meeting_at.day(),
+        meeting_at.hour()
+    )
+    .chars()
+    .collect();
+
+    suffix
+        .into_iter()
+        .map(|c| match c {
+            '0' => Ok('０'),
+            '1' => Ok('１'),
+            '2' => Ok('２'),
+            '3' => Ok('３'),
+            '4' => Ok('４'),
+            '5' => Ok('５'),
+            '6' => Ok('６'),
+            '7' => Ok('７'),
+            '8' => Ok('８'),
+            '9' => Ok('９'),
+            _ => {
+                error!("not a number ({})", c);
+                Err(unexpected_err_resp())
+            }
+        })
+        .collect()
+}
+
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct Consultation {
     consultation_id: i64,
@@ -231,7 +291,10 @@ pub(super) mod tests {
 
     use axum::async_trait;
 
-    use common::{smtp::SendMail, ErrResp};
+    use chrono::TimeZone;
+    use common::{smtp::SendMail, ErrResp, JAPANESE_TIME_ZONE};
+
+    use super::*;
 
     pub(super) struct SendMailMock {
         to: String,
@@ -266,5 +329,33 @@ pub(super) mod tests {
             assert_eq!(self.text, text);
             Ok(())
         }
+    }
+
+    #[test]
+    fn test_generate_sender_name_case1() {
+        let last_name_furigana = "スズキ".to_string();
+        let first_name_furigana = "ジロウ".to_string();
+        let meeting_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 11, 15, 18, 0, 0)
+            .unwrap();
+
+        let result = generate_sender_name(last_name_furigana, first_name_furigana, meeting_at)
+            .expect("failed to get Ok");
+
+        assert_eq!("スズキ　ジロウ　１１１５１８", result);
+    }
+
+    #[test]
+    fn test_generate_sender_name_case2() {
+        let last_name_furigana = "タナカ".to_string();
+        let first_name_furigana = "タロウ".to_string();
+        let meeting_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 8, 0, 0)
+            .unwrap();
+
+        let result = generate_sender_name(last_name_furigana, first_name_furigana, meeting_at)
+            .expect("failed to get Ok");
+
+        assert_eq!("タナカ　タロウ　０９０５０８", result);
     }
 }
