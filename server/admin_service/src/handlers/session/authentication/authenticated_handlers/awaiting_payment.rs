@@ -67,5 +67,47 @@ fn generate_suffix(meeting_at: DateTime<FixedOffset>) -> Result<String, ErrResp>
 
 #[cfg(test)]
 mod tests {
+    use chrono::TimeZone;
+    use common::JAPANESE_TIME_ZONE;
+
     use super::*;
+
+    #[test]
+    fn test_convert_date_time_to_rfc3339_string() {
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+
+        let result = convert_date_time_to_rfc3339_string(current_date_time);
+
+        assert_eq!(current_date_time.to_rfc3339(), result);
+    }
+
+    #[test]
+    fn test_generate_sender_name_case1() {
+        let last_name_furigana = "スズキ".to_string();
+        let first_name_furigana = "ジロウ".to_string();
+        let meeting_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 11, 15, 18, 0, 0)
+            .unwrap();
+
+        let result = generate_sender_name(last_name_furigana, first_name_furigana, meeting_at)
+            .expect("failed to get Ok");
+
+        assert_eq!("スズキ　ジロウ　１１１５１８", result);
+    }
+
+    #[test]
+    fn test_generate_sender_name_case2() {
+        let last_name_furigana = "タナカ".to_string();
+        let first_name_furigana = "タロウ".to_string();
+        let meeting_at = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 8, 0, 0)
+            .unwrap();
+
+        let result = generate_sender_name(last_name_furigana, first_name_furigana, meeting_at)
+            .expect("failed to get Ok");
+
+        assert_eq!("タナカ　タロウ　０９０５０８", result);
+    }
 }
