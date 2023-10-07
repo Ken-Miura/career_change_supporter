@@ -3,7 +3,7 @@
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq)]
-#[sea_orm(schema_name = "ccs_schema", table_name = "neglected_payment")]
+#[sea_orm(schema_name = "ccs_schema", table_name = "left_awaiting_withdrawal")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
     pub consultation_id: i64,
@@ -11,7 +11,9 @@ pub struct Model {
     pub consultant_id: i64,
     pub meeting_at: DateTimeWithTimeZone,
     pub fee_per_hour_in_yen: i32,
-    pub neglect_confirmed_by: String,
+    #[sea_orm(column_type = "Text")]
+    pub sender_name: String,
+    pub confirmed_by: String,
     pub created_at: DateTimeWithTimeZone,
 }
 

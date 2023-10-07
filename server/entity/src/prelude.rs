@@ -18,6 +18,7 @@ pub use super::create_identity_req::Entity as CreateIdentityReq;
 pub use super::deleted_user_account::Entity as DeletedUserAccount;
 pub use super::document::Entity as Document;
 pub use super::identity::Entity as Identity;
+pub use super::left_awaiting_withdrawal::Entity as LeftAwaitingWithdrawal;
 pub use super::maintenance::Entity as Maintenance;
 pub use super::mfa_info::Entity as MfaInfo;
 pub use super::neglected_payment::Entity as NeglectedPayment;

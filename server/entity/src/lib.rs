@@ -22,6 +22,7 @@ pub mod create_identity_req;
 pub mod deleted_user_account;
 pub mod document;
 pub mod identity;
+pub mod left_awaiting_withdrawal;
 pub mod maintenance;
 pub mod mfa_info;
 pub mod neglected_payment;
