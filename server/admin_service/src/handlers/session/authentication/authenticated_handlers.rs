@@ -24,7 +24,6 @@ mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
 pub(crate) mod maintenance;
-pub(crate) mod name;
 pub(crate) mod news;
 pub(crate) mod pagination;
 mod reason_validator;
