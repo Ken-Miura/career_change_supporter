@@ -273,6 +273,7 @@ Email: {}",
     )
 }
 
+// TODO: 現在時刻が相談終了時刻より前である相談がある場合に削除できないように修正
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
