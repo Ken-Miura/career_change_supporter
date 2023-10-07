@@ -31,6 +31,9 @@ pub(crate) mod refresh;
 pub(crate) mod user_account;
 mod user_account_operation;
 
+/// コンサルタントへ報酬を振り込むまで待機する期間（単位：日）
+const WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS: i64 = 8;
+
 #[derive(Deserialize)]
 pub(crate) struct ConsultationIdQuery {
     consultation_id: i64,
