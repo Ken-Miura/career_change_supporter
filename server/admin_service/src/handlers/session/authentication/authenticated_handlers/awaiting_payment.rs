@@ -20,7 +20,7 @@ struct AwaitingPayment {
     sender_name: Option<String>,
 }
 
-fn convertDateTimeToRfc3339String(date_time: DateTime<FixedOffset>) -> String {
+fn convert_date_time_to_rfc3339_string(date_time: DateTime<FixedOffset>) -> String {
     date_time.to_rfc3339()
 }
 

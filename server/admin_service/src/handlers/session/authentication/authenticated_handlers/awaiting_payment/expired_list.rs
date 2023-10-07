@@ -21,7 +21,7 @@ use crate::{
     },
 };
 
-use super::{convertDateTimeToRfc3339String, generate_sender_name, AwaitingPayment};
+use super::{convert_date_time_to_rfc3339_string, generate_sender_name, AwaitingPayment};
 
 const VALID_PAGE_SIZE: u64 = 20;
 
@@ -106,7 +106,7 @@ impl ExpiredAwaitingPaymentsOperation for ExpiredAwaitingPaymentsOperationImpl {
                 // 従って、相談開始日時後でフィルターしているこの時点では存在しないことはありえるため、そのハンドリングを行う
                 let id = m.1;
                 let meeting_at = ap.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE));
-                let meeting_at_str = convertDateTimeToRfc3339String(
+                let meeting_at_str = convert_date_time_to_rfc3339_string(
                     ap.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),
                 );
                 let sender_name = if let Some(i) = id {
@@ -226,7 +226,7 @@ mod tests {
             consultation_id,
             consultant_id,
             user_account_id,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at),
             fee_per_hour_in_yen,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at)
@@ -272,7 +272,7 @@ mod tests {
             consultation_id: consultation_id1,
             consultant_id: consultant_id1,
             user_account_id: user_account_id1,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at1),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at1)
@@ -291,7 +291,7 @@ mod tests {
             consultation_id: consultation_id2,
             consultant_id: consultant_id2,
             user_account_id: user_account_id2,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at2),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: Some(
                 generate_sender_name("スズキ".to_string(), "ジロウ".to_string(), meeting_at2)
@@ -337,7 +337,7 @@ mod tests {
             consultation_id: consultation_id1,
             consultant_id: consultant_id1,
             user_account_id: user_account_id1,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at1),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at1)
@@ -356,7 +356,7 @@ mod tests {
             consultation_id: consultation_id2,
             consultant_id: consultant_id2,
             user_account_id: user_account_id2,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at2),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: Some(
                 generate_sender_name("スズキ".to_string(), "ジロウ".to_string(), meeting_at2)
@@ -402,7 +402,7 @@ mod tests {
             consultation_id: consultation_id1,
             consultant_id: consultant_id1,
             user_account_id: user_account_id1,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at1),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at1)
@@ -421,7 +421,7 @@ mod tests {
             consultation_id: consultation_id2,
             consultant_id: consultant_id2,
             user_account_id: user_account_id2,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at2),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: Some(
                 generate_sender_name("スズキ".to_string(), "ジロウ".to_string(), meeting_at2)
@@ -467,7 +467,7 @@ mod tests {
             consultation_id: consultation_id1,
             consultant_id: consultant_id1,
             user_account_id: user_account_id1,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at1),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at1)
@@ -486,7 +486,7 @@ mod tests {
             consultation_id: consultation_id2,
             consultant_id: consultant_id2,
             user_account_id: user_account_id2,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at2),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: Some(
                 generate_sender_name("スズキ".to_string(), "ジロウ".to_string(), meeting_at2)
@@ -532,7 +532,7 @@ mod tests {
             consultation_id: consultation_id1,
             consultant_id: consultant_id1,
             user_account_id: user_account_id1,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at1),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: Some(
                 generate_sender_name("タナカ".to_string(), "タロウ".to_string(), meeting_at1)
@@ -551,7 +551,7 @@ mod tests {
             consultation_id: consultation_id2,
             consultant_id: consultant_id2,
             user_account_id: user_account_id2,
-            meeting_at: convertDateTimeToRfc3339String(meeting_at2),
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: Some(
                 generate_sender_name("スズキ".to_string(), "ジロウ".to_string(), meeting_at2)
