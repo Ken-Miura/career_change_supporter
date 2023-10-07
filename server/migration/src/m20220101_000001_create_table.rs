@@ -777,6 +777,67 @@ impl MigrationTrait for Migration {
 
         let _ = conn
             /*
+             * 管理者がコンサルタントへの出金が出来なかったときに生成される（具体的には出金時に既に口座情報が削除されている場合）サービスの運用期間を通じて存在し続ける。
+             *
+             * user_account_id、consultant_id、meeting_atは非正規化し、consultationと同じ値を保持する。
+             * それらがないと仮定し、結合を使う場合、下記の点で問題があるため非正規化することしている。
+             *  - このテーブルをconsultationと結合したとき、条件でのフィルタリングと取得件数制限の処理を同時に正しく処理する方法が煩雑
+             */
+            .execute(sql.stmt(
+                r"CREATE TABLE ccs_schema.left_awaiting_withdrawal (
+                  consultation_id BIGINT PRIMARY KEY,
+                  user_account_id BIGINT NOT NULL,
+                  consultant_id BIGINT NOT NULL,
+                  meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                  fee_per_hour_in_yen INTEGER NOT NULL,
+                  sender_name TEXT NOT NULL,
+                  confirmed_by ccs_schema.email_address NOT NULL,
+                  created_at TIMESTAMP WITH TIME ZONE NOT NULL
+                );",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ =
+            conn.execute(sql.stmt(
+                r"GRANT SELECT, INSERT ON ccs_schema.left_awaiting_withdrawal To admin_app;",
+            ))
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX left_awaiting_withdrawal_user_account_id_idx ON ccs_schema.left_awaiting_withdrawal (user_account_id);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX left_awaiting_withdrawal_consultant_id_idx ON ccs_schema.left_awaiting_withdrawal (consultant_id);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX left_awaiting_withdrawal_meeting_at_idx ON ccs_schema.left_awaiting_withdrawal (meeting_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+        let _ = conn
+            .execute(
+                sql.stmt(
+                    r"CREATE INDEX left_awaiting_withdrawal_created_at_idx ON ccs_schema.left_awaiting_withdrawal (created_at);",
+                ),
+            )
+            .await
+            .map(|_| ())?;
+
+        let _ = conn
+            /*
              * 管理者が相談日時までにユーザーの入金を確認できなかったとき生成される。サービスの運用期間を通じて存在し続ける。
              *
              * user_account_id、consultant_id、meeting_atは非正規化し、consultationと同じ値を保持する。
@@ -790,7 +851,6 @@ impl MigrationTrait for Migration {
                   consultant_id BIGINT NOT NULL,
                   meeting_at TIMESTAMP WITH TIME ZONE NOT NULL,
                   fee_per_hour_in_yen INTEGER NOT NULL,
-                  sender_name TEXT NOT NULL,
                   neglect_confirmed_by ccs_schema.email_address NOT NULL,
                   created_at TIMESTAMP WITH TIME ZONE NOT NULL
                 );",
