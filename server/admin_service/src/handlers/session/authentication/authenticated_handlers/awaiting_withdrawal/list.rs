@@ -8,7 +8,9 @@ use axum::{
 };
 use chrono::{DateTime, Duration, FixedOffset, Utc};
 use common::{ErrResp, RespResult, JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{
+    ColumnTrait, DatabaseConnection, EntityTrait, PaginatorTrait, QueryFilter, QueryOrder,
+};
 use serde::Serialize;
 use tracing::error;
 
@@ -76,6 +78,20 @@ impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationImpl {
         per_page: u64,
         criteria: DateTime<FixedOffset>,
     ) -> Result<Vec<AwaitingWithdrawal>, ErrResp> {
+        let models = entity::awaiting_withdrawal::Entity::find()
+            .filter(entity::awaiting_withdrawal::Column::MeetingAt.lt(criteria))
+            .find_also_related(entity::bank_account::Entity)
+            .order_by_asc(entity::awaiting_withdrawal::Column::MeetingAt)
+            .paginate(&self.pool, per_page)
+            .fetch_page(page)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find awaiting_withdrawal (page: {}, per_page: {}, criteria: {}): {}",
+                    page, per_page, criteria, e
+                );
+                unexpected_err_resp()
+            })?;
         todo!()
     }
 }
