@@ -129,7 +129,7 @@ async fn insert_neglected_payment(
     created_at: DateTime<FixedOffset>,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let aw = entity::neglected_payment::ActiveModel {
+    let np = entity::neglected_payment::ActiveModel {
         consultation_id: Set(ap.consultation_id),
         user_account_id: Set(ap.user_account_id),
         consultant_id: Set(ap.consultant_id),
@@ -138,7 +138,7 @@ async fn insert_neglected_payment(
         neglect_confirmed_by: Set(neglect_confirmed_by.clone()),
         created_at: Set(created_at),
     };
-    let _ = aw.insert(txn).await.map_err(|e| {
+    let _ = np.insert(txn).await.map_err(|e| {
         error!("failed to insert neglected_payment (awaiting_payment: {:?}, neglect_confirmed_by: {}, created_at: {}): {}",
             ap, neglect_confirmed_by, created_at, e);
         ErrRespStruct {
