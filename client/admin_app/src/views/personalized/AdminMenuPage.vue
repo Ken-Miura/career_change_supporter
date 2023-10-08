@@ -10,6 +10,7 @@
           <button data-test="move-to-user-account-search-page-button" v-on:click="moveToUserAccountSearchPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント情報確認</button>
           <button v-on:click="moveToAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金待ちリスト</button>
           <button v-on:click="moveToExpiredAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">期限切れ入金待ちリスト</button>
+          <button v-on:click="moveToAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">出金待ちリスト</button>
           <button v-on:click="moveToNeglectedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金されなかった支払いのリスト</button>
           <button v-on:click="moveToRefundedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金済みリスト</button>
           <button v-on:click="moveToMaintenancesPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
@@ -60,6 +61,10 @@ export default defineComponent({
       await router.push('/expired-awaiting-payments?page=0&per-page=20')
     }
 
+    const moveToAwaitingWithdrawalsPage = async () => {
+      await router.push('/awaiting-withdrawals?page=0&per-page=20')
+    }
+
     const moveToNeglectedPaymentsPage = async () => {
       await router.push('/neglected-payments?page=0&per-page=20')
     }
@@ -83,6 +88,7 @@ export default defineComponent({
       moveToUserAccountSearchPage,
       moveToAwaitingPaymentsPage,
       moveToExpiredAwaitingPaymentsPage,
+      moveToAwaitingWithdrawalsPage,
       moveToNeglectedPaymentsPage,
       moveToRefundedPaymentsPage,
       moveToMaintenancesPage,
