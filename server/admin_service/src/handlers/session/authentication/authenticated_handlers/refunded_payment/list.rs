@@ -1,12 +1,17 @@
 // Copyright 2023 Ken Miura
 
+use async_session::async_trait;
 use axum::extract::{Query, State};
 use common::RespResult;
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
+use tracing::error;
 
-use crate::handlers::session::authentication::authenticated_handlers::{
-    admin::Admin, pagination::Pagination,
+use crate::{
+    err::unexpected_err_resp,
+    handlers::session::authentication::authenticated_handlers::{
+        admin::Admin, pagination::Pagination,
+    },
 };
 
 const VALID_PAGE_SIZE: u64 = 20;
@@ -16,10 +21,8 @@ pub(crate) async fn get_refunded_payments(
     query: Query<Pagination>,
     State(pool): State<DatabaseConnection>,
 ) -> RespResult<RefundedPaymentsResult> {
-    // let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    // let op = AwaitingWithdrawalsOperationImpl { pool };
-    // handle_awaiting_withdrawals(query.page, query.per_page, current_date_time, op).await
-    todo!()
+    let op = RefundedPaymentsOperationImpl { pool };
+    handle_refunded_payments(query.page, query.per_page, op).await
 }
 
 #[derive(Serialize, Debug, PartialEq)]
@@ -39,4 +42,27 @@ struct RefundedPayment {
     reason: String,
     refund_confirmed_by: String,
     created_at: String, // RFC 3339形式の文字列
+}
+
+#[async_trait]
+trait RefundedPaymentsOperation {}
+
+struct RefundedPaymentsOperationImpl {
+    pool: DatabaseConnection,
+}
+
+#[async_trait]
+impl RefundedPaymentsOperation for RefundedPaymentsOperationImpl {}
+
+async fn handle_refunded_payments(
+    page: u64,
+    per_page: u64,
+    op: impl RefundedPaymentsOperation,
+) -> RespResult<RefundedPaymentsResult> {
+    if per_page > VALID_PAGE_SIZE {
+        error!("invalid per_page ({})", per_page);
+        return Err(unexpected_err_resp());
+    };
+
+    todo!()
 }
