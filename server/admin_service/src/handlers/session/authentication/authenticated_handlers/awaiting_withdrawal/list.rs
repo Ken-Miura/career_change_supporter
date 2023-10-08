@@ -161,7 +161,9 @@ mod tests {
 
     use chrono::TimeZone;
 
-    // use crate::err::Code;
+    use crate::{
+        err::Code, handlers::session::authentication::authenticated_handlers::generate_sender_name,
+    };
 
     use super::*;
 
@@ -232,6 +234,59 @@ mod tests {
         assert_eq!(
             AwaitingWithdrawalResult {
                 awaiting_withdrawals: vec![]
+            },
+            resp.1 .0
+        );
+    }
+
+    #[tokio::test]
+    async fn test_handle_awaiting_withdrawals_success_case2() {
+        let meeting_at1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
+            .unwrap();
+        let created_at1 = meeting_at1 - Duration::days(5);
+        let awaiting_withdrawal1 = AwaitingWithdrawal {
+            consultation_id: 1,
+            user_account_id: 2,
+            consultant_id: 3,
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
+            fee_per_hour_in_yen: 3000,
+            sender_name: generate_sender_name(
+                "タナカ".to_string(),
+                "タロウ".to_string(),
+                meeting_at1,
+            )
+            .expect("failed to get Ok"),
+            payment_confirmed_by: "admin@test.com".to_string(),
+            created_at: convert_date_time_to_rfc3339_string(created_at1),
+            bank_code: Some("0001".to_string()),
+            branch_code: Some("001".to_string()),
+            account_type: Some("普通".to_string()),
+            account_number: Some("1234567".to_string()),
+            account_holder_name: Some("スズキ　ジロウ".to_string()),
+        };
+
+        let page = 0;
+        let per_page = VALID_PAGE_SIZE;
+        let current_date_time = meeting_at1
+            + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
+            + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+            + Duration::seconds(1);
+
+        let op = AwaitingWithdrawalsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_withdrawals: vec![awaiting_withdrawal1.clone()],
+        };
+
+        let result = handle_awaiting_withdrawals(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            AwaitingWithdrawalResult {
+                awaiting_withdrawals: vec![awaiting_withdrawal1]
             },
             resp.1 .0
         );
