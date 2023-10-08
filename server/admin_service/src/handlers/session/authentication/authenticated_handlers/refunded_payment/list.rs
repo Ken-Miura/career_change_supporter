@@ -1,8 +1,12 @@
 // Copyright 2023 Ken Miura
 
 use async_session::async_trait;
-use axum::extract::{Query, State};
-use common::RespResult;
+use axum::{
+    extract::{Query, State},
+    http::StatusCode,
+    Json,
+};
+use common::{ErrResp, RespResult};
 use entity::sea_orm::DatabaseConnection;
 use serde::Serialize;
 use tracing::error;
@@ -45,14 +49,28 @@ struct RefundedPayment {
 }
 
 #[async_trait]
-trait RefundedPaymentsOperation {}
+trait RefundedPaymentsOperation {
+    async fn get_refunded_payments(
+        &self,
+        page: u64,
+        per_page: u64,
+    ) -> Result<Vec<RefundedPayment>, ErrResp>;
+}
 
 struct RefundedPaymentsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl RefundedPaymentsOperation for RefundedPaymentsOperationImpl {}
+impl RefundedPaymentsOperation for RefundedPaymentsOperationImpl {
+    async fn get_refunded_payments(
+        &self,
+        page: u64,
+        per_page: u64,
+    ) -> Result<Vec<RefundedPayment>, ErrResp> {
+        todo!()
+    }
+}
 
 async fn handle_refunded_payments(
     page: u64,
@@ -64,5 +82,10 @@ async fn handle_refunded_payments(
         return Err(unexpected_err_resp());
     };
 
-    todo!()
+    let refunded_payments = op.get_refunded_payments(page, per_page).await?;
+
+    Ok((
+        StatusCode::OK,
+        Json(RefundedPaymentsResult { refunded_payments }),
+    ))
 }
