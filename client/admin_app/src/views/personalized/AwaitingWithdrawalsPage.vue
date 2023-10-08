@@ -22,7 +22,8 @@
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">コンサルタントID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.consultant_id }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.meeting_at }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
-                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div v-if="item.sender_name" class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div><div v-else class="my-1 lg:my-2 justify-self-start col-span-2">既に身分情報が削除されています</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div v-if="item.sender_name" class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div><div v-else class="my-1 lg:my-2 justify-self-start col-span-2">想定しない値です。管理者に連絡して下さい</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">入金確認者</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.payment_confirmed_by }}</div>
                   <button v-on:click="confirmLeftAwaitingWithdrawal(item.consultation_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">既に口座情報が削除されているので放置された報酬へ移動</button>
                   <button v-on:click="confirmRefund(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金を行ったので返金済みへ移動</button>
                 </div>
