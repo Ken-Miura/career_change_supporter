@@ -155,3 +155,85 @@ async fn handle_awaiting_withdrawals(
         }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+
+    use chrono::TimeZone;
+
+    // use crate::err::Code;
+
+    use super::*;
+
+    struct AwaitingWithdrawalsOperationMock {
+        page: u64,
+        per_page: u64,
+        current_date_time: DateTime<FixedOffset>,
+        awaiting_withdrawals: Vec<AwaitingWithdrawal>,
+    }
+
+    #[async_trait]
+    impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationMock {
+        async fn get_awaiting_withdrawals(
+            &self,
+            page: u64,
+            per_page: u64,
+            criteria: DateTime<FixedOffset>,
+        ) -> Result<Vec<AwaitingWithdrawal>, ErrResp> {
+            assert_eq!(self.page, page);
+            assert_eq!(self.per_page, per_page);
+            assert_eq!(
+                self.current_date_time
+                    - Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
+                    - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64),
+                criteria
+            );
+            let awaiting_withdrawals: Vec<AwaitingWithdrawal> = self
+                .awaiting_withdrawals
+                .clone()
+                .into_iter()
+                .filter(|aw| {
+                    DateTime::parse_from_rfc3339(&aw.meeting_at).expect("failed to get Ok")
+                        < criteria
+                })
+                .collect();
+            let length = awaiting_withdrawals.len();
+            let page = page as usize;
+            let per_page = per_page as usize;
+            let start_index = page * per_page;
+            let num = if length > per_page { per_page } else { length };
+            let end_index = start_index + num;
+            Ok(if length <= start_index {
+                vec![]
+            } else {
+                awaiting_withdrawals[start_index..end_index].to_vec()
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_awaiting_withdrawals_success_case1() {
+        let page = 0;
+        let per_page = VALID_PAGE_SIZE;
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = AwaitingWithdrawalsOperationMock {
+            page,
+            per_page,
+            current_date_time,
+            awaiting_withdrawals: vec![],
+        };
+
+        let result = handle_awaiting_withdrawals(page, per_page, current_date_time, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            AwaitingWithdrawalResult {
+                awaiting_withdrawals: vec![]
+            },
+            resp.1 .0
+        );
+    }
+}
