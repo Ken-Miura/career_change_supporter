@@ -41,6 +41,7 @@ use crate::handlers::session::authentication::authenticated_handlers::maintenanc
 use crate::handlers::session::authentication::authenticated_handlers::news::delete_news_req::post_delete_news_req;
 use crate::handlers::session::authentication::authenticated_handlers::news::latest_news::get_latest_news;
 use crate::handlers::session::authentication::authenticated_handlers::news::set_news_req::post_set_news_req;
+use crate::handlers::session::authentication::authenticated_handlers::refunded_payment::list::get_refunded_payments;
 use crate::handlers::session::authentication::authenticated_handlers::refunded_payment::refund_from_awaiting_payment::post_refund_from_awaiting_payment;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::agreements_by_user_account_id::get_agreements_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::career_creation::approval_records::get_career_creation_approval_records;
@@ -515,6 +516,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/refund-from-awaiting-payment",
                     post(post_refund_from_awaiting_payment),
+                )
+                .route(
+                    "/refunded-payments",
+                    get(get_refunded_payments),
                 )
                 .with_state(state),
         )
