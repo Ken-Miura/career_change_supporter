@@ -28,6 +28,7 @@ pub(crate) mod news;
 pub(crate) mod pagination;
 mod reason_validator;
 pub(crate) mod refresh;
+pub(crate) mod refunded_payment;
 pub(crate) mod user_account;
 mod user_account_operation;
 
