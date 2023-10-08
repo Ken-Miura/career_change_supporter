@@ -7,14 +7,14 @@ use axum::{
     Json,
 };
 use common::{ErrResp, RespResult};
-use entity::sea_orm::DatabaseConnection;
+use entity::sea_orm::{DatabaseConnection, EntityTrait, PaginatorTrait, QueryOrder};
 use serde::Serialize;
 use tracing::error;
 
 use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin, pagination::Pagination,
+        admin::Admin, convert_date_time_to_rfc3339_string, pagination::Pagination,
     },
 };
 
@@ -68,7 +68,33 @@ impl RefundedPaymentsOperation for RefundedPaymentsOperationImpl {
         page: u64,
         per_page: u64,
     ) -> Result<Vec<RefundedPayment>, ErrResp> {
-        todo!()
+        let models = entity::refunded_payment::Entity::find()
+            .order_by_desc(entity::refunded_payment::Column::CreatedAt)
+            .paginate(&self.pool, per_page)
+            .fetch_page(page)
+            .await
+            .map_err(|e| {
+                error!(
+                    "failed to find refunded_payment (page: {}, per_page: {}): {}",
+                    page, per_page, e
+                );
+                unexpected_err_resp()
+            })?;
+        Ok(models
+            .into_iter()
+            .map(|m| RefundedPayment {
+                consultation_id: m.consultation_id,
+                user_account_id: m.user_account_id,
+                consultant_id: m.consultant_id,
+                meeting_at: convert_date_time_to_rfc3339_string(m.meeting_at),
+                fee_per_hour_in_yen: m.fee_per_hour_in_yen,
+                transfer_fee_in_yen: m.transfer_fee_in_yen,
+                sender_name: m.sender_name,
+                reason: m.reason,
+                refund_confirmed_by: m.refund_confirmed_by,
+                created_at: convert_date_time_to_rfc3339_string(m.created_at),
+            })
+            .collect())
     }
 }
 
