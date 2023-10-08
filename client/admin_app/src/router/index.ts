@@ -26,6 +26,7 @@ import NewsPage from '../views/personalized/NewsPage.vue'
 import NotFoundPage from '../views/NotFoundPage.vue'
 import AwaitingPaymentsPage from '../views/personalized/AwaitingPaymentsPage.vue'
 import ExpiredAwaitingPaymentsPage from '../views/personalized/ExpiredAwaitingPaymentsPage.vue'
+import RefundedPaymentsPage from '../views/personalized/RefundedPaymentsPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -162,6 +163,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/expired-awaiting-payments',
     name: 'ExpiredAwaitingPaymentsPage',
     component: ExpiredAwaitingPaymentsPage
+  },
+  {
+    path: '/refunded-payments',
+    name: 'RefundedPaymentsPage',
+    component: RefundedPaymentsPage
   },
   {
     path: '/:pathMatch(.*)*',
