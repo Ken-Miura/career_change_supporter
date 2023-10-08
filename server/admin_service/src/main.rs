@@ -38,6 +38,7 @@ use crate::handlers::session::authentication::authenticated_handlers::identity_r
 use crate::handlers::session::authentication::authenticated_handlers::identity_request::update_request::list::get_update_identity_requests;
 use crate::handlers::session::authentication::authenticated_handlers::maintenance::planned_maintenances::get_planned_maintenances;
 use crate::handlers::session::authentication::authenticated_handlers::maintenance::set_maintenance_req::post_set_maintenance_req;
+use crate::handlers::session::authentication::authenticated_handlers::neglected_payment::list::get_neglected_payments;
 use crate::handlers::session::authentication::authenticated_handlers::neglected_payment::post::post_neglected_payment;
 use crate::handlers::session::authentication::authenticated_handlers::news::delete_news_req::post_delete_news_req;
 use crate::handlers::session::authentication::authenticated_handlers::news::latest_news::get_latest_news;
@@ -525,6 +526,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/neglected-payment",
                     post(post_neglected_payment),
+                )
+                .route(
+                    "/neglected-payments",
+                    get(get_neglected_payments),
                 )
                 .with_state(state),
         )
