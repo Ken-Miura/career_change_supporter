@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getAwaitingPaymentsDone" class="m-6">
+    <div v-if="!getAwaitingPaymentsDone || !postAwaitingWithdrawalDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -54,6 +54,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { GetAwaitingPaymentsResp } from '@/util/personalized/awaiting-payment/GetAwaitingPaymentsResp'
 import { AwaitingPayment } from '@/util/personalized/awaiting-payment/AwaitingPayment'
+import { usePostAwaitingWithdrawal } from '@/util/personalized/awaiting-payment/usePostAwaitingWithdrawal'
+import { PostAwaitingWithdrawalResp } from '@/util/personalized/awaiting-payment/PostAwaitingWithdrawalResp'
 
 export default defineComponent({
   name: 'AwaitingPaymentsPage',
@@ -123,13 +125,38 @@ export default defineComponent({
       await getItems(page.value, perPage.value)
     })
 
+    const {
+      postAwaitingWithdrawalDone,
+      postAwaitingWithdrawalFunc
+    } = usePostAwaitingWithdrawal()
+
     const confirmPayment = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postAwaitingWithdrawalFunc(consultationId)
+        if (!(response instanceof PostAwaitingWithdrawalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
       error,
       getAwaitingPaymentsDone,
+      postAwaitingWithdrawalDone,
       items,
       confirmPayment,
       prevDisabled,
