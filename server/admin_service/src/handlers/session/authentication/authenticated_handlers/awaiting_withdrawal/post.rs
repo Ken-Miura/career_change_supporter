@@ -282,4 +282,27 @@ mod tests {
         assert_eq!(StatusCode::INTERNAL_SERVER_ERROR, resp.0);
         assert_eq!(Code::UnexpectedErr as u32, resp.1 .0.code);
     }
+
+    #[tokio::test]
+    async fn test_handle_awaiting_withdrawal_fail_no_awaiting_payment_found() {
+        let consultation_id = 512;
+        let admin_email_address = "admin@test.com".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = AwaitingWithdrawalOperationMock {
+            consultation_id,
+            admin_email_address: admin_email_address.clone(),
+            current_date_time,
+            no_awaiting_payment_found: true,
+        };
+
+        let result =
+            handle_awaiting_withdrawal(consultation_id, admin_email_address, current_date_time, op)
+                .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoAwaitingPaymentFound as u32, resp.1 .0.code);
+    }
 }

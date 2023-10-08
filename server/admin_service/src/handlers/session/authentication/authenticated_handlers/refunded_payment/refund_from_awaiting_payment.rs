@@ -32,7 +32,7 @@ pub(crate) async fn post_refund_from_awaiting_payment(
 ) -> RespResult<RefundFromAwaitingPaymentResult> {
     let consultation_id = req.consultation_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = AwaitingWithdrawalOperationImpl { pool };
+    let op = RefundFromAwaitingPaymentOperationImpl { pool };
     handle_refund_from_awaiting_payment(
         consultation_id,
         admin_info.email_address,
@@ -49,13 +49,16 @@ async fn handle_refund_from_awaiting_payment(
     consultation_id: i64,
     admin_email_address: String,
     current_date_time: DateTime<FixedOffset>,
-    op: impl AwaitingWithdrawalOperation,
+    op: impl RefundFromAwaitingPaymentOperation,
 ) -> RespResult<RefundFromAwaitingPaymentResult> {
     validate_consultation_id_is_positive(consultation_id)?;
     validate_email_address(&admin_email_address).map_err(|e| {
         error!("invalid email address ({}): {}", admin_email_address, e);
         unexpected_err_resp()
     })?;
+    // NOTE:
+    // 現在時刻が相談日時を超えていることもチェックすべきだが、
+    // 一般公開するサービスではなく、管理者しかアクセスできないサービスなのでそこまで厳密にチェックしていない
     op.refund_from_awaiting_payment(
         consultation_id,
         admin_email_address,
@@ -68,7 +71,7 @@ async fn handle_refund_from_awaiting_payment(
 }
 
 #[async_trait]
-trait AwaitingWithdrawalOperation {
+trait RefundFromAwaitingPaymentOperation {
     async fn refund_from_awaiting_payment(
         &self,
         consultation_id: i64,
@@ -79,12 +82,12 @@ trait AwaitingWithdrawalOperation {
     ) -> Result<(), ErrResp>;
 }
 
-struct AwaitingWithdrawalOperationImpl {
+struct RefundFromAwaitingPaymentOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
+impl RefundFromAwaitingPaymentOperation for RefundFromAwaitingPaymentOperationImpl {
     async fn refund_from_awaiting_payment(
         &self,
         consultation_id: i64,
@@ -200,15 +203,17 @@ mod tests {
 
     use super::*;
 
-    struct AwaitingWithdrawalOperationMock {
+    struct RefundFromAwaitingPaymentOperationMock {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
+        reason: String,
+        transfer_fee_in_yen: i32,
         no_awaiting_payment_found: bool,
     }
 
     #[async_trait]
-    impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationMock {
+    impl RefundFromAwaitingPaymentOperation for RefundFromAwaitingPaymentOperationMock {
         async fn refund_from_awaiting_payment(
             &self,
             consultation_id: i64,
@@ -220,6 +225,8 @@ mod tests {
             assert_eq!(consultation_id, self.consultation_id);
             assert_eq!(admin_email_address, self.admin_email_address);
             assert_eq!(current_date_time, self.current_date_time);
+            assert_eq!(reason, self.reason);
+            assert_eq!(transfer_fee_in_yen, self.transfer_fee_in_yen);
             if self.no_awaiting_payment_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
@@ -239,10 +246,12 @@ mod tests {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = AwaitingWithdrawalOperationMock {
+        let op = RefundFromAwaitingPaymentOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
+            reason: REASON.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_payment_found: false,
         };
 
@@ -266,10 +275,12 @@ mod tests {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = AwaitingWithdrawalOperationMock {
+        let op = RefundFromAwaitingPaymentOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
+            reason: REASON.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_payment_found: false,
         };
 
@@ -293,10 +304,12 @@ mod tests {
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = AwaitingWithdrawalOperationMock {
+        let op = RefundFromAwaitingPaymentOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
+            reason: REASON.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_payment_found: false,
         };
 
@@ -311,5 +324,34 @@ mod tests {
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::INTERNAL_SERVER_ERROR, resp.0);
         assert_eq!(Code::UnexpectedErr as u32, resp.1 .0.code);
+    }
+
+    #[tokio::test]
+    async fn test_handle_refund_from_awaiting_payment_fail_no_awaiting_payment_found() {
+        let consultation_id = 512;
+        let admin_email_address = "admin@test.com".to_string();
+        let current_date_time = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
+            .unwrap();
+        let op = RefundFromAwaitingPaymentOperationMock {
+            consultation_id,
+            admin_email_address: admin_email_address.clone(),
+            current_date_time,
+            reason: REASON.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            no_awaiting_payment_found: true,
+        };
+
+        let result = handle_refund_from_awaiting_payment(
+            consultation_id,
+            admin_email_address,
+            current_date_time,
+            op,
+        )
+        .await;
+
+        let resp = result.expect_err("failed to get Err");
+        assert_eq!(StatusCode::BAD_REQUEST, resp.0);
+        assert_eq!(Code::NoAwaitingPaymentFound as u32, resp.1 .0.code);
     }
 }
