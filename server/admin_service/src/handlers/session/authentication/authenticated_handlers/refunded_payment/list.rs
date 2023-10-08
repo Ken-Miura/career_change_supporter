@@ -119,7 +119,7 @@ async fn handle_refunded_payments(
 #[cfg(test)]
 mod tests {
 
-    use chrono::{Duration, TimeZone};
+    use chrono::{DateTime, Duration, TimeZone};
     use common::{JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE};
 
     use crate::handlers::session::authentication::authenticated_handlers::{
@@ -144,7 +144,12 @@ mod tests {
         ) -> Result<Vec<RefundedPayment>, ErrResp> {
             assert_eq!(self.page, page);
             assert_eq!(self.per_page, per_page);
-            let refunded_payments: Vec<RefundedPayment> = self.refunded_payments.clone();
+            let mut refunded_payments: Vec<RefundedPayment> = self.refunded_payments.clone();
+            refunded_payments.sort_by(|a, b| {
+                DateTime::parse_from_rfc3339(&b.created_at)
+                    .expect("failed to get Ok")
+                    .cmp(&DateTime::parse_from_rfc3339(&a.created_at).expect("failed to get Ok"))
+            });
             let length = refunded_payments.len();
             let page = page as usize;
             let per_page = per_page as usize;
@@ -294,7 +299,78 @@ mod tests {
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
             RefundedPaymentsResult {
-                refunded_payments: vec![rp1, rp2]
+                refunded_payments: vec![rp2, rp1]
+            },
+            resp.1 .0
+        );
+    }
+
+    #[tokio::test]
+    async fn test_handle_refunded_payments_success_case4() {
+        let page = 0;
+        let per_page = 1;
+
+        let meeting_at1 = JAPANESE_TIME_ZONE
+            .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
+            .unwrap();
+        let created_at1 = meeting_at1
+            + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
+            + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+            + Duration::days(1);
+        let rp1 = RefundedPayment {
+            consultation_id: 1,
+            user_account_id: 2,
+            consultant_id: 3,
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
+            fee_per_hour_in_yen: 4000,
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            sender_name: generate_sender_name(
+                "タナカ".to_string(),
+                "タロウ".to_string(),
+                meeting_at1,
+            )
+            .expect("failed to get Ok"),
+            reason: "理由1".to_string(),
+            refund_confirmed_by: "admin@test.com".to_string(),
+            created_at: convert_date_time_to_rfc3339_string(created_at1),
+        };
+
+        let meeting_at2 = meeting_at1 + Duration::hours(1);
+        let created_at2 = meeting_at2
+            + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
+            + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
+            + Duration::days(1);
+        let rp2 = RefundedPayment {
+            consultation_id: 4,
+            user_account_id: 5,
+            consultant_id: 6,
+            meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
+            fee_per_hour_in_yen: 4000,
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            sender_name: generate_sender_name(
+                "スズキ".to_string(),
+                "ジロウ".to_string(),
+                meeting_at2,
+            )
+            .expect("failed to get Ok"),
+            reason: "理由2".to_string(),
+            refund_confirmed_by: "admin@test.com".to_string(),
+            created_at: convert_date_time_to_rfc3339_string(created_at2),
+        };
+
+        let op = RefundedPaymentsOperationMock {
+            page,
+            per_page,
+            refunded_payments: vec![rp1, rp2.clone()],
+        };
+
+        let result = handle_refunded_payments(page, per_page, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            RefundedPaymentsResult {
+                refunded_payments: vec![rp2]
             },
             resp.1 .0
         );
