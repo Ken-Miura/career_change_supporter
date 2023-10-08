@@ -19,9 +19,11 @@ use crate::{
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, delete_awaiting_payment, find_awaiting_payment_with_exclusive_lock,
         find_identity_by_user_account_id_in_transaction, generate_sender_name,
-        validate_consultation_id_is_positive, ConsultationIdBody,
+        validate_consultation_id_is_positive, ConsultationIdBody, TRANSFER_FEE_IN_YEN,
     },
 };
+
+const REASON: &str = "管理者が相談開始時刻までに入金を確認出来なかったため返金";
 
 pub(crate) async fn post_refund_from_awaiting_payment(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -54,8 +56,14 @@ async fn handle_refund_from_awaiting_payment(
         error!("invalid email address ({}): {}", admin_email_address, e);
         unexpected_err_resp()
     })?;
-    op.refund_from_awaiting_payment(consultation_id, admin_email_address, current_date_time)
-        .await?;
+    op.refund_from_awaiting_payment(
+        consultation_id,
+        admin_email_address,
+        current_date_time,
+        REASON.to_string(),
+        *TRANSFER_FEE_IN_YEN,
+    )
+    .await?;
     Ok((StatusCode::OK, Json(RefundFromAwaitingPaymentResult {})))
 }
 
@@ -66,6 +74,8 @@ trait AwaitingWithdrawalOperation {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
+        reason: String,
+        transfer_fee_in_yen: i32,
     ) -> Result<(), ErrResp>;
 }
 
@@ -80,6 +90,8 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
+        reason: String,
+        transfer_fee_in_yen: i32,
     ) -> Result<(), ErrResp> {
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
@@ -122,7 +134,7 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
                             }
                         })?;
 
-                    insert_refunded_payment(ap, sender_name, admin_email_address, current_date_time, txn)
+                    insert_refunded_payment(ap, sender_name, admin_email_address, current_date_time, reason, transfer_fee_in_yen, txn)
                         .await?;
 
                     delete_awaiting_payment(consultation_id, txn).await?;
@@ -151,23 +163,27 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
 async fn insert_refunded_payment(
     ap: entity::awaiting_payment::Model,
     sender_name: String,
-    payment_confirmed_by: String,
+    refund_confirmed_by: String,
     created_at: DateTime<FixedOffset>,
+    reason: String,
+    transfer_fee_in_yen: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let aw = entity::awaiting_withdrawal::ActiveModel {
+    let rp = entity::refunded_payment::ActiveModel {
         consultation_id: Set(ap.consultation_id),
         user_account_id: Set(ap.user_account_id),
         consultant_id: Set(ap.consultant_id),
         meeting_at: Set(ap.meeting_at),
         fee_per_hour_in_yen: Set(ap.fee_per_hour_in_yen),
+        transfer_fee_in_yen: Set(transfer_fee_in_yen),
         sender_name: Set(sender_name),
-        payment_confirmed_by: Set(payment_confirmed_by.clone()),
+        reason: Set(reason.clone()),
+        refund_confirmed_by: Set(refund_confirmed_by.clone()),
         created_at: Set(created_at),
     };
-    let _ = aw.insert(txn).await.map_err(|e| {
-        error!("failed to insert awaiting_withdrawal (awaiting_payment: {:?}, payment_confirmed_by: {}, created_at: {}): {}",
-            ap, payment_confirmed_by, created_at, e);
+    let _ = rp.insert(txn).await.map_err(|e| {
+        error!("failed to insert refunded_payment (awaiting_payment: {:?}, transfer_fee_in_yen: {}, reason: {}, refund_confirmed_by: {}, created_at: {}): {}",
+            ap, transfer_fee_in_yen, reason, refund_confirmed_by, created_at, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -198,6 +214,8 @@ mod tests {
             consultation_id: i64,
             admin_email_address: String,
             current_date_time: DateTime<FixedOffset>,
+            reason: String,
+            transfer_fee_in_yen: i32,
         ) -> Result<(), ErrResp> {
             assert_eq!(consultation_id, self.consultation_id);
             assert_eq!(admin_email_address, self.admin_email_address);
