@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getExpiredAwaitingPaymentsDone || !postRefundFromAwaitingPaymentDone" class="m-6">
+    <div v-if="!getExpiredAwaitingPaymentsDone || !postRefundFromAwaitingPaymentDone || !postNeglectedPaymentDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -57,6 +57,8 @@ import { GetExpiredAwaitingPaymentsResp } from '@/util/personalized/awaiting-pay
 import { AwaitingPayment } from '@/util/personalized/awaiting-payment/AwaitingPayment'
 import { usePostRefundFromAwaitingPayment } from '@/util/personalized/awaiting-payment/usePostRefundFromAwaitingPayment'
 import { PostRefundFromAwaitingPaymentResp } from '@/util/personalized/awaiting-payment/PostRefundFromAwaitingPaymentResp'
+import { usePostNeglectedPayment } from '@/util/personalized/awaiting-payment/usePostNeglectedPayment'
+import { PostNeglectedPaymentResp } from '@/util/personalized/awaiting-payment/PostNeglectedPaymentResp'
 
 export default defineComponent({
   name: 'ExpiredAwaitingPaymentsPage',
@@ -126,8 +128,32 @@ export default defineComponent({
       await getItems(page.value, perPage.value)
     })
 
+    const {
+      postNeglectedPaymentDone,
+      postNeglectedPaymentFunc
+    } = usePostNeglectedPayment()
+
     const confirmIgnoredPayment = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postNeglectedPaymentFunc(consultationId)
+        if (!(response instanceof PostNeglectedPaymentResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     const {
@@ -162,6 +188,7 @@ export default defineComponent({
       error,
       getExpiredAwaitingPaymentsDone,
       postRefundFromAwaitingPaymentDone,
+      postNeglectedPaymentDone,
       items,
       confirmIgnoredPayment,
       confirmRefund,
