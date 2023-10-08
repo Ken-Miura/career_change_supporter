@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getExpiredAwaitingPaymentsDone" class="m-6">
+    <div v-if="!getExpiredAwaitingPaymentsDone || !postRefundFromAwaitingPaymentDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -24,7 +24,7 @@
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div v-if="item.sender_name" class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div><div v-else class="my-1 lg:my-2 justify-self-start col-span-2">既に身分情報が削除されています</div>
                   <button v-on:click="confirmIgnoredPayment(item.consultation_id)" class="mt-4 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金がないので無視された入金へ移動</button>
-                  <button v-on:click="confirmIgnoredPayment(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金を行ったので返金済みへ移動</button>
+                  <button v-on:click="confirmRefund(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金を行ったので返金済みへ移動</button>
                 </div>
               </div>
             </li>
@@ -55,6 +55,8 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { GetExpiredAwaitingPaymentsResp } from '@/util/personalized/awaiting-payment/GetExpiredAwaitingPaymentsResp'
 import { AwaitingPayment } from '@/util/personalized/awaiting-payment/AwaitingPayment'
+import { usePostRefundFromAwaitingPayment } from '@/util/personalized/awaiting-payment/usePostRefundFromAwaitingPayment'
+import { PostRefundFromAwaitingPaymentResp } from '@/util/personalized/awaiting-payment/PostRefundFromAwaitingPaymentResp'
 
 export default defineComponent({
   name: 'ExpiredAwaitingPaymentsPage',
@@ -128,13 +130,38 @@ export default defineComponent({
       console.log(consultationId)
     }
 
+    const {
+      postRefundFromAwaitingPaymentDone,
+      postRefundFromAwaitingPaymentFunc
+    } = usePostRefundFromAwaitingPayment()
+
     const confirmRefund = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postRefundFromAwaitingPaymentFunc(consultationId)
+        if (!(response instanceof PostRefundFromAwaitingPaymentResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
       error,
       getExpiredAwaitingPaymentsDone,
+      postRefundFromAwaitingPaymentDone,
       items,
       confirmIgnoredPayment,
       confirmRefund,
