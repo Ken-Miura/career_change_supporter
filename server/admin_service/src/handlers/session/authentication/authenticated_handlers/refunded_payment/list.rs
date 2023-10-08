@@ -115,3 +115,61 @@ async fn handle_refunded_payments(
         Json(RefundedPaymentsResult { refunded_payments }),
     ))
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    struct RefundedPaymentsOperationMock {
+        page: u64,
+        per_page: u64,
+        refunded_payments: Vec<RefundedPayment>,
+    }
+
+    #[async_trait]
+    impl RefundedPaymentsOperation for RefundedPaymentsOperationMock {
+        async fn get_refunded_payments(
+            &self,
+            page: u64,
+            per_page: u64,
+        ) -> Result<Vec<RefundedPayment>, ErrResp> {
+            assert_eq!(self.page, page);
+            assert_eq!(self.per_page, per_page);
+            let refunded_payments: Vec<RefundedPayment> = self.refunded_payments.clone();
+            let length = refunded_payments.len();
+            let page = page as usize;
+            let per_page = per_page as usize;
+            let start_index = page * per_page;
+            let num = if length > per_page { per_page } else { length };
+            let end_index = start_index + num;
+            Ok(if length <= start_index {
+                vec![]
+            } else {
+                refunded_payments[start_index..end_index].to_vec()
+            })
+        }
+    }
+
+    #[tokio::test]
+    async fn test_handle_refunded_payments_success_case1() {
+        let page = 0;
+        let per_page = VALID_PAGE_SIZE;
+        let op = RefundedPaymentsOperationMock {
+            page,
+            per_page,
+            refunded_payments: vec![],
+        };
+
+        let result = handle_refunded_payments(page, per_page, op).await;
+
+        let resp = result.expect("failed to get Ok");
+        assert_eq!(StatusCode::OK, resp.0);
+        assert_eq!(
+            RefundedPaymentsResult {
+                refunded_payments: vec![]
+            },
+            resp.1 .0
+        );
+    }
+}
