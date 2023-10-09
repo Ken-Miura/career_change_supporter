@@ -24,15 +24,15 @@ use crate::{
 
 const REASON: &str = "ユーザーからのクレームのため返金";
 
-pub(crate) async fn post_refund_from_awaiting_withdrawal(
+pub(crate) async fn post_receipt_of_consultation(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
     State(pool): State<DatabaseConnection>,
     Json(req): Json<ConsultationIdBody>,
-) -> RespResult<RefundFromAwaitingWithdrawalResult> {
+) -> RespResult<ReceiptOfConsultationResult> {
     let consultation_id = req.consultation_id;
     let current_date_time = Utc::now().with_timezone(&(*JAPANESE_TIME_ZONE));
-    let op = RefundFromAwaitingWithdrawalOperationImpl { pool };
-    handle_refund_from_awaiting_withdrawal(
+    let op = ReceiptOfConsultationOperationImpl { pool };
+    handle_receipt_of_consultation(
         consultation_id,
         admin_info.email_address,
         current_date_time,
@@ -42,14 +42,14 @@ pub(crate) async fn post_refund_from_awaiting_withdrawal(
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
-pub(crate) struct RefundFromAwaitingWithdrawalResult {}
+pub(crate) struct ReceiptOfConsultationResult {}
 
-async fn handle_refund_from_awaiting_withdrawal(
+async fn handle_receipt_of_consultation(
     consultation_id: i64,
     admin_email_address: String,
     current_date_time: DateTime<FixedOffset>,
-    op: impl RefundFromAwaitingWithdrawalOperation,
-) -> RespResult<RefundFromAwaitingWithdrawalResult> {
+    op: impl ReceiptOfConsultationOperation,
+) -> RespResult<ReceiptOfConsultationResult> {
     validate_consultation_id_is_positive(consultation_id)?;
     validate_email_address(&admin_email_address).map_err(|e| {
         error!("invalid email address ({}): {}", admin_email_address, e);
@@ -58,7 +58,7 @@ async fn handle_refund_from_awaiting_withdrawal(
     // NOTE:
     // 現在時刻が出金可能時刻を超えていることもチェックすべきだが、
     // 一般公開するサービスではなく、管理者しかアクセスできないサービスなのでそこまで厳密にチェックしていない
-    op.refund_from_awaiting_withdrawal(
+    op.receipt_of_consultation(
         consultation_id,
         admin_email_address,
         current_date_time,
@@ -66,12 +66,12 @@ async fn handle_refund_from_awaiting_withdrawal(
         *TRANSFER_FEE_IN_YEN,
     )
     .await?;
-    Ok((StatusCode::OK, Json(RefundFromAwaitingWithdrawalResult {})))
+    Ok((StatusCode::OK, Json(ReceiptOfConsultationResult {})))
 }
 
 #[async_trait]
-trait RefundFromAwaitingWithdrawalOperation {
-    async fn refund_from_awaiting_withdrawal(
+trait ReceiptOfConsultationOperation {
+    async fn receipt_of_consultation(
         &self,
         consultation_id: i64,
         admin_email_address: String,
@@ -81,13 +81,13 @@ trait RefundFromAwaitingWithdrawalOperation {
     ) -> Result<(), ErrResp>;
 }
 
-struct RefundFromAwaitingWithdrawalOperationImpl {
+struct ReceiptOfConsultationOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOperationImpl {
-    async fn refund_from_awaiting_withdrawal(
+impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
+    async fn receipt_of_consultation(
         &self,
         consultation_id: i64,
         admin_email_address: String,
@@ -137,10 +137,7 @@ impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOpera
                     unexpected_err_resp()
                 }
                 TransactionError::Transaction(err_resp_struct) => {
-                    error!(
-                        "failed to refund_from_awaiting_withdrawal: {}",
-                        err_resp_struct
-                    );
+                    error!("failed to receipt_of_consultation: {}", err_resp_struct);
                     err_resp_struct.err_resp
                 }
             })?;
@@ -187,7 +184,7 @@ mod tests {
 
     use super::*;
 
-    struct RefundFromAwaitingWithdrawalOperationMock {
+    struct ReceiptOfConsultationOperationMock {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
@@ -197,8 +194,8 @@ mod tests {
     }
 
     #[async_trait]
-    impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOperationMock {
-        async fn refund_from_awaiting_withdrawal(
+    impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationMock {
+        async fn receipt_of_consultation(
             &self,
             consultation_id: i64,
             admin_email_address: String,
@@ -224,13 +221,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_refund_from_awaiting_withdrawal_success() {
+    async fn test_handle_receipt_of_consultation_success() {
         let consultation_id = 512;
         let admin_email_address = "admin@test.com".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = RefundFromAwaitingWithdrawalOperationMock {
+        let op = ReceiptOfConsultationOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
@@ -239,7 +236,7 @@ mod tests {
             no_awaiting_withdrawal_found: false,
         };
 
-        let result = handle_refund_from_awaiting_withdrawal(
+        let result = handle_receipt_of_consultation(
             consultation_id,
             admin_email_address,
             current_date_time,
@@ -249,17 +246,17 @@ mod tests {
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
-        assert_eq!(RefundFromAwaitingWithdrawalResult {}, resp.1 .0);
+        assert_eq!(ReceiptOfConsultationResult {}, resp.1 .0);
     }
 
     #[tokio::test]
-    async fn test_handle_refund_from_awaiting_withdrawal_fail_non_positive_consultation_id() {
+    async fn test_handle_receipt_of_consultation_fail_non_positive_consultation_id() {
         let consultation_id = -1;
         let admin_email_address = "abc".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = RefundFromAwaitingWithdrawalOperationMock {
+        let op = ReceiptOfConsultationOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
@@ -268,7 +265,7 @@ mod tests {
             no_awaiting_withdrawal_found: false,
         };
 
-        let result = handle_refund_from_awaiting_withdrawal(
+        let result = handle_receipt_of_consultation(
             consultation_id,
             admin_email_address,
             current_date_time,
@@ -282,13 +279,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_refund_from_awaiting_withdrawal_fail_invalid_email_address() {
+    async fn test_handle_receipt_of_consultation_fail_invalid_email_address() {
         let consultation_id = 512;
         let admin_email_address = "abc".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = RefundFromAwaitingWithdrawalOperationMock {
+        let op = ReceiptOfConsultationOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
@@ -297,7 +294,7 @@ mod tests {
             no_awaiting_withdrawal_found: false,
         };
 
-        let result = handle_refund_from_awaiting_withdrawal(
+        let result = handle_receipt_of_consultation(
             consultation_id,
             admin_email_address,
             current_date_time,
@@ -311,13 +308,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_handle_refund_from_awaiting_withdrawal_fail_no_awaiting_withdrawal_found() {
+    async fn test_handle_receipt_of_consultation_fail_no_awaiting_withdrawal_found() {
         let consultation_id = 512;
         let admin_email_address = "admin@test.com".to_string();
         let current_date_time = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 5, 21, 0, 40)
             .unwrap();
-        let op = RefundFromAwaitingWithdrawalOperationMock {
+        let op = ReceiptOfConsultationOperationMock {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
@@ -326,7 +323,7 @@ mod tests {
             no_awaiting_withdrawal_found: true,
         };
 
-        let result = handle_refund_from_awaiting_withdrawal(
+        let result = handle_receipt_of_consultation(
             consultation_id,
             admin_email_address,
             current_date_time,

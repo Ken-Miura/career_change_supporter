@@ -5,6 +5,7 @@ mod handlers;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
+use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::post::post_receipt_of_consultation;
 use crate::handlers::session::authentication::authenticated_handlers::refunded_payment::refund_from_awaiting_withdrawal::post_refund_from_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::{KEY_TO_TRANSFER_FEE_IN_YEN, KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE};
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::expired_list::get_expired_awaiting_payments;
@@ -536,6 +537,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/neglected-payments",
                     get(get_neglected_payments),
+                )
+                .route(
+                    "/receipt-of-consultation",
+                    post(post_receipt_of_consultation),
                 )
                 .with_state(state),
         )
