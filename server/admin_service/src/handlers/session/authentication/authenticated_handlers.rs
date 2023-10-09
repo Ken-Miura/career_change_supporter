@@ -454,4 +454,40 @@ pub(super) mod tests {
 
         assert_eq!(current_date_time.to_rfc3339(), result);
     }
+
+    #[test]
+    fn test_calculate_reward_case1() {
+        let fee = 3000;
+        let platform_fee_rate_in_percentage = "50.0";
+        let transfer_fee = 250;
+
+        let result = calculate_reward(fee, platform_fee_rate_in_percentage, transfer_fee)
+            .expect("failed to get Ok");
+
+        assert_eq!(1250, result);
+    }
+
+    #[test]
+    fn test_calculate_reward_case2() {
+        let fee = 3001;
+        let platform_fee_rate_in_percentage = "50.0";
+        let transfer_fee = 250;
+
+        let result = calculate_reward(fee, platform_fee_rate_in_percentage, transfer_fee)
+            .expect("failed to get Ok");
+
+        assert_eq!(1251, result);
+    }
+
+    #[test]
+    fn test_calculate_reward_case3() {
+        let fee = 3004;
+        let platform_fee_rate_in_percentage = "60.0";
+        let transfer_fee = 250;
+
+        let result = calculate_reward(fee, platform_fee_rate_in_percentage, transfer_fee)
+            .expect("failed to get Ok");
+
+        assert_eq!(952, result);
+    }
 }
