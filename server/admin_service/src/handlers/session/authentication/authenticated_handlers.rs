@@ -174,6 +174,45 @@ async fn delete_awaiting_payment(
     Ok(())
 }
 
+async fn find_awaiting_withdrawal_with_exclusive_lock(
+    consultation_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<Option<entity::awaiting_withdrawal::Model>, ErrRespStruct> {
+    let model_option = entity::awaiting_withdrawal::Entity::find_by_id(consultation_id)
+        .lock_exclusive()
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find awaiting_withdrawal (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model_option)
+}
+
+async fn delete_awaiting_withdrawal(
+    consultation_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let _ = entity::awaiting_withdrawal::Entity::delete_by_id(consultation_id)
+        .exec(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to delete awaiting_withdrawal (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(())
+}
+
 async fn find_identity_by_user_account_id(
     pool: &DatabaseConnection,
     user_account_id: i64,
