@@ -40,6 +40,8 @@ export namespace Code {
   export const INVALID_BODY_LENGTH = 30028
   export const ILLEGAL_BODY = 30029
   export const INVALID_NEWS_ID = 30030
+  export const NO_AWAITING_PAYMENT_FOUND = 30031
+  export const NO_AWAITING_WITHDRAWAL_FOUND = 30032
 }
 
 export function createErrorMessage (code: number): string {
@@ -95,3 +97,5 @@ codeToMessage.set(Code.ILLEGAL_TITLE.toString(), `${Message.ILLEGAL_TITLE_MESSAG
 codeToMessage.set(Code.INVALID_BODY_LENGTH.toString(), `${Message.INVALID_BODY_LENGTH_MESSAGE} (${Code.INVALID_BODY_LENGTH})`)
 codeToMessage.set(Code.ILLEGAL_BODY.toString(), `${Message.ILLEGAL_BODY_MESSAGE} (${Code.ILLEGAL_BODY})`)
 codeToMessage.set(Code.INVALID_NEWS_ID.toString(), `${Message.INVALID_NEWS_ID_MESSAGE} (${Code.INVALID_NEWS_ID})`)
+codeToMessage.set(Code.NO_AWAITING_PAYMENT_FOUND.toString(), `${Message.NO_AWAITING_PAYMENT_FOUND_MESSAGE} (${Code.NO_AWAITING_PAYMENT_FOUND})`)
+codeToMessage.set(Code.NO_AWAITING_WITHDRAWAL_FOUND.toString(), `${Message.NO_AWAITING_WITHDRAWAL_FOUND_MESSAGE} (${Code.NO_AWAITING_WITHDRAWAL_FOUND})`)

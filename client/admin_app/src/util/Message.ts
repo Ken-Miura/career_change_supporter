@@ -43,4 +43,6 @@ export namespace Message {
     export const INVALID_BODY_LENGTH_MESSAGE = '本文の長さが不正です'
     export const ILLEGAL_BODY_MESSAGE = '本文に不正な文字があります（制御文字や半角文字を含むことは出来ません）'
     export const INVALID_NEWS_ID_MESSAGE = '不正なお知らせIDです'
+    export const NO_AWAITING_PAYMENT_FOUND_MESSAGE = '対象が存在しません。既に処理されている可能性があります'
+    export const NO_AWAITING_WITHDRAWAL_FOUND_MESSAGE = `${NO_AWAITING_PAYMENT_FOUND_MESSAGE}`
 }
