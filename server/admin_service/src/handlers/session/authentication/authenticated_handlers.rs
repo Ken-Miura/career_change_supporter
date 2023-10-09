@@ -1,5 +1,7 @@
 // Copyright 2023 Ken Miura
 
+use std::str::FromStr;
+
 use axum::{http::StatusCode, Json};
 use chrono::{DateTime, Datelike, FixedOffset, Timelike};
 use common::{
@@ -11,6 +13,7 @@ use entity::sea_orm::{
     QuerySelect, Set, TransactionError, TransactionTrait,
 };
 use once_cell::sync::Lazy;
+use rust_decimal::{prelude::FromPrimitive, Decimal, RoundingStrategy};
 use serde::{Deserialize, Serialize};
 use tracing::error;
 
@@ -48,6 +51,66 @@ static TRANSFER_FEE_IN_YEN: Lazy<i32> = Lazy::new(|| {
         .parse()
         .expect("failed to parse TRANSFER_FEE_IN_YEN")
 });
+
+pub(crate) const KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE: &str = "PLATFORM_FEE_RATE_IN_PERCENTAGE";
+static PLATFORM_FEE_RATE_IN_PERCENTAGE: Lazy<String> = Lazy::new(|| {
+    std::env::var(KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE).unwrap_or_else(|_| {
+        // 単体テスト実行時に環境変数がないため、初期値として記載しておく。
+        // サービスとして起動するときは環境変数を記載することは必須。
+        "50.0".to_string()
+    })
+});
+
+fn calculate_reward(
+    sale_in_yen: i32,
+    platform_fee_rate_in_percentage: &str,
+    transfer_fee_in_yen: i32,
+) -> Result<i32, ErrResp> {
+    let platform_fee_in_yen =
+        calculate_platform_fee_in_yen(sale_in_yen, platform_fee_rate_in_percentage)?;
+    let reward = sale_in_yen - platform_fee_in_yen - transfer_fee_in_yen;
+    Ok(reward)
+}
+
+// platform_fee_rate_in_percentageはパーセンテージを示す少数の文字列。返り値は、sale_in_yen * (platform_fee_rate_in_percentage/100) の結果の少数部分を切り捨てた値。
+fn calculate_platform_fee_in_yen(
+    sale_in_yen: i32,
+    platform_fee_rate_in_percentage: &str,
+) -> Result<i32, ErrResp> {
+    let platform_fee_rate_in_percentage_decimal =
+        Decimal::from_str(platform_fee_rate_in_percentage).map_err(|e| {
+            error!(
+                "failed to parse platform_fee_rate_in_percentage ({}): {}",
+                platform_fee_rate_in_percentage, e
+            );
+            unexpected_err_resp()
+        })?;
+    let one_handred_decimal = Decimal::from_str("100").map_err(|e| {
+        error!("failed to parse str literal: {}", e);
+        unexpected_err_resp()
+    })?;
+    let sale_in_yen_decimal = match Decimal::from_i32(sale_in_yen) {
+        Some(s) => s,
+        None => {
+            error!("failed to parse sale_in_yen value ({})", sale_in_yen);
+            return Err(unexpected_err_resp());
+        }
+    };
+    let platform_fee_in_yen_decimal = (sale_in_yen_decimal
+        * (platform_fee_rate_in_percentage_decimal / one_handred_decimal))
+        .round_dp_with_strategy(0, RoundingStrategy::ToZero);
+    let platform_fee_in_yen = platform_fee_in_yen_decimal
+        .to_string()
+        .parse::<i32>()
+        .map_err(|e| {
+            error!(
+                "failed to parse platform_fee_in_yen_decimal ({}): {}",
+                platform_fee_in_yen_decimal, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(platform_fee_in_yen)
+}
 
 #[derive(Deserialize)]
 pub(crate) struct ConsultationIdQuery {

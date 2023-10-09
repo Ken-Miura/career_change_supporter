@@ -5,7 +5,7 @@ mod handlers;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
-use crate::handlers::session::authentication::authenticated_handlers::KEY_TO_TRANSFER_FEE_IN_YEN;
+use crate::handlers::session::authentication::authenticated_handlers::{KEY_TO_TRANSFER_FEE_IN_YEN, KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE};
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::expired_list::get_expired_awaiting_payments;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_withdrawal::list::get_awaiting_withdrawals;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_withdrawal::post::post_awaiting_withdrawal;
@@ -145,6 +145,7 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
         KEY_TO_USE_ECS_TASK_ROLE.to_string(),
         KEY_TO_TRANSFER_FEE_IN_YEN.to_string(),
+        KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
     ]
 });
 

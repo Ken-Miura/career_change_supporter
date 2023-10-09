@@ -54,6 +54,7 @@ struct AwaitingWithdrawal {
     account_type: Option<String>,
     account_number: Option<String>,
     account_holder_name: Option<String>,
+    // TODO: 振込手数料、プラットフォーム手数料割合、報酬の3つを追加する
 }
 
 #[async_trait]
