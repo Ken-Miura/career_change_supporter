@@ -8,7 +8,7 @@ use common::{
     ErrRespStruct, RespResult, JAPANESE_TIME_ZONE,
 };
 use entity::sea_orm::{
-    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, Set, TransactionError,
+    ActiveModelTrait, DatabaseConnection, DatabaseTransaction, EntityTrait, Set, TransactionError,
     TransactionTrait,
 };
 use serde::Serialize;
@@ -17,12 +17,11 @@ use tracing::error;
 use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin, delete_awaiting_withdrawal, find_awaiting_withdrawal_with_exclusive_lock,
-        validate_consultation_id_is_positive, ConsultationIdBody, TRANSFER_FEE_IN_YEN,
+        admin::Admin, calculate_reward, delete_awaiting_withdrawal,
+        find_awaiting_withdrawal_with_exclusive_lock, validate_consultation_id_is_positive,
+        ConsultationIdBody, PLATFORM_FEE_RATE_IN_PERCENTAGE, TRANSFER_FEE_IN_YEN,
     },
 };
-
-const REASON: &str = "ユーザーからのクレームのため返金";
 
 pub(crate) async fn post_receipt_of_consultation(
     Admin { admin_info }: Admin, // 認証されていることを保証するために必須のパラメータ
@@ -62,7 +61,7 @@ async fn handle_receipt_of_consultation(
         consultation_id,
         admin_email_address,
         current_date_time,
-        REASON.to_string(),
+        PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
         *TRANSFER_FEE_IN_YEN,
     )
     .await?;
@@ -76,7 +75,7 @@ trait ReceiptOfConsultationOperation {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
-        reason: String,
+        platform_fee_rate_in_percentage: String,
         transfer_fee_in_yen: i32,
     ) -> Result<(), ErrResp>;
 }
@@ -92,7 +91,7 @@ impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
-        reason: String,
+        platform_fee_rate_in_percentage: String,
         transfer_fee_in_yen: i32,
     ) -> Result<(), ErrResp> {
         self.pool
@@ -115,12 +114,45 @@ impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
                         }
                     })?;
 
-                    insert_refunded_payment(
+                    // 欲しいのはコンサルタントの口座情報なのでconsultant_idを渡す
+                    let ba_option = find_bank_account(aw.consultant_id, txn).await?;
+                    let ba = ba_option.ok_or_else(|| {
+                        error!(
+                            "no bank_account (consultant_id: {}) found",
+                            aw.consultant_id
+                        );
+                        ErrRespStruct {
+                            err_resp: unexpected_err_resp(),
+                        }
+                    })?;
+
+                    let reward = calculate_reward(
+                        aw.fee_per_hour_in_yen,
+                        &platform_fee_rate_in_percentage,
+                        transfer_fee_in_yen,
+                    )
+                    .map_err(|e| {
+                        error!(
+                            "failed calculate_reward ({}, {}, {})",
+                            aw.fee_per_hour_in_yen,
+                            &platform_fee_rate_in_percentage,
+                            transfer_fee_in_yen
+                        );
+                        ErrRespStruct { err_resp: e }
+                    })?;
+
+                    let fee_related_info = FeeRelatedInfo {
+                        transfer_fee_in_yen,
+                        platform_fee_rate_in_percentage,
+                    };
+
+                    insert_receipt_of_consultation(
                         aw,
+                        ba,
                         admin_email_address,
                         current_date_time,
-                        reason,
-                        transfer_fee_in_yen,
+                        fee_related_info,
+                        reward,
                         txn,
                     )
                     .await?;
@@ -145,29 +177,62 @@ impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
     }
 }
 
-async fn insert_refunded_payment(
-    aw: entity::awaiting_withdrawal::Model,
-    refund_confirmed_by: String,
-    created_at: DateTime<FixedOffset>,
-    reason: String,
+async fn find_bank_account(
+    user_account_id: i64,
+    txn: &DatabaseTransaction,
+) -> Result<Option<entity::bank_account::Model>, ErrRespStruct> {
+    let model = entity::bank_account::Entity::find_by_id(user_account_id)
+        .one(txn)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find bank_account (user_account_id: {}): {}",
+                user_account_id, e
+            );
+            ErrRespStruct {
+                err_resp: unexpected_err_resp(),
+            }
+        })?;
+    Ok(model)
+}
+
+struct FeeRelatedInfo {
     transfer_fee_in_yen: i32,
+    platform_fee_rate_in_percentage: String,
+}
+
+async fn insert_receipt_of_consultation(
+    aw: entity::awaiting_withdrawal::Model,
+    ba: entity::bank_account::Model,
+    withdrawal_confirmed_by: String,
+    created_at: DateTime<FixedOffset>,
+    fee_related_info: FeeRelatedInfo,
+    reward: i32,
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
-    let rp = entity::refunded_payment::ActiveModel {
+    let rp = entity::receipt_of_consultation::ActiveModel {
         consultation_id: Set(aw.consultation_id),
         user_account_id: Set(aw.user_account_id),
         consultant_id: Set(aw.consultant_id),
         meeting_at: Set(aw.meeting_at),
         fee_per_hour_in_yen: Set(aw.fee_per_hour_in_yen),
-        transfer_fee_in_yen: Set(transfer_fee_in_yen),
+        platform_fee_rate_in_percentage: Set(fee_related_info
+            .platform_fee_rate_in_percentage
+            .clone()),
+        transfer_fee_in_yen: Set(fee_related_info.transfer_fee_in_yen),
+        reward: Set(reward),
         sender_name: Set(aw.sender_name.clone()),
-        reason: Set(reason.clone()),
-        refund_confirmed_by: Set(refund_confirmed_by.clone()),
+        bank_code: Set(ba.bank_code.clone()),
+        branch_code: Set(ba.branch_code.clone()),
+        account_type: Set(ba.account_type.clone()),
+        account_number: Set(ba.account_number.clone()),
+        account_holder_name: Set(ba.account_holder_name.clone()),
+        withdrawal_confirmed_by: Set(withdrawal_confirmed_by.clone()),
         created_at: Set(created_at),
     };
     let _ = rp.insert(txn).await.map_err(|e| {
-        error!("failed to insert refunded_payment (awaiting_withdrawal: {:?}, transfer_fee_in_yen: {}, reason: {}, refund_confirmed_by: {}, created_at: {}): {}",
-            aw, transfer_fee_in_yen, reason, refund_confirmed_by, created_at, e);
+        error!("failed to insert receipt_of_consultation (awaiting_withdrawal: {:?}, bank_account: {:?}, platform_fee_rage_in_percentage: {}, transfer_fee_in_yen: {}, reward: {}, withdrawal_confirmed_by: {}, created_at: {}): {}",
+            aw, ba, fee_related_info.platform_fee_rate_in_percentage, fee_related_info.transfer_fee_in_yen, reward, withdrawal_confirmed_by, created_at, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
@@ -200,13 +265,12 @@ mod tests {
             consultation_id: i64,
             admin_email_address: String,
             current_date_time: DateTime<FixedOffset>,
-            reason: String,
+            platform_fee_rate_in_percentage: String,
             transfer_fee_in_yen: i32,
         ) -> Result<(), ErrResp> {
             assert_eq!(consultation_id, self.consultation_id);
             assert_eq!(admin_email_address, self.admin_email_address);
             assert_eq!(current_date_time, self.current_date_time);
-            assert_eq!(reason, self.reason);
             assert_eq!(transfer_fee_in_yen, self.transfer_fee_in_yen);
             if self.no_awaiting_withdrawal_found {
                 return Err((
@@ -231,7 +295,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: REASON.to_string(),
+            reason: "REASON".to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -260,7 +324,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: REASON.to_string(),
+            reason: "REASON".to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -289,7 +353,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: REASON.to_string(),
+            reason: "REASON".to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -318,7 +382,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: REASON.to_string(),
+            reason: "REASON".to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: true,
         };
