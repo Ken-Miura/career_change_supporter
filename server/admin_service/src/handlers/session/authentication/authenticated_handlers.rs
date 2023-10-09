@@ -32,6 +32,7 @@ pub(crate) mod neglected_payment;
 pub(crate) mod news;
 pub(crate) mod pagination;
 mod reason_validator;
+pub(crate) mod receipt_of_consultation;
 pub(crate) mod refresh;
 pub(crate) mod refunded_payment;
 pub(crate) mod user_account;
