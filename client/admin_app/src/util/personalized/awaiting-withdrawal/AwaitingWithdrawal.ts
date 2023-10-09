@@ -13,5 +13,8 @@ export type AwaitingWithdrawal = {
     account_type: string | null,
     account_number: string | null,
     account_holder_name: string | null,
+    platform_fee_rate_in_percentage: string,
+    transfer_fee_in_yen: number,
+    reward: number,
     /* eslint-enable camelcase */
 }
