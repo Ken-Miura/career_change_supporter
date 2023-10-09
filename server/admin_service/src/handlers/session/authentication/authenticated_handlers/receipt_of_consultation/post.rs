@@ -57,7 +57,7 @@ async fn handle_receipt_of_consultation(
     // NOTE:
     // 現在時刻が出金可能時刻を超えていることもチェックすべきだが、
     // 一般公開するサービスではなく、管理者しかアクセスできないサービスなのでそこまで厳密にチェックしていない
-    op.receipt_of_consultation(
+    op.issue_receipt_of_consultation(
         consultation_id,
         admin_email_address,
         current_date_time,
@@ -70,7 +70,7 @@ async fn handle_receipt_of_consultation(
 
 #[async_trait]
 trait ReceiptOfConsultationOperation {
-    async fn receipt_of_consultation(
+    async fn issue_receipt_of_consultation(
         &self,
         consultation_id: i64,
         admin_email_address: String,
@@ -86,7 +86,7 @@ struct ReceiptOfConsultationOperationImpl {
 
 #[async_trait]
 impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
-    async fn receipt_of_consultation(
+    async fn issue_receipt_of_consultation(
         &self,
         consultation_id: i64,
         admin_email_address: String,
@@ -260,7 +260,7 @@ mod tests {
 
     #[async_trait]
     impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationMock {
-        async fn receipt_of_consultation(
+        async fn issue_receipt_of_consultation(
             &self,
             consultation_id: i64,
             admin_email_address: String,
