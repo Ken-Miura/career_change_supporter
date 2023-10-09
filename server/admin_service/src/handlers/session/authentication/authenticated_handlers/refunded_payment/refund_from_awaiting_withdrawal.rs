@@ -18,7 +18,6 @@ use crate::{
     err::{unexpected_err_resp, Code},
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, delete_awaiting_withdrawal, find_awaiting_withdrawal_with_exclusive_lock,
-        find_identity_by_user_account_id_in_transaction, generate_sender_name,
         validate_consultation_id_is_positive, ConsultationIdBody, TRANSFER_FEE_IN_YEN,
     },
 };
@@ -57,7 +56,7 @@ async fn handle_refund_from_awaiting_withdrawal(
         unexpected_err_resp()
     })?;
     // NOTE:
-    // 現在時刻が相談日時を超えていることもチェックすべきだが、
+    // 現在時刻が出金可能時刻を超えていることもチェックすべきだが、
     // 一般公開するサービスではなく、管理者しかアクセスできないサービスなのでそこまで厳密にチェックしていない
     op.refund_from_awaiting_withdrawal(
         consultation_id,
@@ -99,9 +98,9 @@ impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOpera
         self.pool
             .transaction::<_, (), ErrRespStruct>(|txn| {
                 Box::pin(async move {
-                    let ap_option =
+                    let aw_option =
                         find_awaiting_withdrawal_with_exclusive_lock(consultation_id, txn).await?;
-                    let ap = ap_option.ok_or_else(|| {
+                    let aw = aw_option.ok_or_else(|| {
                         error!(
                             "no awaiting_withdrawal (consultation_id: {}) found",
                             consultation_id
@@ -116,29 +115,15 @@ impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOpera
                         }
                     })?;
 
-                    let id =
-                        find_identity_by_user_account_id_in_transaction(txn, ap.user_account_id)
-                            .await?;
-                    let id = id.ok_or_else(|| {
-                        error!(
-                            "no identity (user_account_id: {}) found",
-                            ap.user_account_id
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-                    let sender_name = generate_sender_name(id.last_name_furigana.to_string(), id.first_name_furigana.to_string(), ap.meeting_at)
-                        .map_err(|e| {
-                            error!("failed to generate_sender_name (last_name_furigana: {}, first_name_furigana: {}, meeting_at: {})",
-                                id.last_name_furigana, id.first_name_furigana, ap.meeting_at);
-                            ErrRespStruct {
-                                err_resp: e,
-                            }
-                        })?;
-
-                    insert_refunded_payment(ap, sender_name, admin_email_address, current_date_time, reason, transfer_fee_in_yen, txn)
-                        .await?;
+                    insert_refunded_payment(
+                        aw,
+                        admin_email_address,
+                        current_date_time,
+                        reason,
+                        transfer_fee_in_yen,
+                        txn,
+                    )
+                    .await?;
 
                     delete_awaiting_withdrawal(consultation_id, txn).await?;
 
@@ -164,8 +149,7 @@ impl RefundFromAwaitingWithdrawalOperation for RefundFromAwaitingWithdrawalOpera
 }
 
 async fn insert_refunded_payment(
-    ap: entity::awaiting_withdrawal::Model,
-    sender_name: String,
+    aw: entity::awaiting_withdrawal::Model,
     refund_confirmed_by: String,
     created_at: DateTime<FixedOffset>,
     reason: String,
@@ -173,20 +157,20 @@ async fn insert_refunded_payment(
     txn: &DatabaseTransaction,
 ) -> Result<(), ErrRespStruct> {
     let rp = entity::refunded_payment::ActiveModel {
-        consultation_id: Set(ap.consultation_id),
-        user_account_id: Set(ap.user_account_id),
-        consultant_id: Set(ap.consultant_id),
-        meeting_at: Set(ap.meeting_at),
-        fee_per_hour_in_yen: Set(ap.fee_per_hour_in_yen),
+        consultation_id: Set(aw.consultation_id),
+        user_account_id: Set(aw.user_account_id),
+        consultant_id: Set(aw.consultant_id),
+        meeting_at: Set(aw.meeting_at),
+        fee_per_hour_in_yen: Set(aw.fee_per_hour_in_yen),
         transfer_fee_in_yen: Set(transfer_fee_in_yen),
-        sender_name: Set(sender_name),
+        sender_name: Set(aw.sender_name.clone()),
         reason: Set(reason.clone()),
         refund_confirmed_by: Set(refund_confirmed_by.clone()),
         created_at: Set(created_at),
     };
     let _ = rp.insert(txn).await.map_err(|e| {
         error!("failed to insert refunded_payment (awaiting_withdrawal: {:?}, transfer_fee_in_yen: {}, reason: {}, refund_confirmed_by: {}, created_at: {}): {}",
-            ap, transfer_fee_in_yen, reason, refund_confirmed_by, created_at, e);
+            aw, transfer_fee_in_yen, reason, refund_confirmed_by, created_at, e);
         ErrRespStruct {
             err_resp: unexpected_err_resp(),
         }
