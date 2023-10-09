@@ -17,7 +17,8 @@ use tracing::error;
 use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
-        admin::Admin, convert_date_time_to_rfc3339_string, pagination::Pagination,
+        admin::Admin, calculate_reward, convert_date_time_to_rfc3339_string,
+        pagination::Pagination, PLATFORM_FEE_RATE_IN_PERCENTAGE, TRANSFER_FEE_IN_YEN,
         WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS,
     },
 };
@@ -54,7 +55,9 @@ struct AwaitingWithdrawal {
     account_type: Option<String>,
     account_number: Option<String>,
     account_holder_name: Option<String>,
-    // TODO: 振込手数料、プラットフォーム手数料割合、報酬の3つを追加する
+    platform_fee_rate_in_percentage: String,
+    transfer_fee_in_yen: i32,
+    reward: i32,
 }
 
 #[async_trait]
@@ -93,7 +96,7 @@ impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(models
+        models
             .into_iter()
             .map(|m| {
                 let aw = m.0;
@@ -110,7 +113,12 @@ impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationImpl {
                     } else {
                         (None, None, None, None, None)
                     };
-                AwaitingWithdrawal {
+                let reward = calculate_reward(aw.fee_per_hour_in_yen, &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(), *TRANSFER_FEE_IN_YEN).map_err(|e|{
+                    error!("failed to calculate_reward (fee_per_hour_in_yen: {}, platform_fee_rate_in_percentage: {}, transfer_fee_in_yen: {}): {:?}",
+                        aw.fee_per_hour_in_yen, *PLATFORM_FEE_RATE_IN_PERCENTAGE, *TRANSFER_FEE_IN_YEN, e);
+                    unexpected_err_resp()
+                })?;
+                Ok(AwaitingWithdrawal {
                     consultation_id: aw.consultation_id,
                     user_account_id: aw.user_account_id,
                     consultant_id: aw.consultant_id,
@@ -124,9 +132,12 @@ impl AwaitingWithdrawalsOperation for AwaitingWithdrawalsOperationImpl {
                     account_type,
                     account_number,
                     account_holder_name,
-                }
+                    platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                    transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+                    reward
+                })
             })
-            .collect())
+            .collect()
     }
 }
 
@@ -246,12 +257,13 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 3000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 3000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -265,6 +277,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 0;
@@ -299,12 +319,13 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 4000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 4000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -318,16 +339,25 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let meeting_at2 = meeting_at1 + Duration::days(1);
         let created_at2 = meeting_at2 - Duration::days(5);
+        let fee_per_hour_in_yen2 = 5000;
         let awaiting_withdrawal2 = AwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
-            fee_per_hour_in_yen: 5000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: generate_sender_name(
                 "サトウ".to_string(),
                 "サブロウ".to_string(),
@@ -341,6 +371,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("7654321".to_string()),
             account_holder_name: Some("タカハシ　シロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen2,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 0;
@@ -374,13 +412,14 @@ mod tests {
         let meeting_at1 = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
+        let fee_per_hour_in_yen1 = 4000;
         let created_at1 = meeting_at1 - Duration::days(5);
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 4000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -394,16 +433,25 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let meeting_at2 = meeting_at1 + Duration::days(1);
         let created_at2 = meeting_at2 - Duration::days(5);
+        let fee_per_hour_in_yen2 = 5000;
         let awaiting_withdrawal2 = AwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
-            fee_per_hour_in_yen: 5000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: generate_sender_name(
                 "サトウ".to_string(),
                 "サブロウ".to_string(),
@@ -417,6 +465,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("7654321".to_string()),
             account_holder_name: Some("タカハシ　シロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen2,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 0;
@@ -451,12 +507,13 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 4000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 4000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -470,16 +527,25 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let meeting_at2 = meeting_at1 + Duration::days(1);
         let created_at2 = meeting_at2 - Duration::days(5);
+        let fee_per_hour_in_yen2 = 5000;
         let awaiting_withdrawal2 = AwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
-            fee_per_hour_in_yen: 5000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: generate_sender_name(
                 "サトウ".to_string(),
                 "サブロウ".to_string(),
@@ -493,6 +559,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("7654321".to_string()),
             account_holder_name: Some("タカハシ　シロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen2,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 1;
@@ -527,6 +601,7 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 4000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
@@ -546,16 +621,25 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let meeting_at2 = meeting_at1 + Duration::days(1);
         let created_at2 = meeting_at2 - Duration::days(5);
+        let fee_per_hour_in_yen2 = 5000;
         let awaiting_withdrawal2 = AwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
-            fee_per_hour_in_yen: 5000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: generate_sender_name(
                 "サトウ".to_string(),
                 "サブロウ".to_string(),
@@ -569,6 +653,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("7654321".to_string()),
             account_holder_name: Some("タカハシ　シロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen2,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 2;
@@ -603,12 +695,13 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 4000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 4000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -622,16 +715,25 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let meeting_at2 = meeting_at1 + Duration::days(15);
         let created_at2 = meeting_at2 - Duration::days(5);
+        let fee_per_hour_in_yen2 = 5000;
         let awaiting_withdrawal2 = AwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
-            fee_per_hour_in_yen: 5000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen2,
             sender_name: generate_sender_name(
                 "サトウ".to_string(),
                 "サブロウ".to_string(),
@@ -645,6 +747,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("7654321".to_string()),
             account_holder_name: Some("タカハシ　シロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen2,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 0;
@@ -679,12 +789,13 @@ mod tests {
             .with_ymd_and_hms(2023, 9, 25, 21, 0, 0)
             .unwrap();
         let created_at1 = meeting_at1 - Duration::days(5);
+        let fee_per_hour_in_yen1 = 3000;
         let awaiting_withdrawal1 = AwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
-            fee_per_hour_in_yen: 3000,
+            fee_per_hour_in_yen: fee_per_hour_in_yen1,
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
@@ -698,6 +809,14 @@ mod tests {
             account_type: Some("普通".to_string()),
             account_number: Some("1234567".to_string()),
             account_holder_name: Some("スズキ　ジロウ".to_string()),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
+            reward: calculate_reward(
+                fee_per_hour_in_yen1,
+                &PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
+                *TRANSFER_FEE_IN_YEN,
+            )
+            .expect("failed to get Ok"),
         };
 
         let page = 0;
