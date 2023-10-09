@@ -253,8 +253,8 @@ mod tests {
         consultation_id: i64,
         admin_email_address: String,
         current_date_time: DateTime<FixedOffset>,
-        reason: String,
         transfer_fee_in_yen: i32,
+        platform_fee_rate_in_percentage: String,
         no_awaiting_withdrawal_found: bool,
     }
 
@@ -272,6 +272,10 @@ mod tests {
             assert_eq!(admin_email_address, self.admin_email_address);
             assert_eq!(current_date_time, self.current_date_time);
             assert_eq!(transfer_fee_in_yen, self.transfer_fee_in_yen);
+            assert_eq!(
+                platform_fee_rate_in_percentage,
+                self.platform_fee_rate_in_percentage
+            );
             if self.no_awaiting_withdrawal_found {
                 return Err((
                     StatusCode::BAD_REQUEST,
@@ -295,7 +299,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: "REASON".to_string(),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -324,7 +328,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: "REASON".to_string(),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -353,7 +357,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: "REASON".to_string(),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: false,
         };
@@ -382,7 +386,7 @@ mod tests {
             consultation_id,
             admin_email_address: admin_email_address.clone(),
             current_date_time,
-            reason: "REASON".to_string(),
+            platform_fee_rate_in_percentage: PLATFORM_FEE_RATE_IN_PERCENTAGE.to_string(),
             transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
             no_awaiting_withdrawal_found: true,
         };
