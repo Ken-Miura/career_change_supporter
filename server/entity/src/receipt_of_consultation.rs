@@ -14,6 +14,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text")]
     pub platform_fee_rate_in_percentage: String,
     pub transfer_fee_in_yen: i32,
+    pub reward: i32,
     #[sea_orm(column_type = "Text")]
     pub sender_name: String,
     #[sea_orm(column_type = "Text")]

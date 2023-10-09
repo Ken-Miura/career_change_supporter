@@ -916,6 +916,7 @@ impl MigrationTrait for Migration {
                   fee_per_hour_in_yen INTEGER NOT NULL,
                   platform_fee_rate_in_percentage TEXT NOT NULL,
                   transfer_fee_in_yen INTEGER NOT NULL,
+                  reward INTEGER NOT NULL,
                   sender_name TEXT NOT NULL,
                   bank_code TEXT NOT NULL,
                   branch_code TEXT NOT NULL,
