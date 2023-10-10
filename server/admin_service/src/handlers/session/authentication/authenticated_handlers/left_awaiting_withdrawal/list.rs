@@ -20,18 +20,18 @@ use crate::{
 
 const VALID_PAGE_SIZE: u64 = 20;
 
-pub(crate) async fn get_receipts_of_consultation(
+pub(crate) async fn get_left_awaiting_withdrawals(
     Admin { admin_info: _ }: Admin, // 認証されていることを保証するために必須のパラメータ
     query: Query<Pagination>,
     State(pool): State<DatabaseConnection>,
-) -> RespResult<ReceiptsOfConsultationResult> {
-    let op = ReceiptsOfConsultationOperationImpl { pool };
-    handle_receipts_of_consultation(query.page, query.per_page, op).await
+) -> RespResult<LeftAwaitingWithdrawalsResult> {
+    let op = LeftAwaitingWithdrawalsOperationImpl { pool };
+    handle_left_awaiting_withdrawals(query.page, query.per_page, op).await
 }
 
 #[derive(Serialize, Debug, PartialEq)]
-pub(crate) struct ReceiptsOfConsultationResult {
-    receipts_of_consultation: Vec<ReceiptOfConsultation>,
+pub(crate) struct LeftAwaitingWithdrawalsResult {
+    left_awaiting_withdrawals: Vec<ReceiptOfConsultation>,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq)]
@@ -55,21 +55,21 @@ struct ReceiptOfConsultation {
 }
 
 #[async_trait]
-trait ReceiptsOfConsultationOperation {
-    async fn get_receipts_of_consultation(
+trait LeftAwaitingWithdrawalsOperation {
+    async fn get_left_awaiting_withdrawals(
         &self,
         page: u64,
         per_page: u64,
     ) -> Result<Vec<ReceiptOfConsultation>, ErrResp>;
 }
 
-struct ReceiptsOfConsultationOperationImpl {
+struct LeftAwaitingWithdrawalsOperationImpl {
     pool: DatabaseConnection,
 }
 
 #[async_trait]
-impl ReceiptsOfConsultationOperation for ReceiptsOfConsultationOperationImpl {
-    async fn get_receipts_of_consultation(
+impl LeftAwaitingWithdrawalsOperation for LeftAwaitingWithdrawalsOperationImpl {
+    async fn get_left_awaiting_withdrawals(
         &self,
         page: u64,
         per_page: u64,
@@ -110,22 +110,22 @@ impl ReceiptsOfConsultationOperation for ReceiptsOfConsultationOperationImpl {
     }
 }
 
-async fn handle_receipts_of_consultation(
+async fn handle_left_awaiting_withdrawals(
     page: u64,
     per_page: u64,
-    op: impl ReceiptsOfConsultationOperation,
-) -> RespResult<ReceiptsOfConsultationResult> {
+    op: impl LeftAwaitingWithdrawalsOperation,
+) -> RespResult<LeftAwaitingWithdrawalsResult> {
     if per_page > VALID_PAGE_SIZE {
         error!("invalid per_page ({})", per_page);
         return Err(unexpected_err_resp());
     };
 
-    let receipts_of_consultation = op.get_receipts_of_consultation(page, per_page).await?;
+    let left_awaiting_withdrawals = op.get_left_awaiting_withdrawals(page, per_page).await?;
 
     Ok((
         StatusCode::OK,
-        Json(ReceiptsOfConsultationResult {
-            receipts_of_consultation,
+        Json(LeftAwaitingWithdrawalsResult {
+            left_awaiting_withdrawals,
         }),
     ))
 }
@@ -146,29 +146,29 @@ mod tests {
 
     use super::*;
 
-    struct ReceiptsOfConsultationOperationMock {
+    struct LeftAwaitingWithdrawalsOperationMock {
         page: u64,
         per_page: u64,
-        receipts_of_consultation: Vec<ReceiptOfConsultation>,
+        left_awaiting_withdrawals: Vec<ReceiptOfConsultation>,
     }
 
     #[async_trait]
-    impl ReceiptsOfConsultationOperation for ReceiptsOfConsultationOperationMock {
-        async fn get_receipts_of_consultation(
+    impl LeftAwaitingWithdrawalsOperation for LeftAwaitingWithdrawalsOperationMock {
+        async fn get_left_awaiting_withdrawals(
             &self,
             page: u64,
             per_page: u64,
         ) -> Result<Vec<ReceiptOfConsultation>, ErrResp> {
             assert_eq!(self.page, page);
             assert_eq!(self.per_page, per_page);
-            let mut receipts_of_consultation: Vec<ReceiptOfConsultation> =
-                self.receipts_of_consultation.clone();
-            receipts_of_consultation.sort_by(|a, b| {
+            let mut left_awaiting_withdrawals: Vec<ReceiptOfConsultation> =
+                self.left_awaiting_withdrawals.clone();
+            left_awaiting_withdrawals.sort_by(|a, b| {
                 DateTime::parse_from_rfc3339(&b.created_at)
                     .expect("failed to get Ok")
                     .cmp(&DateTime::parse_from_rfc3339(&a.created_at).expect("failed to get Ok"))
             });
-            let length = receipts_of_consultation.len();
+            let length = left_awaiting_withdrawals.len();
             let page = page as usize;
             let per_page = per_page as usize;
             let start_index = page * per_page;
@@ -177,35 +177,35 @@ mod tests {
             Ok(if length <= start_index {
                 vec![]
             } else {
-                receipts_of_consultation[start_index..end_index].to_vec()
+                left_awaiting_withdrawals[start_index..end_index].to_vec()
             })
         }
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case1() {
+    async fn test_handle_left_awaiting_withdrawals_success_case1() {
         let page = 0;
         let per_page = VALID_PAGE_SIZE;
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![],
+            left_awaiting_withdrawals: vec![],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case2() {
+    async fn test_handle_left_awaiting_withdrawals_success_case2() {
         let page = 0;
         let per_page = VALID_PAGE_SIZE;
 
@@ -240,26 +240,26 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1.clone()],
+            left_awaiting_withdrawals: vec![rp1.clone()],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![rp1]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![rp1]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case3() {
+    async fn test_handle_left_awaiting_withdrawals_success_case3() {
         let page = 0;
         let per_page = VALID_PAGE_SIZE;
 
@@ -323,26 +323,26 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1.clone(), rp2.clone()],
+            left_awaiting_withdrawals: vec![rp1.clone(), rp2.clone()],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![rp2, rp1]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![rp2, rp1]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case4() {
+    async fn test_handle_left_awaiting_withdrawals_success_case4() {
         let page = 0;
         let per_page = 1;
 
@@ -406,26 +406,26 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1, rp2.clone()],
+            left_awaiting_withdrawals: vec![rp1, rp2.clone()],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![rp2]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![rp2]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case5() {
+    async fn test_handle_left_awaiting_withdrawals_success_case5() {
         let page = 1;
         let per_page = 1;
 
@@ -489,26 +489,26 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1.clone(), rp2],
+            left_awaiting_withdrawals: vec![rp1.clone(), rp2],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![rp1]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![rp1]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_success_case6() {
+    async fn test_handle_left_awaiting_withdrawals_success_case6() {
         let page = 2;
         let per_page = 1;
 
@@ -572,26 +572,26 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1, rp2],
+            left_awaiting_withdrawals: vec![rp1, rp2],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect("failed to get Ok");
         assert_eq!(StatusCode::OK, resp.0);
         assert_eq!(
-            ReceiptsOfConsultationResult {
-                receipts_of_consultation: vec![]
+            LeftAwaitingWithdrawalsResult {
+                left_awaiting_withdrawals: vec![]
             },
             resp.1 .0
         );
     }
 
     #[tokio::test]
-    async fn test_handle_receipts_of_consultation_fail_case1() {
+    async fn test_handle_left_awaiting_withdrawals_fail_case1() {
         let page = 0;
         let per_page = VALID_PAGE_SIZE + 1;
 
@@ -626,13 +626,13 @@ mod tests {
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
-        let op = ReceiptsOfConsultationOperationMock {
+        let op = LeftAwaitingWithdrawalsOperationMock {
             page,
             per_page,
-            receipts_of_consultation: vec![rp1.clone()],
+            left_awaiting_withdrawals: vec![rp1.clone()],
         };
 
-        let result = handle_receipts_of_consultation(page, per_page, op).await;
+        let result = handle_left_awaiting_withdrawals(page, per_page, op).await;
 
         let resp = result.expect_err("failed to get Err");
         assert_eq!(StatusCode::INTERNAL_SERVER_ERROR, resp.0);
