@@ -31,26 +31,18 @@ pub(crate) async fn get_left_awaiting_withdrawals(
 
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct LeftAwaitingWithdrawalsResult {
-    left_awaiting_withdrawals: Vec<ReceiptOfConsultation>,
+    left_awaiting_withdrawals: Vec<LeftAwaitingWithdrawal>,
 }
 
 #[derive(Clone, Serialize, Debug, PartialEq)]
-struct ReceiptOfConsultation {
+struct LeftAwaitingWithdrawal {
     consultation_id: i64,
     user_account_id: i64,
     consultant_id: i64,
     meeting_at: String, // RFC 3339形式の文字列,
     fee_per_hour_in_yen: i32,
-    platform_fee_rate_in_percentage: String,
-    transfer_fee_in_yen: i32,
-    reward: i32,
     sender_name: String,
-    bank_code: String,
-    branch_code: String,
-    account_type: String,
-    account_number: String,
-    account_holder_name: String,
-    withdrawal_confirmed_by: String,
+    confirmed_by: String,
     created_at: String, // RFC 3339形式の文字列
 }
 
@@ -60,7 +52,7 @@ trait LeftAwaitingWithdrawalsOperation {
         &self,
         page: u64,
         per_page: u64,
-    ) -> Result<Vec<ReceiptOfConsultation>, ErrResp>;
+    ) -> Result<Vec<LeftAwaitingWithdrawal>, ErrResp>;
 }
 
 struct LeftAwaitingWithdrawalsOperationImpl {
@@ -73,37 +65,29 @@ impl LeftAwaitingWithdrawalsOperation for LeftAwaitingWithdrawalsOperationImpl {
         &self,
         page: u64,
         per_page: u64,
-    ) -> Result<Vec<ReceiptOfConsultation>, ErrResp> {
-        let models = entity::receipt_of_consultation::Entity::find()
-            .order_by_desc(entity::receipt_of_consultation::Column::CreatedAt)
+    ) -> Result<Vec<LeftAwaitingWithdrawal>, ErrResp> {
+        let models = entity::left_awaiting_withdrawal::Entity::find()
+            .order_by_desc(entity::left_awaiting_withdrawal::Column::CreatedAt)
             .paginate(&self.pool, per_page)
             .fetch_page(page)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to find receipt_of_consultation (page: {}, per_page: {}): {}",
+                    "failed to find left_awaiting_withdrawal (page: {}, per_page: {}): {}",
                     page, per_page, e
                 );
                 unexpected_err_resp()
             })?;
         Ok(models
             .into_iter()
-            .map(|m| ReceiptOfConsultation {
+            .map(|m| LeftAwaitingWithdrawal {
                 consultation_id: m.consultation_id,
                 user_account_id: m.user_account_id,
                 consultant_id: m.consultant_id,
                 meeting_at: convert_date_time_to_rfc3339_string(m.meeting_at),
                 fee_per_hour_in_yen: m.fee_per_hour_in_yen,
-                platform_fee_rate_in_percentage: m.platform_fee_rate_in_percentage,
-                transfer_fee_in_yen: m.transfer_fee_in_yen,
-                reward: m.reward,
                 sender_name: m.sender_name,
-                bank_code: m.bank_code,
-                branch_code: m.branch_code,
-                account_type: m.account_type,
-                account_number: m.account_number,
-                account_holder_name: m.account_holder_name,
-                withdrawal_confirmed_by: m.withdrawal_confirmed_by,
+                confirmed_by: m.confirmed_by,
                 created_at: convert_date_time_to_rfc3339_string(m.created_at),
             })
             .collect())
@@ -139,8 +123,7 @@ mod tests {
     use crate::{
         err::Code,
         handlers::session::authentication::authenticated_handlers::{
-            calculate_reward, generate_sender_name, TRANSFER_FEE_IN_YEN,
-            WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS,
+            generate_sender_name, WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS,
         },
     };
 
@@ -149,7 +132,7 @@ mod tests {
     struct LeftAwaitingWithdrawalsOperationMock {
         page: u64,
         per_page: u64,
-        left_awaiting_withdrawals: Vec<ReceiptOfConsultation>,
+        left_awaiting_withdrawals: Vec<LeftAwaitingWithdrawal>,
     }
 
     #[async_trait]
@@ -158,10 +141,10 @@ mod tests {
             &self,
             page: u64,
             per_page: u64,
-        ) -> Result<Vec<ReceiptOfConsultation>, ErrResp> {
+        ) -> Result<Vec<LeftAwaitingWithdrawal>, ErrResp> {
             assert_eq!(self.page, page);
             assert_eq!(self.per_page, per_page);
-            let mut left_awaiting_withdrawals: Vec<ReceiptOfConsultation> =
+            let mut left_awaiting_withdrawals: Vec<LeftAwaitingWithdrawal> =
                 self.left_awaiting_withdrawals.clone();
             left_awaiting_withdrawals.sort_by(|a, b| {
                 DateTime::parse_from_rfc3339(&b.created_at)
@@ -216,27 +199,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
@@ -270,27 +245,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
@@ -299,27 +266,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp2 = ReceiptOfConsultation {
+        let rp2 = LeftAwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "スズキ".to_string(),
                 "ジロウ".to_string(),
                 meeting_at2,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "7654321".to_string(),
-            account_holder_name: "サトウ　サブロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
@@ -353,27 +312,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
@@ -382,27 +333,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp2 = ReceiptOfConsultation {
+        let rp2 = LeftAwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "スズキ".to_string(),
                 "ジロウ".to_string(),
                 meeting_at2,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "7654321".to_string(),
-            account_holder_name: "サトウ　サブロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
@@ -436,27 +379,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
@@ -465,27 +400,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp2 = ReceiptOfConsultation {
+        let rp2 = LeftAwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "スズキ".to_string(),
                 "ジロウ".to_string(),
                 meeting_at2,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "7654321".to_string(),
-            account_holder_name: "サトウ　サブロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
@@ -519,27 +446,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
@@ -548,27 +467,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp2 = ReceiptOfConsultation {
+        let rp2 = LeftAwaitingWithdrawal {
             consultation_id: 4,
             user_account_id: 5,
             consultant_id: 6,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at2),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "スズキ".to_string(),
                 "ジロウ".to_string(),
                 meeting_at2,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "7654321".to_string(),
-            account_holder_name: "サトウ　サブロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at2),
         };
 
@@ -602,27 +513,19 @@ mod tests {
             + Duration::days(WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS)
             + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64)
             + Duration::days(1);
-        let rp1 = ReceiptOfConsultation {
+        let rp1 = LeftAwaitingWithdrawal {
             consultation_id: 1,
             user_account_id: 2,
             consultant_id: 3,
             meeting_at: convert_date_time_to_rfc3339_string(meeting_at1),
             fee_per_hour_in_yen: 4000,
-            platform_fee_rate_in_percentage: "50.0".to_string(),
-            transfer_fee_in_yen: *TRANSFER_FEE_IN_YEN,
-            reward: calculate_reward(4000, "50.0", *TRANSFER_FEE_IN_YEN).expect("failed to get Ok"),
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
                 meeting_at1,
             )
             .expect("failed to get Ok"),
-            bank_code: "0001".to_string(),
-            branch_code: "001".to_string(),
-            account_type: "普通".to_string(),
-            account_number: "1234567".to_string(),
-            account_holder_name: "スズキ　ジロウ".to_string(),
-            withdrawal_confirmed_by: "admin@test.com".to_string(),
+            confirmed_by: "admin@test.com".to_string(),
             created_at: convert_date_time_to_rfc3339_string(created_at1),
         };
 
