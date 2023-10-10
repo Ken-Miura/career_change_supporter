@@ -5,6 +5,7 @@ mod handlers;
 
 use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
+use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::post::post_left_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::list::get_receipts_of_consultation;
 use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::post::post_receipt_of_consultation;
 use crate::handlers::session::authentication::authenticated_handlers::refunded_payment::refund_from_awaiting_withdrawal::post_refund_from_awaiting_withdrawal;
@@ -546,6 +547,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/receipts-of-consultation",
                     get(get_receipts_of_consultation),
+                )
+                .route(
+                    "/left-awaiting-withdrawal",
+                    post(post_left_awaiting_withdrawal),
                 )
                 .with_state(state),
         )
