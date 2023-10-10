@@ -27,6 +27,7 @@ pub(crate) mod consultation;
 mod document_operation;
 pub(crate) mod identity_by_user_account_id;
 pub(crate) mod identity_request;
+pub(crate) mod left_awaiting_withdrawal;
 pub(crate) mod maintenance;
 pub(crate) mod neglected_payment;
 pub(crate) mod news;
