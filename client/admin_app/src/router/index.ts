@@ -29,6 +29,7 @@ import ExpiredAwaitingPaymentsPage from '../views/personalized/ExpiredAwaitingPa
 import RefundedPaymentsPage from '../views/personalized/RefundedPaymentsPage.vue'
 import NeglectedPaymentsPage from '../views/personalized/NeglectedPaymentsPage.vue'
 import AwaitingWithdrawalsPage from '../views/personalized/AwaitingWithdrawalsPage.vue'
+import LeftAwaitingWithdrawalsPage from '../views/personalized/LeftAwaitingWithdrawalsPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -180,6 +181,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/refunded-payments',
     name: 'RefundedPaymentsPage',
     component: RefundedPaymentsPage
+  },
+  {
+    path: '/left-awaiting-withdrawals',
+    name: 'LeftAwaitingWithdrawalsPage',
+    component: LeftAwaitingWithdrawalsPage
   },
   {
     path: '/:pathMatch(.*)*',

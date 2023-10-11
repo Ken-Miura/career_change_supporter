@@ -1,0 +1,138 @@
+<template>
+  <TheHeader/>
+  <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
+    <div v-if="!getLeftAwaitingWithdrawalsDone" class="m-6">
+      <WaitingCircle />
+    </div>
+    <main v-else>
+      <div v-if="error.exists">
+        <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <AlertMessage class="mt-2" v-bind:message="error.message"/>
+        </div>
+      </div>
+      <div v-else>
+        <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+          <h3 class="font-bold text-xl lg:text-2xl">放置された報酬リスト</h3>
+            <ul>
+              <li v-for="item in items" v-bind:key="item.consultation_id">
+                <div class="mt-6">
+                  <div class="text-lg lg:text-xl bg-gray-600 text-white font-bold rounded-t px-4 py-2">相談ID{{ item.consultation_id }}</div>
+                  <div class="border border-t-0 border-gray-600 rounded-b bg-white px-4 py-3 text-black text-lg lg:text-xl grid grid-cols-3">
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">ユーザーID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.user_account_id }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">コンサルタントID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.consultant_id }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">相談日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.meeting_at }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">確認者</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.confirmed_by }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">確認日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.created_at }}</div>
+                </div>
+              </div>
+            </li>
+          </ul>
+          <div class="mt-4 bg-white px-4 py-3 text-black text-xl grid grid-cols-2">
+            <button data-test="prev-button" v-on:click="prev" v-bind:disabled="prevDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＜</button>
+            <button data-test="next-button" v-on:click="next" v-bind:disabled="nextDisabled" class="col-span-1 bg-gray-600 hover:bg-gray-700 text-white font-bold m-2 px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" >＞</button>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer class="max-w-lg mx-auto flex flex-col text-white">
+      <router-link to="/admin-menu" class="hover:underline text-center">管理メニューへ</router-link>
+      <router-link to="/" class="mt-6 hover:underline text-center">トップページへ</router-link>
+    </footer>
+  </div>
+</template>
+
+<script lang="ts">
+import { computed, defineComponent, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import TheHeader from '@/components/TheHeader.vue'
+import AlertMessage from '@/components/AlertMessage.vue'
+import WaitingCircle from '@/components/WaitingCircle.vue'
+import { ApiErrorResp } from '@/util/ApiError'
+import { Code, createErrorMessage } from '@/util/Error'
+import { Message } from '@/util/Message'
+import { useGetLeftAwaitingWithdrawals } from '@/util/personalized/left-awaiting-withdrawal/useGetLeftAwaitingWithdrawals'
+import { LeftAwaitingWithdrawal } from '@/util/personalized/left-awaiting-withdrawal/LeftAwaitingWithdrawal'
+import { GetLeftAwaitingWithdrawalsResp } from '@/util/personalized/left-awaiting-withdrawal/GetLeftAwaitingWithdrawalsResp'
+
+export default defineComponent({
+  name: 'LeftAwaitingWithdrawalsPage',
+  components: {
+    TheHeader,
+    AlertMessage,
+    WaitingCircle
+  },
+  setup () {
+    const error = reactive({
+      exists: false,
+      message: ''
+    })
+
+    const {
+      getLeftAwaitingWithdrawalsDone,
+      getLeftAwaitingWithdrawalsFunc
+    } = useGetLeftAwaitingWithdrawals()
+
+    const router = useRouter()
+    const route = useRoute()
+    const query = route.query
+    const page = ref(parseInt(query.page as string))
+    const perPage = ref(parseInt(query['per-page'] as string))
+
+    const items = ref([] as LeftAwaitingWithdrawal[])
+    const prevDisabled = computed(() => page.value <= 0)
+    const nextDisabled = computed(() => items.value.length < perPage.value)
+    const prev = async () => {
+      await router.push(`/left-awaiting-withdrawals?page=${(page.value - 1)}&per-page=${perPage.value}`)
+    }
+    const next = async () => {
+      await router.push(`/left-awaiting-withdrawals?page=${(page.value + 1)}&per-page=${perPage.value}`)
+    }
+
+    const getItems = async (page: number, perPage: number) => {
+      try {
+        const response = await getLeftAwaitingWithdrawalsFunc(page, perPage)
+        if (!(response instanceof GetLeftAwaitingWithdrawalsResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        items.value = response.getItems()
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
+    watch(route, async (newRoute) => {
+      const query = newRoute.query
+      page.value = parseInt(query.page as string)
+      perPage.value = parseInt(query['per-page'] as string)
+      await getItems(page.value, perPage.value)
+    })
+
+    onMounted(async () => {
+      await getItems(page.value, perPage.value)
+    })
+
+    return {
+      error,
+      getLeftAwaitingWithdrawalsDone,
+      items,
+      prevDisabled,
+      nextDisabled,
+      prev,
+      next
+    }
+  }
+})
+</script>

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { getLeftAwaitingWithdrawals } from './GetLeftAwaitingWithdrawals'
 
-export function useGetRefundedPayments () {
+export function useGetLeftAwaitingWithdrawals () {
   const getLeftAwaitingWithdrawalsDone = ref(true)
   const getLeftAwaitingWithdrawalsFunc = async (page: number, perPage: number) => {
     try {

@@ -13,6 +13,7 @@
           <button v-on:click="moveToAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">出金待ちリスト</button>
           <button v-on:click="moveToNeglectedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金されなかった支払いのリスト</button>
           <button v-on:click="moveToRefundedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金済みリスト</button>
+          <button v-on:click="moveToLeftAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">放置された報酬リスト</button>
           <button v-on:click="moveToMaintenancesPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
           <button v-on:click="moveToNewsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">お知らせ作成</button>
         </div>
@@ -73,6 +74,10 @@ export default defineComponent({
       await router.push('/refunded-payments?page=0&per-page=20')
     }
 
+    const moveToLeftAwaitingWithdrawalsPage = async () => {
+      await router.push('/left-awaiting-withdrawals?page=0&per-page=20')
+    }
+
     const moveToMaintenancesPage = async () => {
       await router.push('/maintenances')
     }
@@ -91,6 +96,7 @@ export default defineComponent({
       moveToAwaitingWithdrawalsPage,
       moveToNeglectedPaymentsPage,
       moveToRefundedPaymentsPage,
+      moveToLeftAwaitingWithdrawalsPage,
       moveToMaintenancesPage,
       moveToNewsPage
     }
