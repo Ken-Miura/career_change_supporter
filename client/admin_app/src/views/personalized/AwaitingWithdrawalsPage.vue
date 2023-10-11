@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getAwaitingWithdrawalsDone || !postLeftAwaitingWithdrawalDone || !postReceiptOfConsultationDone" class="m-6">
+    <div v-if="!getAwaitingWithdrawalsDone || !postLeftAwaitingWithdrawalDone || !postReceiptOfConsultationDone || !postRefundFromAwaitingWithdrawalDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -70,6 +70,8 @@ import { usePostLeftAwaitingWithdrawal } from '@/util/personalized/awaiting-with
 import { PostLeftAwaitingWithdrawalResp } from '@/util/personalized/awaiting-withdrawal/PostLeftAwaitingWithdrawalResp'
 import { usePostReceiptOfConsultation } from '@/util/personalized/awaiting-withdrawal/usePostReceiptOfConsultation'
 import { PostReceiptOfConsultationResp } from '@/util/personalized/awaiting-withdrawal/PostReceiptOfConsultationResp'
+import { usePostRefundFromAwaitingWithdrawal } from '@/util/personalized/awaiting-withdrawal/usePostRefundFromAwaitingWithdrawal'
+import { PostRefundFromAwaitingWithdrawalResp } from '@/util/personalized/awaiting-withdrawal/PostRefundFromAwaitingWithdrawalResp'
 
 export default defineComponent({
   name: 'AwaitingWithdrawalsPage',
@@ -195,8 +197,33 @@ export default defineComponent({
       }
     }
 
+    const {
+      postRefundFromAwaitingWithdrawalDone,
+      postRefundFromAwaitingWithdrawalFunc
+    } =
+    usePostRefundFromAwaitingWithdrawal()
+
     const confirmRefund = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postRefundFromAwaitingWithdrawalFunc(consultationId)
+        if (!(response instanceof PostRefundFromAwaitingWithdrawalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     return {
@@ -204,6 +231,7 @@ export default defineComponent({
       getAwaitingWithdrawalsDone,
       postLeftAwaitingWithdrawalDone,
       postReceiptOfConsultationDone,
+      postRefundFromAwaitingWithdrawalDone,
       items,
       confirmWithdrawal,
       confirmLeftAwaitingWithdrawal,
