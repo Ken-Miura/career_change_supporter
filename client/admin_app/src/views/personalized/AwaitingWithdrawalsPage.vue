@@ -1,7 +1,7 @@
 <template>
   <TheHeader/>
   <div class="bg-gradient-to-r from-gray-500 to-gray-900 min-h-screen pt-12 lg:pt-20 pb-6 px-2 lg:px-0" style="font-family:'Lato',sans-serif;">
-    <div v-if="!getAwaitingWithdrawalsDone" class="m-6">
+    <div v-if="!getAwaitingWithdrawalsDone || !postLeftAwaitingWithdrawalDone || !postReceiptOfConsultationDone" class="m-6">
       <WaitingCircle />
     </div>
     <main v-else>
@@ -66,6 +66,10 @@ import { Message } from '@/util/Message'
 import { useGetAwaitingWithdrawals } from '@/util/personalized/awaiting-withdrawal/useGetAwaitingWithdrawals'
 import { AwaitingWithdrawal } from '@/util/personalized/awaiting-withdrawal/AwaitingWithdrawal'
 import { GetAwaitingWithdrawalsResp } from '@/util/personalized/awaiting-withdrawal/GetAwaitingWithdrawalsResp'
+import { usePostLeftAwaitingWithdrawal } from '@/util/personalized/awaiting-withdrawal/usePostLeftAwaitingWithdrawal'
+import { PostLeftAwaitingWithdrawalResp } from '@/util/personalized/awaiting-withdrawal/PostLeftAwaitingWithdrawalResp'
+import { usePostReceiptOfConsultation } from '@/util/personalized/awaiting-withdrawal/usePostReceiptOfConsultation'
+import { PostReceiptOfConsultationResp } from '@/util/personalized/awaiting-withdrawal/PostReceiptOfConsultationResp'
 
 export default defineComponent({
   name: 'AwaitingWithdrawalsPage',
@@ -135,12 +139,60 @@ export default defineComponent({
       await getItems(page.value, perPage.value)
     })
 
+    const {
+      postReceiptOfConsultationDone,
+      postReceiptOfConsultationFunc
+    } = usePostReceiptOfConsultation()
+
     const confirmWithdrawal = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postReceiptOfConsultationFunc(consultationId)
+        if (!(response instanceof PostReceiptOfConsultationResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
+    const {
+      postLeftAwaitingWithdrawalDone,
+      postLeftAwaitingWithdrawalFunc
+    } = usePostLeftAwaitingWithdrawal()
+
     const confirmLeftAwaitingWithdrawal = async (consultationId: number) => {
-      console.log(consultationId)
+      try {
+        const response = await postLeftAwaitingWithdrawalFunc(consultationId)
+        if (!(response instanceof PostLeftAwaitingWithdrawalResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          error.exists = true
+          error.message = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        await getItems(page.value, perPage.value)
+      } catch (e) {
+        error.exists = true
+        error.message = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
     }
 
     const confirmRefund = async (consultationId: number) => {
@@ -150,6 +202,8 @@ export default defineComponent({
     return {
       error,
       getAwaitingWithdrawalsDone,
+      postLeftAwaitingWithdrawalDone,
+      postReceiptOfConsultationDone,
       items,
       confirmWithdrawal,
       confirmLeftAwaitingWithdrawal,
