@@ -12,6 +12,7 @@
           <button v-on:click="moveToExpiredAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">期限切れ入金待ちリスト</button>
           <button v-on:click="moveToAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">出金待ちリスト</button>
           <button v-on:click="moveToNeglectedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金されなかった支払いのリスト</button>
+          <button v-on:click="moveToReceiptsOfConsultationPagePage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">領収書リスト</button>
           <button v-on:click="moveToRefundedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金済みリスト</button>
           <button v-on:click="moveToLeftAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">放置された報酬リスト</button>
           <button v-on:click="moveToMaintenancesPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">メンテナンス期間設定</button>
@@ -70,6 +71,10 @@ export default defineComponent({
       await router.push('/neglected-payments?page=0&per-page=20')
     }
 
+    const moveToReceiptsOfConsultationPagePage = async () => {
+      await router.push('/receipts-of-consultation?page=0&per-page=20')
+    }
+
     const moveToRefundedPaymentsPage = async () => {
       await router.push('/refunded-payments?page=0&per-page=20')
     }
@@ -95,6 +100,7 @@ export default defineComponent({
       moveToExpiredAwaitingPaymentsPage,
       moveToAwaitingWithdrawalsPage,
       moveToNeglectedPaymentsPage,
+      moveToReceiptsOfConsultationPagePage,
       moveToRefundedPaymentsPage,
       moveToLeftAwaitingWithdrawalsPage,
       moveToMaintenancesPage,

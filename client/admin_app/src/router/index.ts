@@ -30,6 +30,7 @@ import RefundedPaymentsPage from '../views/personalized/RefundedPaymentsPage.vue
 import NeglectedPaymentsPage from '../views/personalized/NeglectedPaymentsPage.vue'
 import AwaitingWithdrawalsPage from '../views/personalized/AwaitingWithdrawalsPage.vue'
 import LeftAwaitingWithdrawalsPage from '../views/personalized/LeftAwaitingWithdrawalsPage.vue'
+import ReceiptsOfConsultationPage from '../views/personalized/ReceiptsOfConsultationPage.vue'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -176,6 +177,11 @@ const routes: Array<RouteRecordRaw> = [
     path: '/neglected-payments',
     name: 'NeglectedPaymentsPage',
     component: NeglectedPaymentsPage
+  },
+  {
+    path: '/receipts-of-consultation',
+    name: 'ReceiptsOfConsultationPage',
+    component: ReceiptsOfConsultationPage
   },
   {
     path: '/refunded-payments',
