@@ -250,6 +250,23 @@ async fn find_consultation_by_consultation_id(
     }))
 }
 
+async fn exist_awaiting_payment(
+    consultation_id: i64,
+    pool: &DatabaseConnection,
+) -> Result<bool, ErrResp> {
+    let model = entity::awaiting_payment::Entity::find_by_id(consultation_id)
+        .one(pool)
+        .await
+        .map_err(|e| {
+            error!(
+                "failed to find awaiting_payment (consultation_id: {}): {}",
+                consultation_id, e
+            );
+            unexpected_err_resp()
+        })?;
+    Ok(model.is_some())
+}
+
 fn ensure_consultation_room_can_be_opened(
     current_date_time: &DateTime<FixedOffset>,
     consultation_date_time_in_jst: &DateTime<FixedOffset>,

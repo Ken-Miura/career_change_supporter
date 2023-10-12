@@ -148,6 +148,7 @@ pub(crate) enum Code {
     AccountDeleteIsNotConfirmed = 20142,
     NoEnoughSpareTimeBeforeMeeting = 20143,
     ConsultationHasNotBeenFinished = 20144,
+    PaymentIsNotDoneYet = 20145,
 }
 
 pub(crate) fn unexpected_err_resp() -> ErrResp {
