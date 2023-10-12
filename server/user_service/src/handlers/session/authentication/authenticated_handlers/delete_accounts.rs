@@ -6,10 +6,13 @@ use axum::http::StatusCode;
 use axum::{async_trait, Json};
 use axum_extra::extract::cookie::Cookie;
 use axum_extra::extract::SignedCookieJar;
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, Duration, FixedOffset};
 use common::opensearch::{delete_document, INDEX_NAME};
 use common::smtp::{SendMail, SmtpClient, INQUIRY_EMAIL_ADDRESS, SYSTEM_EMAIL_ADDRESS};
-use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, WEB_SITE_NAME};
+use common::{
+    ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE,
+    WEB_SITE_NAME,
+};
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     ModelTrait, QueryFilter, Set, TransactionError, TransactionTrait,
@@ -75,7 +78,10 @@ pub(crate) struct DeleteAccountsResult {}
 
 #[async_trait]
 trait DeleteAccountsOperation {
-    async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp>;
+    async fn get_undone_consultation_ids(
+        &self,
+        criteria: DateTime<FixedOffset>,
+    ) -> Result<Vec<i64>, ErrResp>;
 
     async fn delete_user_account(
         &self,
@@ -92,26 +98,25 @@ struct DeleteAccountsOperationImpl {
 
 #[async_trait]
 impl DeleteAccountsOperation for DeleteAccountsOperationImpl {
-    async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp> {
-        // FROM settlement LEFT JOIN consultationの形となる
-        // consultationの数は多量になる可能性がある。一方で、settlementの数はたかがしれているので
-        // settlementを起点にデータを取ってくるこのケースでは複数回分けて取得するような操作は必要ない
-        let models = entity::settlement::Entity::find()
-            .find_also_related(entity::consultation::Entity)
-            .filter(entity::consultation::Column::ConsultantId.eq(consultant_id))
+    async fn get_undone_consultation_ids(
+        &self,
+        criteria: DateTime<FixedOffset>,
+    ) -> Result<Vec<i64>, ErrResp> {
+        let undone_consultations = entity::consultation::Entity::find()
+            .filter(entity::consultation::Column::MeetingAt.gt(criteria))
             .all(&self.pool)
             .await
             .map_err(|e| {
                 error!(
-                    "failed to filter settlement (consultant_id: {}): {}",
-                    consultant_id, e
+                    "failed to filter consultation (criteria: {}): {}",
+                    criteria, e
                 );
                 unexpected_err_resp()
             })?;
-        Ok(models
+        Ok(undone_consultations
             .into_iter()
-            .map(|m| m.0.settlement_id)
-            .collect::<Vec<i64>>())
+            .map(|m| m.consultation_id)
+            .collect())
     }
 
     async fn delete_user_account(
@@ -273,7 +278,6 @@ Email: {}",
     )
 }
 
-// TODO: 現在時刻が相談終了時刻より前である相談がある場合に削除できないように修正
 async fn handle_delete_accounts(
     account_id: i64,
     email_address: String,
@@ -284,11 +288,12 @@ async fn handle_delete_accounts(
 ) -> RespResult<DeleteAccountsResult> {
     ensure_account_delete_confirmed(account_id, account_delete_confirmed)?;
 
-    let settlement_ids = op.get_settlement_ids(account_id).await?;
-    if !settlement_ids.is_empty() {
+    let criteria = current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
+    let undone_consultation_ids = op.get_undone_consultation_ids(criteria).await?;
+    if !undone_consultation_ids.is_empty() {
         error!(
-            "cannot delete user_account (user_account: {}) because settlements ({:?}) still exist",
-            account_id, settlement_ids
+            "cannot delete user_account (user_account: {}) because cnosultations ({:?}) are not done yet",
+            account_id, undone_consultation_ids
         );
         return Err((
             StatusCode::BAD_REQUEST,
@@ -348,15 +353,21 @@ mod tests {
 
     struct DeleteAccountsOperationMock {
         account_id: i64,
-        settlement_ids: Vec<i64>,
+        undone_consutation_ids: Vec<i64>,
         current_date_time: DateTime<FixedOffset>,
     }
 
     #[async_trait]
     impl DeleteAccountsOperation for DeleteAccountsOperationMock {
-        async fn get_settlement_ids(&self, consultant_id: i64) -> Result<Vec<i64>, ErrResp> {
-            assert_eq!(self.account_id, consultant_id);
-            Ok(self.settlement_ids.clone())
+        async fn get_undone_consultation_ids(
+            &self,
+            criteria: DateTime<FixedOffset>,
+        ) -> Result<Vec<i64>, ErrResp> {
+            assert_eq!(
+                self.current_date_time - Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64),
+                criteria
+            );
+            Ok(self.undone_consutation_ids.clone())
         }
 
         async fn delete_user_account(
@@ -373,7 +384,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_delete_accounts_success_no_settlement() {
+    async fn handle_delete_accounts_success_undone_consutation() {
         let account_id = 5517;
         let email_address = "test0@test.com";
         let current_date_time = JAPANESE_TIME_ZONE
@@ -381,7 +392,7 @@ mod tests {
             .unwrap();
         let op = DeleteAccountsOperationMock {
             account_id,
-            settlement_ids: vec![],
+            undone_consutation_ids: vec![],
             current_date_time,
         };
         let send_mail_mock = SendMailMock::new(
@@ -407,7 +418,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_delete_accounts_fail_1_settlement() {
+    async fn handle_delete_accounts_fail_1_undone_consultation() {
         let account_id = 5517;
         let email_address = "test0@test.com";
         let current_date_time = JAPANESE_TIME_ZONE
@@ -415,7 +426,7 @@ mod tests {
             .unwrap();
         let op = DeleteAccountsOperationMock {
             account_id,
-            settlement_ids: vec![51],
+            undone_consutation_ids: vec![51],
             current_date_time,
         };
         let send_mail_mock = SendMailMock::new(
@@ -441,7 +452,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handle_delete_accounts_fail_2_settlements() {
+    async fn handle_delete_accounts_fail_2_undone_consultations() {
         let account_id = 5517;
         let email_address = "test0@test.com";
         let current_date_time = JAPANESE_TIME_ZONE
@@ -449,7 +460,7 @@ mod tests {
             .unwrap();
         let op = DeleteAccountsOperationMock {
             account_id,
-            settlement_ids: vec![51, 89],
+            undone_consutation_ids: vec![51, 89],
             current_date_time,
         };
         let send_mail_mock = SendMailMock::new(
@@ -483,7 +494,7 @@ mod tests {
             .unwrap();
         let op = DeleteAccountsOperationMock {
             account_id,
-            settlement_ids: vec![],
+            undone_consutation_ids: vec![],
             current_date_time,
         };
         let send_mail_mock = SendMailMock::new(
