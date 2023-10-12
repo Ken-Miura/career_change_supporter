@@ -12,7 +12,7 @@
       </div>
       <div v-else>
         <div data-test="list" class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-xl lg:text-2xl">期限切れ入金待ちリスト</h3>
+          <h3 class="font-bold text-xl lg:text-2xl">出金待ちリスト</h3>
             <ul>
               <li v-for="item in items" v-bind:key="item.consultation_id">
                 <div class="mt-6">
@@ -32,7 +32,7 @@
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">口座名義人</div><div v-if="item.account_holder_name" class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.account_holder_name }}</div><div v-else class="my-1 lg:my-2 justify-self-start col-span-2">既に口座情報が削除されています</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">プラットフォーム手数料（％）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.platform_fee_rate_in_percentage }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">振込手数料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.transfer_fee_in_yen }}</div>
-                  <div class="my-1 lg:my-2 justify-self-start col-span-1"><span class=" text-red-500">報酬（円）（振り込む金額）</span></div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.reward }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1"><span class=" text-red-500">報酬（円）<br>（振り込む金額）</span></div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.reward }}</div>
                   <button v-on:click="confirmWithdrawal(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">報酬を渡したので領収書へ移動</button>
                   <button v-on:click="confirmLeftAwaitingWithdrawal(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">既に口座情報が削除されているので放置された報酬へ移動</button>
                   <button v-on:click="confirmRefund(item.consultation_id)" class="mt-6 col-span-3 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金を行ったので返金済みへ移動</button>
