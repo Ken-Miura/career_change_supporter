@@ -4,7 +4,7 @@ import { PostLeftAwaitingWithdrawalResp } from './PostLeftAwaitingWithdrawalResp
 export async function postLeftAwaitingWithdrawal (consultationId: number): Promise<PostLeftAwaitingWithdrawalResp | ApiErrorResp> {
   // eslint-disable-next-line
   const data = { consultation_id: consultationId }
-  const response = await fetch('/admin/api/receipt-of-consultation', {
+  const response = await fetch('/admin/api/left-awaiting-withdrawal', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(data)
