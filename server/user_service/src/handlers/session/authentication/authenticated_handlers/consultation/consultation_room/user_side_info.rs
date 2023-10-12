@@ -885,6 +885,43 @@ mod tests {
                     }),
                 )),
             },
+            TestCase {
+                name: "fail".to_string(),
+                input: Input {
+                    account_id: account_id_of_user,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: UserSideInfoOperationMock {
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        consultant: UserInfo {
+                            account_id: account_id_of_consultant,
+                            email_address: consultant_email_address.to_string(),
+                            mfa_enabled_at: None,
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: true,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PaymentIsNotDoneYet as u32,
+                    }),
+                )),
+            },
         ]
     });
 
