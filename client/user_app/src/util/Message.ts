@@ -203,6 +203,7 @@ export namespace Message {
     export const NOT_TERMS_OF_USE_AGREED_YET_ON_ACCOUNT_DELETE_OPERATION_MESSAGE = '利用規約への同意が必要です。ログアウトし、再ログインすると利用規約への同意画面が表示されるので、利用規約同意を先に行って下さい'
     export const NO_ENOUGH_SPARE_TIME_BEFORE_MEETING_MESSAGE = '相談開始日時までに十分な余裕がないため、その日時は選択出来ません'
     export const CONSULTATION_HAS_NOT_BEEN_FINISHED_MESSAGE = 'コンサルタントとして受け付けた相談をすべて完了していないため、アカウントの削除は出来ません'
+    export const PAYMENT_IS_NOT_DONE_YET_MESSAGE = 'ユーザーの相談料の支払い完了が確認できていないため、相談を開始出来ません'
 
     const SKY_WAY_UNEXPECTED_ERROR = '予期せぬエラーが発生しました。一度ブラウザを閉じ、お使いの端末がインターネットに接続できていることを確認後に再度相談を開始して下さい。それでも問題が解決しない場合、お手数ですがあなたのアカウントのメールアドレス、相談開始時刻、相手のユーザーID（またはコンサルタントID）と次に表示されたメッセージをお問い合わせ先にご連絡下さい'
     const SKY_WAY_INTERNAL_ERROR_COMMON_MESSAGE = '相談の開始に失敗しました。一度ブラウザを閉じて再度相談を開始して下さい。問題が解決しない場合、別の端末、OS、またはブラウザでお試し下さい。それでも問題が解決しない場合、次に表示されているメッセージとともにお問い合わせ先にご連絡下さい'
