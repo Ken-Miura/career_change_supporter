@@ -330,7 +330,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -352,7 +351,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -379,7 +377,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -406,7 +403,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id: consultation_id + 3,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -433,7 +429,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id: consultant_id + 60,
                             consultation_date_time_in_jst,
@@ -460,7 +455,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst: current_date_time, // consultation_date_time_in_jst == current_date_time => まだミーティング時間中
@@ -487,7 +481,6 @@ mod tests {
                     op: UserRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,

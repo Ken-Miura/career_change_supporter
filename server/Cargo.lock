@@ -2594,18 +2594,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "make_payment_of_unhandled_settlement"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "common",
- "dotenv",
- "entity",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "matchers"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -6,15 +6,12 @@ use axum::http::StatusCode;
 use axum::{extract::State, Json};
 use chrono::{DateTime, FixedOffset, Utc};
 use common::opensearch::{update_document, INDEX_NAME};
-use common::payment_platform::charge::{ChargeOperation, ChargeOperationImpl};
 use common::rating::calculate_average_rating;
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult, JAPANESE_TIME_ZONE};
-use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
-    ModelTrait, QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
+    QueryFilter, Set, TransactionError, TransactionTrait,
 };
-use entity::{receipt, settlement};
 use opensearch::OpenSearch;
 use serde::{Deserialize, Serialize};
 use tracing::{error, info};
@@ -22,9 +19,7 @@ use tracing::{error, info};
 use crate::err::{unexpected_err_resp, Code};
 use crate::handlers::session::authentication::authenticated_handlers::consultation::{validate_consultation_id_is_positive};
 use crate::handlers::session::authentication::authenticated_handlers::document_operation::find_document_model_by_user_account_id_with_exclusive_lock;
-use crate::handlers::session::authentication::authenticated_handlers::payment_platform::ACCESS_INFO;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::verified_user::VerifiedUser;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::convert_payment_err::convert_payment_err_to_err_resp;
 use crate::handlers::session::authentication::user_operation::find_user_account_by_user_account_id_with_exclusive_lock;
 
 use super::{
@@ -84,12 +79,6 @@ trait ConsultantRatingOperation {
         consultant_id: i64,
         averate_rating: f64,
         num_of_rated: i32,
-    ) -> Result<(), ErrResp>;
-
-    async fn make_payment_if_needed(
-        &self,
-        consultation_id: i64,
-        current_date_time: DateTime<FixedOffset>,
     ) -> Result<(), ErrResp>;
 }
 
@@ -285,74 +274,6 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
             })?;
         Ok(())
     }
-
-    async fn make_payment_if_needed(
-        &self,
-        consultation_id: i64,
-        current_date_time: DateTime<FixedOffset>,
-    ) -> Result<(), ErrResp> {
-        self.pool
-            .transaction::<_, (), ErrRespStruct>(|txn| {
-                Box::pin(async move {
-                    let settlement_option = find_settlement_by_consultation_id_with_exclusive_lock(
-                        txn,
-                        consultation_id,
-                    )
-                    .await?;
-                    let stl = match settlement_option {
-                        Some(s) => s,
-                        None => {
-                            // 特定の期間ユーザーが評価をせず、定期実行ツールによって自動決済されている場合、既にsettlementはない
-                            info!(
-                                "no settlement found (consultation_id: {}) on rating",
-                                consultation_id
-                            );
-                            return Ok(());
-                        }
-                    };
-
-                    insert_receipt(txn, &stl, current_date_time).await?;
-
-                    let charge_id = stl.charge_id.clone();
-                    let _ = stl.delete(txn).await.map_err(|e| {
-                        error!(
-                            "failed to delete settlement (consultation_id: {}): {}",
-                            consultation_id, e
-                        );
-                        ErrRespStruct {
-                            err_resp: unexpected_err_resp(),
-                        }
-                    })?;
-
-                    let charge_op = ChargeOperationImpl::new(&ACCESS_INFO);
-                    let _ = charge_op
-                        .capture_the_charge(charge_id.as_str())
-                        .await
-                        .map_err(|e| {
-                            error!(
-                                "failed to capture the charge (charge_id: {}): {}",
-                                charge_id, e
-                            );
-                            ErrRespStruct {
-                                err_resp: convert_payment_err_to_err_resp(&e),
-                            }
-                        })?;
-                    Ok(())
-                })
-            })
-            .await
-            .map_err(|e| match e {
-                TransactionError::Connection(db_err) => {
-                    error!("connection error: {}", db_err);
-                    unexpected_err_resp()
-                }
-                TransactionError::Transaction(err_resp_struct) => {
-                    error!("failed to make_payment_if_needed: {}", err_resp_struct);
-                    err_resp_struct.err_resp
-                }
-            })?;
-        Ok(())
-    }
 }
 
 async fn update_consultant_rating(
@@ -402,53 +323,6 @@ async fn update_rating_info_on_document(
     Ok(())
 }
 
-async fn find_settlement_by_consultation_id_with_exclusive_lock(
-    txn: &DatabaseTransaction,
-    consultation_id: i64,
-) -> Result<Option<settlement::Model>, ErrRespStruct> {
-    let model = entity::prelude::Settlement::find()
-        .filter(entity::settlement::Column::ConsultationId.eq(consultation_id))
-        .lock_exclusive()
-        .one(txn)
-        .await
-        .map_err(|e| {
-            error!(
-                "failed to find settlement (consultation_id): {}): {}",
-                consultation_id, e
-            );
-            ErrRespStruct {
-                err_resp: unexpected_err_resp(),
-            }
-        })?;
-    Ok(model)
-}
-
-async fn insert_receipt(
-    txn: &DatabaseTransaction,
-    model: &settlement::Model,
-    current_date_time: DateTime<FixedOffset>,
-) -> Result<(), ErrRespStruct> {
-    let consultation_id = model.consultation_id;
-    let active_model = receipt::ActiveModel {
-        receipt_id: NotSet,
-        consultation_id: Set(model.consultation_id),
-        charge_id: Set(model.charge_id.clone()),
-        fee_per_hour_in_yen: Set(model.fee_per_hour_in_yen),
-        platform_fee_rate_in_percentage: Set(model.platform_fee_rate_in_percentage.clone()),
-        settled_at: Set(current_date_time),
-    };
-    let _ = active_model.insert(txn).await.map_err(|e| {
-        error!(
-            "failed to insert receipt (consultation_id: {}): {}",
-            consultation_id, e
-        );
-        ErrRespStruct {
-            err_resp: unexpected_err_resp(),
-        }
-    })?;
-    Ok(())
-}
-
 async fn handle_consultant_rating(
     account_id: i64,
     consultation_id: i64,
@@ -482,9 +356,6 @@ async fn handle_consultant_rating(
     let average_rating = calculate_average_rating(ratings).unwrap_or(0.0);
     // ユーザーに見せる評価は小数点一桁まで。ただ、表示するときに小数点一桁に丸めるだけで、データとしては計算結果をそのまま保管しておく
     op.update_rating_on_document_if_not_disabled(cl.consultant_id, average_rating, num_of_rated)
-        .await?;
-
-    op.make_payment_if_needed(cl.consultation_id, *current_date_time)
         .await?;
 
     Ok((StatusCode::OK, Json(ConsultantRatingResult {})))
@@ -557,7 +428,6 @@ mod tests {
         current_date_time: DateTime<FixedOffset>,
         already_exists: bool,
         ratings: Vec<i16>,
-        over_capacity: bool,
     }
 
     #[async_trait]
@@ -616,24 +486,6 @@ mod tests {
             assert!(diff < f64::EPSILON);
             Ok(())
         }
-
-        async fn make_payment_if_needed(
-            &self,
-            consultation_id: i64,
-            current_date_time: DateTime<FixedOffset>,
-        ) -> Result<(), ErrResp> {
-            assert_eq!(self.consultation_info.consultation_id, consultation_id);
-            assert_eq!(self.current_date_time, current_date_time);
-            if self.over_capacity {
-                return Err((
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
-                    }),
-                ));
-            };
-            Ok(())
-        }
     }
 
     static TEST_CASE_SET: Lazy<Vec<TestCase>> = Lazy::new(|| {
@@ -648,7 +500,6 @@ mod tests {
         let consultation_date_time_in_jst = JAPANESE_TIME_ZONE
             .with_ymd_and_hms(2023, 3, 13, 10, 0, 0)
             .unwrap();
-        let over_capacity = false;
         vec![
             TestCase {
                 name: "success 1".to_string(),
@@ -660,7 +511,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -669,7 +519,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -684,7 +533,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -693,7 +541,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating, 3],
-                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -708,7 +555,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -717,7 +563,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating, 3, 2],
-                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -732,7 +577,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -741,7 +585,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating, 3, 2],
-                        over_capacity,
                     },
                 },
                 expected: Ok((StatusCode::OK, Json(ConsultantRatingResult {}))),
@@ -756,7 +599,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -765,7 +607,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -785,7 +626,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -794,7 +634,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -814,7 +653,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id: consultation_id + 68,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -823,7 +661,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -843,7 +680,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id: user_account_id + 65010,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -852,7 +688,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -872,7 +707,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst: current_date_time, // consultation_date_time_in_jst == current_date_time => まだミーティング時間中,
@@ -881,7 +715,6 @@ mod tests {
                         current_date_time,
                         already_exists: false,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
@@ -901,7 +734,6 @@ mod tests {
                     op: ConsultantRatingOperationMock {
                         consultation_id,
                         consultation_info: ConsultationInfo {
-                            consultation_id,
                             user_account_id,
                             consultant_id,
                             consultation_date_time_in_jst,
@@ -910,45 +742,12 @@ mod tests {
                         current_date_time,
                         already_exists: true,
                         ratings: vec![rating],
-                        over_capacity,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::ConsultantHasAlreadyBeenRated as u32,
-                    }),
-                )),
-            },
-            // https://pay.jp/docs/api/#error
-            // にあるエラーの内、返される可能性が有り、かつユーザーが対応可能なエラーはover_capacityのみ
-            // そのエラーに対応するエラーコードのテストを仕様としてテストコードの形で残す
-            TestCase {
-                name: "fail ReachPaymentPlatformRateLimit".to_string(),
-                input: Input {
-                    account_id,
-                    consultation_id,
-                    rating,
-                    current_date_time,
-                    op: ConsultantRatingOperationMock {
-                        consultation_id,
-                        consultation_info: ConsultationInfo {
-                            consultation_id,
-                            user_account_id,
-                            consultant_id,
-                            consultation_date_time_in_jst,
-                        },
-                        rating,
-                        current_date_time,
-                        already_exists: false,
-                        ratings: vec![rating],
-                        over_capacity: true,
-                    },
-                },
-                expected: Err((
-                    StatusCode::TOO_MANY_REQUESTS,
-                    Json(ApiError {
-                        code: Code::ReachPaymentPlatformRateLimit as u32,
                     }),
                 )),
             },

@@ -17,7 +17,6 @@ pub(crate) mod user_rating;
 
 #[derive(Clone, Debug)]
 struct ConsultationInfo {
-    consultation_id: i64,
     user_account_id: i64,
     consultant_id: i64,
     consultation_date_time_in_jst: DateTime<FixedOffset>,
@@ -38,7 +37,6 @@ async fn find_consultation_info(
             unexpected_err_resp()
         })?;
     Ok(model_option.map(|m| ConsultationInfo {
-        consultation_id: m.consultation_id,
         user_account_id: m.user_account_id,
         consultant_id: m.consultant_id,
         consultation_date_time_in_jst: m.meeting_at.with_timezone(&(*JAPANESE_TIME_ZONE)),

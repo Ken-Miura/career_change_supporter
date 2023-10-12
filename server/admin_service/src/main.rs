@@ -91,10 +91,6 @@ use common::opensearch::{
     create_client, KEY_TO_OPENSEARCH_ENDPOINT_URI, KEY_TO_OPENSEARCH_PASSWORD,
     KEY_TO_OPENSEARCH_USERNAME, KEY_TO_OPENSEARCH_AUTH,
 };
-use common::payment_platform::{
-    KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-    KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-};
 use common::redis::{KEY_TO_REDIS_HOST, KEY_TO_REDIS_PORT, construct_redis_url};
 use common::smtp::{
     KEY_TO_SYSTEM_EMAIL_ADDRESS, KEY_TO_INQUIRY_EMAIL_ADDRESS, KEY_TO_AWS_SES_REGION, KEY_TO_AWS_SES_ENDPOINT_URI, SmtpClient, AWS_SES_REGION, AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, AWS_SES_ENDPOINT_URI,
@@ -131,9 +127,6 @@ static ENV_VARS: Lazy<Vec<String>> = Lazy::new(|| {
         KEY_TO_SOCKET.to_string(),
         KEY_TO_REDIS_HOST.to_string(),
         KEY_TO_REDIS_PORT.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
         KEY_TO_AWS_S3_REGION.to_string(),
         KEY_TO_AWS_S3_ENDPOINT_URI.to_string(),
         KEY_TO_IDENTITY_IMAGES_BUCKET_NAME.to_string(),

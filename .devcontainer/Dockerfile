@@ -125,10 +125,6 @@ FROM batch-processor-base as delete-expired-temp-mfa-secrets
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_mfa_secrets ./
 ENTRYPOINT [ "delete_expired_temp_mfa_secrets" ]
 
-FROM batch-processor-base as make-payment-of-unhandled-settlement
-COPY --from=server-test-and-build /home/developer/workspace/target/release/make_payment_of_unhandled_settlement ./
-ENTRYPOINT [ "make_payment_of_unhandled_settlement" ]
-
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
 FROM --platform=linux/amd64 alpine:3.18.2 as psql-client

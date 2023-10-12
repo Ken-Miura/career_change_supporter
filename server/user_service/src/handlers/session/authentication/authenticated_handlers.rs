@@ -7,7 +7,6 @@ pub(crate) mod delete_accounts;
 mod document_operation;
 mod fee_per_hour_in_yen_range;
 pub(crate) mod mfs_setting;
-mod payment_platform;
 pub(crate) mod personal_info;
 pub(crate) mod refresh;
 pub(crate) mod terms_of_use;
