@@ -81,6 +81,7 @@ async fn handle_consultant_side_info(
     ensure_audio_test_is_done(audio_test_done)?;
     let result = get_consultation_by_consultation_id(consultation_id, &op).await?;
     ensure_consultant_id_is_valid(result.consultant_id, account_id)?;
+    ensure_payment_is_done(consultation_id, &op).await?;
     // 操作者（コンサルタント）のアカウントが無効化されているかどうかは個々のURLを示すハンドラに来る前の共通箇所でチェックする
     // 従って、アカウントが無効化されているかどうかは相談相手のみ確認する
     let _ = get_user_account_if_available(result.user_account_id, &op).await?;
@@ -121,6 +122,8 @@ trait ConsultantSideInfoOperation {
         consultation_id: i64,
     ) -> Result<Option<Consultation>, ErrResp>;
 
+    async fn exist_awaiting_payment(&self, consultation_id: i64) -> Result<bool, ErrResp>;
+
     async fn get_user_account_if_available(
         &self,
         user_account_id: i64,
@@ -144,6 +147,10 @@ impl ConsultantSideInfoOperation for ConsultantSideInfoOperationImpl {
         consultation_id: i64,
     ) -> Result<Option<Consultation>, ErrResp> {
         super::find_consultation_by_consultation_id(consultation_id, &self.pool).await
+    }
+
+    async fn exist_awaiting_payment(&self, consultation_id: i64) -> Result<bool, ErrResp> {
+        super::exist_awaiting_payment(consultation_id, &self.pool).await
     }
 
     async fn get_user_account_if_available(
@@ -230,6 +237,22 @@ fn ensure_consultant_id_is_valid(
     Ok(())
 }
 
+async fn ensure_payment_is_done(
+    consultation_id: i64,
+    op: &impl ConsultantSideInfoOperation,
+) -> Result<(), ErrResp> {
+    let exists = op.exist_awaiting_payment(consultation_id).await?;
+    if exists {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ApiError {
+                code: Code::PaymentIsNotDoneYet as u32,
+            }),
+        ));
+    };
+    Ok(())
+}
+
 async fn get_user_account_if_available(
     user_account_id: i64,
     op: &impl ConsultantSideInfoOperation,
@@ -307,6 +330,7 @@ mod tests {
         consultation: Consultation,
         user_account: UserInfo,
         current_date_time: DateTime<FixedOffset>,
+        exist_awaiting_payment: bool,
     }
 
     #[async_trait]
@@ -319,6 +343,11 @@ mod tests {
                 return Ok(None);
             }
             Ok(Some(self.consultation.clone()))
+        }
+
+        async fn exist_awaiting_payment(&self, consultation_id: i64) -> Result<bool, ErrResp> {
+            assert_eq!(self.consultation_id, consultation_id);
+            Ok(self.exist_awaiting_payment)
         }
 
         async fn get_user_account_if_available(
@@ -380,6 +409,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Ok((
@@ -419,6 +449,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Ok((
@@ -459,6 +490,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Ok((
@@ -498,6 +530,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Ok((
@@ -536,6 +569,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -572,6 +606,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -608,6 +643,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -644,6 +680,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -680,6 +717,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -716,6 +754,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -756,6 +795,7 @@ mod tests {
                             ),
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -794,6 +834,7 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
@@ -832,12 +873,50 @@ mod tests {
                             disabled_at: None,
                         },
                         current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: false,
                     },
                 },
                 expected: Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError {
                         code: Code::ConsultationRoomHasAlreadyClosed as u32,
+                    }),
+                )),
+            },
+            TestCase {
+                name: "fail PaymentIsNotDoneYet".to_string(),
+                input: Input {
+                    account_id: account_id_of_consultant,
+                    consultation_id,
+                    current_date_time: *CURRENT_DATE_TIME,
+                    identification: SkyWayIdentification {
+                        application_id: DUMMY_APPLICATION_ID.to_string(),
+                        secret: DUMMY_SECRET.to_string(),
+                    },
+                    token_id: TOKEN_ID.to_string(),
+                    audio_test_done: true,
+                    op: ConsultantSideInfoOperationMock {
+                        consultation_id,
+                        consultation: Consultation {
+                            user_account_id: account_id_of_user,
+                            consultant_id: account_id_of_consultant,
+                            consultation_date_time_in_jst,
+                            room_name: ROOM_NAME.to_string(),
+                        },
+                        user_account: UserInfo {
+                            account_id: account_id_of_user,
+                            email_address: user_account_email_address.to_string(),
+                            mfa_enabled_at: None,
+                            disabled_at: None,
+                        },
+                        current_date_time: *CURRENT_DATE_TIME,
+                        exist_awaiting_payment: true,
+                    },
+                },
+                expected: Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ApiError {
+                        code: Code::PaymentIsNotDoneYet as u32,
                     }),
                 )),
             },
