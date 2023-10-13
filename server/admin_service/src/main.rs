@@ -65,7 +65,7 @@ use crate::handlers::session::authentication::authenticated_handlers::user_accou
 use crate::handlers::session::authentication::authenticated_handlers::user_account::identity_update::rejection_records::get_identity_update_rejection_records;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::rating_info_by_consultant_id::get_rating_info_by_consultant_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::rating_info_by_user_account_id::get_rating_info_by_user_account_id;
-use crate::handlers::session::authentication::authenticated_handlers::user_account::tenant_id_by_user_account_id::get_tenant_id_by_user_account_id;
+use crate::handlers::session::authentication::authenticated_handlers::user_account::bank_account_by_user_account_id::get_bank_account_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_email_address::post_user_account_retrieval_by_email_address;
 use crate::handlers::session::authentication::authenticated_handlers::user_account::user_account_retrieval_by_user_account_id::post_user_account_retrieval_by_user_account_id;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::list::get_awaiting_payments;
@@ -363,8 +363,8 @@ async fn main_internal(num_of_cpus: u32) {
                     get(get_fee_per_hour_in_yen_by_user_account_id),
                 )
                 .route(
-                    "/tenant-id-by-user-account-id",
-                    get(get_tenant_id_by_user_account_id),
+                    "/bank-account-by-user-account-id",
+                    get(get_bank_account_by_user_account_id),
                 )
                 .route(
                     "/consultation-reqs-by-user-account-id",

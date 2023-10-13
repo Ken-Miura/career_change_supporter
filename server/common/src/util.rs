@@ -80,6 +80,16 @@ pub struct Career {
     pub note: Option<String>,
 }
 
+/// 口座情報
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct BankAccount {
+    pub bank_code: String,
+    pub branch_code: String,
+    pub account_type: String,
+    pub account_number: String,
+    pub account_holder_name: String,
+}
+
 /// メンテナンス情報
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Maintenance {

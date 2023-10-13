@@ -5,22 +5,14 @@ mod bank_account_validator;
 
 use axum::async_trait;
 use axum::{extract::State, http::StatusCode, Json};
+use common::util::BankAccount;
 use common::{ErrResp, RespResult};
 use entity::sea_orm::{DatabaseConnection, EntityTrait};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use tracing::error;
 
 use crate::err::unexpected_err_resp;
 use crate::handlers::session::authentication::authenticated_handlers::authenticated_users::user::User;
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-struct BankAccount {
-    bank_code: String,
-    branch_code: String,
-    account_type: String,
-    account_number: String,
-    account_holder_name: String,
-}
 
 pub(crate) async fn get_reward(
     User { user_info }: User,
