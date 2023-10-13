@@ -10,7 +10,6 @@ use chrono::Datelike;
 use common::opensearch::{index_document, update_document, INDEX_NAME};
 use common::util::{Identity, Ymd};
 use common::{ApiError, ErrResp, ErrRespStruct, RespResult};
-use entity::prelude::Tenant as TenantEntity;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, DatabaseTransaction, EntityTrait,
     QueryFilter, QuerySelect, Set, TransactionError, TransactionTrait,
@@ -220,14 +219,17 @@ impl SubmitBankAccountOperation for SubmitBankAccountOperationImpl {
     }
 
     async fn check_if_bank_account_exists(&self, account_id: i64) -> Result<bool, ErrResp> {
-        let tenant_option = TenantEntity::find_by_id(account_id)
+        let ba_option = entity::bank_account::Entity::find_by_id(account_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
-                error!("failed to find tenant (account_id: {}): {}", account_id, e);
+                error!(
+                    "failed to find bank_account (account_id: {}): {}",
+                    account_id, e
+                );
                 unexpected_err_resp()
             })?;
-        Ok(tenant_option.is_some())
+        Ok(ba_option.is_some())
     }
 
     async fn check_if_careers_exist(&self, account_id: i64) -> Result<bool, ErrResp> {
