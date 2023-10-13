@@ -9,6 +9,7 @@ use crate::handlers::session::authentication::authenticated_handlers::left_await
 use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::post::post_left_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::list::get_receipts_of_consultation;
 use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::post::post_receipt_of_consultation;
+use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::receipt_of_consultation_by_consultation_id::get_receipt_of_consultation_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::refunded_payment::refund_from_awaiting_withdrawal::post_refund_from_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::{KEY_TO_TRANSFER_FEE_IN_YEN, KEY_TO_PLATFORM_FEE_RATE_IN_PERCENTAGE};
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::expired_list::get_expired_awaiting_payments;
@@ -21,7 +22,6 @@ use crate::handlers::session::authentication::authenticated_handlers::career_req
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::list::get_create_career_requests;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant_rating_by_consultation_id::get_consultant_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_by_consultation_id::get_consultation_by_consultation_id;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::receipt_of_consultation_by_consultation_id::get_receipt_of_consultation_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::refund_by_consultation_id::get_refund_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::settlement_by_consultation_id::get_settlement_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::stopped_settlement_by_consultation_id::get_stopped_settlement_by_consultation_id;
