@@ -10,10 +10,7 @@ use std::{env::set_var, error::Error, process::exit};
 use tracing::{error, info};
 
 use common::{
-    admin::{
-        wait_for, DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
-        KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
-    },
+    admin::{KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS},
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     log::{init_log, LOG_LEVEL},
     smtp::{
@@ -85,11 +82,7 @@ async fn main_internal() {
         exit(CONNECTION_ERROR)
     });
 
-    let op = DeleteExpiredConsultationReqsOperationImpl {
-        pool,
-        duration_per_iteration_in_milli_seconds:
-            *DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
-    };
+    let op = DeleteExpiredConsultationReqsOperationImpl { pool };
 
     let smtp_client = if *USE_ECS_TASK_ROLE {
         SmtpClient::new_with_ecs_task_role(AWS_SES_REGION.as_str(), AWS_SES_ENDPOINT_URI.as_str())
@@ -150,7 +143,7 @@ async fn delete_expired_consultation_reqs(
             error!("failed delete_consultation_req: {:?}", result);
             delete_failed.push(expired_consultation_req);
         }
-        op.wait_for_dependent_service_rate_limit().await;
+        op.wait_for_next_iteration().await;
     }
 
     if !delete_failed.is_empty() {
@@ -199,7 +192,8 @@ trait DeleteExpiredConsultationReqsOperation {
     async fn delete_consultation_req(&self, consultation_req_id: i64)
         -> Result<(), Box<dyn Error>>;
 
-    async fn wait_for_dependent_service_rate_limit(&self);
+    /// 外部サービスに依存するアクションをする場合、その外部サービスのレートリミットにかからないように一定時間待つ
+    async fn wait_for_next_iteration(&self);
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -216,7 +210,6 @@ struct ConsultationReq {
 
 struct DeleteExpiredConsultationReqsOperationImpl {
     pool: DatabaseConnection,
-    duration_per_iteration_in_milli_seconds: u64,
 }
 
 #[async_trait]
@@ -263,8 +256,8 @@ impl DeleteExpiredConsultationReqsOperation for DeleteExpiredConsultationReqsOpe
         Ok(())
     }
 
-    async fn wait_for_dependent_service_rate_limit(&self) {
-        wait_for(self.duration_per_iteration_in_milli_seconds).await;
+    async fn wait_for_next_iteration(&self) {
+        // 特に外部サービスに依存する処理はないため何もしない
     }
 }
 
@@ -351,7 +344,7 @@ mod tests {
             Ok(())
         }
 
-        async fn wait_for_dependent_service_rate_limit(&self) {
+        async fn wait_for_next_iteration(&self) {
             // テストコードでは待つ必要はないので何もしない
         }
     }

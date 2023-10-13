@@ -12,18 +12,11 @@ use tracing::{error, info};
 
 use common::{
     admin::{
-        wait_for, TransactionExecutionError,
-        DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS, KEY_TO_DB_ADMIN_NAME,
-        KEY_TO_DB_ADMIN_PASSWORD, NUM_OF_MAX_TARGET_RECORDS,
+        TransactionExecutionError, KEY_TO_DB_ADMIN_NAME, KEY_TO_DB_ADMIN_PASSWORD,
+        NUM_OF_MAX_TARGET_RECORDS,
     },
     db::{construct_db_url, KEY_TO_DB_HOST, KEY_TO_DB_NAME, KEY_TO_DB_PORT},
     log::{init_log, LOG_LEVEL},
-    payment_platform::{
-        construct_access_info,
-        tenant::{TenantOperation, TenantOperationImpl},
-        AccessInfo, KEY_TO_PAYMENT_PLATFORM_API_PASSWORD, KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-    },
     smtp::{
         SendMail, SmtpClient, ADMIN_EMAIL_ADDRESS, AWS_SES_ACCESS_KEY_ID, AWS_SES_ENDPOINT_URI,
         AWS_SES_REGION, AWS_SES_SECRET_ACCESS_KEY, KEY_TO_ADMIN_EMAIL_ADDRESS,
@@ -53,9 +46,6 @@ fn main() {
         KEY_TO_SYSTEM_EMAIL_ADDRESS.to_string(),
         KEY_TO_AWS_SES_REGION.to_string(),
         KEY_TO_AWS_SES_ENDPOINT_URI.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_URL.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME.to_string(),
-        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD.to_string(),
         KEY_TO_USE_ECS_TASK_ROLE.to_string(),
     ]);
     if result.is_err() {
@@ -98,24 +88,7 @@ async fn main_internal() {
         exit(CONNECTION_ERROR)
     });
 
-    let access_info = match construct_access_info(
-        KEY_TO_PAYMENT_PLATFORM_API_URL,
-        KEY_TO_PAYMENT_PLATFORM_API_USERNAME,
-        KEY_TO_PAYMENT_PLATFORM_API_PASSWORD,
-    ) {
-        Ok(ai) => ai,
-        Err(e) => {
-            error!("invalid PAYJP access info: {}", e);
-            exit(ENV_VAR_CAPTURE_FAILURE);
-        }
-    };
-
-    let op = DeleteExpiredDeletedUserAccountsOperationImpl {
-        pool,
-        access_info,
-        duration_per_iteration_in_milli_seconds:
-            *DURATION_WAITING_FOR_DEPENDENT_SERVICE_RATE_LIMIT_IN_MILLI_SECONDS,
-    };
+    let op = DeleteExpiredDeletedUserAccountsOperationImpl { pool };
 
     let smtp_client = if *USE_ECS_TASK_ROLE {
         SmtpClient::new_with_ecs_task_role(AWS_SES_REGION.as_str(), AWS_SES_ENDPOINT_URI.as_str())
@@ -175,7 +148,7 @@ async fn delete_expired_deleted_user_accounts(
             error!("failed delete_deleted_user_account: {:?}", result);
             delete_failed.push(expired_deleted_user_account);
         }
-        op.wait_for_dependent_service_rate_limit().await;
+        op.wait_for_next_iteration().await;
     }
 
     if !delete_failed.is_empty() {
@@ -224,7 +197,8 @@ trait DeleteExpiredDeletedUserAccountsOperation {
     async fn delete_deleted_user_account(&self, user_account_id: i64)
         -> Result<(), Box<dyn Error>>;
 
-    async fn wait_for_dependent_service_rate_limit(&self);
+    /// 外部サービスに依存するアクションをする場合、その外部サービスのレートリミットにかからないように一定時間待つ
+    async fn wait_for_next_iteration(&self);
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -240,8 +214,6 @@ struct DeletedUserAccount {
 
 struct DeleteExpiredDeletedUserAccountsOperationImpl {
     pool: DatabaseConnection,
-    access_info: AccessInfo,
-    duration_per_iteration_in_milli_seconds: u64,
 }
 
 #[async_trait]
@@ -275,70 +247,78 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
         &self,
         user_account_id: i64,
     ) -> Result<(), Box<dyn Error>> {
-        let access_info = self.access_info.clone();
         let result = self
             .pool
-            .transaction::<_, (bool, usize, bool, bool, Option<String>), TransactionExecutionError>(
-                |txn| {
-                    Box::pin(async move {
-                        let dua = lock_deleted_user_account_exclusively(user_account_id, txn).await?;
-                        let _ = dua.delete(txn).await.map_err(|e| {
-                            TransactionExecutionError {
-                                message: format!(
-                                    "failed to delete deleted_user_account (user_account_id: {}): {}",
-                                    user_account_id, e
-                                ),
-                            }
+            .transaction::<_, (bool, usize, bool, bool, bool), TransactionExecutionError>(|txn| {
+                Box::pin(async move {
+                    let dua = lock_deleted_user_account_exclusively(user_account_id, txn).await?;
+
+                    let deleted_identity = entity::identity::Entity::delete_by_id(user_account_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| TransactionExecutionError {
+                            message: format!(
+                                "failed to delete identity (user_account_id: {}): {}",
+                                user_account_id, e
+                            ),
                         })?;
 
-                        let deleted_identity =
-                            entity::identity::Entity::delete_by_id(user_account_id)
-                                .exec(txn)
-                                .await
-                                .map_err(|e| TransactionExecutionError {
-                                    message: format!(
-                                        "failed to delete identity (user_account_id: {}): {}",
-                                        user_account_id, e
-                                    ),
-                                })?;
+                    let num_of_careers_deleted = delete_careers(user_account_id, txn).await?;
 
-                        let num_of_careers_deleted = delete_careers(user_account_id, txn).await?;
+                    // documentレコードとそれに対応したインデックスはユーザーがアカウントを削除するとき
+                    // （user_account -> deleted_user_accountに移動するとき）に実施済のためここでは必要ない
 
-                        let deleted_consulting_fee =
-                            entity::consulting_fee::Entity::delete_by_id(user_account_id)
-                                .exec(txn)
-                                .await
-                                .map_err(|e| TransactionExecutionError {
-                                    message: format!(
-                                        "failed to delete consulting_fee (user_account_id: {}): {}",
-                                        user_account_id, e
-                                    ),
-                                })?;
+                    let deleted_consulting_fee =
+                        entity::consulting_fee::Entity::delete_by_id(user_account_id)
+                            .exec(txn)
+                            .await
+                            .map_err(|e| TransactionExecutionError {
+                                message: format!(
+                                    "failed to delete consulting_fee (user_account_id: {}): {}",
+                                    user_account_id, e
+                                ),
+                            })?;
 
-                        let deleted_mfa_info =
-                            entity::mfa_info::Entity::delete_by_id(user_account_id)
-                                .exec(txn)
-                                .await
-                                .map_err(|e| TransactionExecutionError {
-                                    message: format!(
-                                        "failed to delete mfa_info (user_account_id: {}): {}",
-                                        user_account_id, e
-                                    ),
-                                })?;
+                    let deleted_mfa_info = entity::mfa_info::Entity::delete_by_id(user_account_id)
+                        .exec(txn)
+                        .await
+                        .map_err(|e| TransactionExecutionError {
+                            message: format!(
+                                "failed to delete mfa_info (user_account_id: {}): {}",
+                                user_account_id, e
+                            ),
+                        })?;
 
-                        let deleted_tenant_id =
-                            delete_tenant(user_account_id, txn, &access_info).await?;
+                    let deleted_bank_account =
+                        entity::bank_account::Entity::delete_by_id(user_account_id)
+                            .exec(txn)
+                            .await
+                            .map_err(|e| TransactionExecutionError {
+                                message: format!(
+                                    "failed to delete bank_account (user_account_id: {}): {}",
+                                    user_account_id, e
+                                ),
+                            })?;
 
-                        Ok((
-                            deleted_identity.rows_affected != 0,
-                            num_of_careers_deleted,
-                            deleted_consulting_fee.rows_affected != 0,
-                            deleted_mfa_info.rows_affected != 0,
-                            deleted_tenant_id,
-                        ))
-                    })
-                },
-            )
+                    let _ = dua
+                        .delete(txn)
+                        .await
+                        .map_err(|e| TransactionExecutionError {
+                            message: format!(
+                                "failed to delete deleted_user_account (user_account_id: {}): {}",
+                                user_account_id, e
+                            ),
+                        })?;
+
+                    Ok((
+                        deleted_identity.rows_affected != 0,
+                        num_of_careers_deleted,
+                        deleted_consulting_fee.rows_affected != 0,
+                        deleted_mfa_info.rows_affected != 0,
+                        deleted_bank_account.rows_affected != 0,
+                    ))
+                })
+            })
             .await
             .map_err(|e| match e {
                 TransactionError::Connection(db_err) => {
@@ -348,13 +328,13 @@ impl DeleteExpiredDeletedUserAccountsOperation for DeleteExpiredDeletedUserAccou
                     format!("transaction error: {}", transaction_err)
                 }
             })?;
-        info!("identity deleted: {}, num of careers deleted: {}, consulting fee deleted: {}, mfa info deleted: {}, deleted tenant id: {:?}",
+        info!("identity deleted: {}, num of careers deleted: {}, consulting fee deleted: {}, mfa info deleted: {}, bank account deleted: {}",
             result.0, result.1, result.2, result.3, result.4);
         Ok(())
     }
 
-    async fn wait_for_dependent_service_rate_limit(&self) {
-        wait_for(self.duration_per_iteration_in_milli_seconds).await;
+    async fn wait_for_next_iteration(&self) {
+        // 特に外部サービスに依存する処理はないため何もしない
     }
 }
 
@@ -406,50 +386,6 @@ async fn delete_careers(
             })?;
     }
     Ok(models.len())
-}
-
-// DB外へのアクセスがあるため、トランザクションの最後に実施する
-async fn delete_tenant(
-    user_account_id: i64,
-    txn: &DatabaseTransaction,
-    access_info: &AccessInfo,
-) -> Result<Option<String>, TransactionExecutionError> {
-    let model_option = entity::tenant::Entity::find_by_id(user_account_id)
-        .one(txn)
-        .await
-        .map_err(|e| TransactionExecutionError {
-            message: format!(
-                "failed to find tenant (user_account_id: {}): {}",
-                user_account_id, e
-            ),
-        })?;
-    let model = match model_option {
-        Some(m) => m,
-        None => return Ok(None),
-    };
-
-    let tenant_id = model.tenant_id.clone();
-    let _ = model
-        .delete(txn)
-        .await
-        .map_err(|e| TransactionExecutionError {
-            message: format!(
-                "failed to delete tenant (user_account_id: {}): {}",
-                user_account_id, e
-            ),
-        })?;
-    let tenant_op = TenantOperationImpl::new(access_info);
-    let _ = tenant_op
-        .delete_tenant(&tenant_id)
-        .await
-        .map_err(|e| TransactionExecutionError {
-            message: format!(
-                "failed to delete tenant on payment platform (tenant_id: {}): {}",
-                tenant_id, e
-            ),
-        })?;
-
-    Ok(Some(tenant_id))
 }
 
 fn create_text(
@@ -534,7 +470,7 @@ mod tests {
             Ok(())
         }
 
-        async fn wait_for_dependent_service_rate_limit(&self) {
+        async fn wait_for_next_iteration(&self) {
             // テストコードでは待つ必要はないので何もしない
         }
     }
