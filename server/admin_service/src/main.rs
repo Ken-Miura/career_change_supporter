@@ -21,10 +21,8 @@ use crate::handlers::session::authentication::authenticated_handlers::career_req
 use crate::handlers::session::authentication::authenticated_handlers::career_request::create_request::list::get_create_career_requests;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultant_rating_by_consultation_id::get_consultant_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_by_consultation_id::get_consultation_by_consultation_id;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::make_payment_req::post_make_payment_req;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::receipt_by_consultation_id::get_receipt_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::refund_by_consultation_id::get_refund_by_consultation_id;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::refund_req::post_refund_req;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::resume_settlement_req::post_resume_settlement_req;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::settlement_by_consultation_id::get_settlement_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::stop_settlement_req::post_stop_settlement_req;
@@ -465,14 +463,6 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/resume-settlement-req",
                     post(post_resume_settlement_req),
-                )
-                .route(
-                    "/make-payment-req",
-                    post(post_make_payment_req),
-                )
-                .route(
-                    "/refund-req",
-                    post(post_refund_req),
                 )
                 .route(
                     "/planned-maintenances",
