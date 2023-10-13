@@ -23,9 +23,7 @@ use crate::handlers::session::authentication::authenticated_handlers::consultati
 use crate::handlers::session::authentication::authenticated_handlers::consultation::consultation_by_consultation_id::get_consultation_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::receipt_by_consultation_id::get_receipt_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::refund_by_consultation_id::get_refund_by_consultation_id;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::resume_settlement_req::post_resume_settlement_req;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::settlement_by_consultation_id::get_settlement_by_consultation_id;
-use crate::handlers::session::authentication::authenticated_handlers::consultation::stop_settlement_req::post_stop_settlement_req;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::stopped_settlement_by_consultation_id::get_stopped_settlement_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::consultation::user_rating_by_consultation_id::get_user_rating_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::identity_by_user_account_id::get_identity_by_user_account_id;
@@ -455,14 +453,6 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/refund-by-consultation-id",
                     get(get_refund_by_consultation_id),
-                )
-                .route(
-                    "/stop-settlement-req",
-                    post(post_stop_settlement_req),
-                )
-                .route(
-                    "/resume-settlement-req",
-                    post(post_resume_settlement_req),
                 )
                 .route(
                     "/planned-maintenances",
