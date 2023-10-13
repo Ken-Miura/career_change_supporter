@@ -147,7 +147,7 @@ mod tests {
             sender_name: generate_sender_name(
                 "タナカ".to_string(),
                 "タロウ".to_string(),
-                DateTime::parse_from_rfc3339("2023-04-13T14:00:00.0000+09:00 ")
+                DateTime::parse_from_rfc3339("2023-04-13T14:00:00.0000+09:00")
                     .expect("failed to get Ok"),
             )
             .expect("failed to get Ok"),

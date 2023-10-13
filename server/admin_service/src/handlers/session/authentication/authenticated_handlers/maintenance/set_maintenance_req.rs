@@ -3,9 +3,9 @@
 use axum::async_trait;
 use axum::http::StatusCode;
 use axum::{extract::State, Json};
-use chrono::{DateTime, Duration, FixedOffset, TimeZone, Utc};
+use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use common::util::Maintenance;
-use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE, LENGTH_OF_MEETING_IN_MINUTE};
+use common::{ApiError, ErrResp, RespResult, JAPANESE_TIME_ZONE};
 use entity::sea_orm::ActiveValue::NotSet;
 use entity::sea_orm::{
     ActiveModelTrait, ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter, Set,
@@ -222,32 +222,6 @@ async fn ensure_there_is_no_overwrap(
                     code: Code::MaintenanceAlreadyHasBeenSet as u32,
                 }),
             ));
-        }
-    }
-    Ok(())
-}
-
-// データベースにアクセスする際のSQLの間違いや
-// 依存するORMの間違いがあった場合に備えて、本当に決済の停止対象であることを確認する
-// 本来であれば不要な処理だが、お金に関連する内容なのでアプリケーション側でもテストできるようにコードを書いておく
-fn ensure_there_is_overwrap_between_meeting_and_maintenance(
-    maintenance_start_time: DateTime<FixedOffset>,
-    maintenance_end_time: DateTime<FixedOffset>,
-    meeting_date_times: &Vec<DateTime<FixedOffset>>,
-) -> Result<(), ErrResp> {
-    for meeting_date_time in meeting_date_times {
-        let meeting_start_time = *meeting_date_time;
-        let meeting_end_time =
-            *meeting_date_time + Duration::minutes(LENGTH_OF_MEETING_IN_MINUTE as i64);
-        // ２つの時間帯が重ならない条件
-        // 参考: https://yucatio.hatenablog.com/entry/2018/08/16/175914
-        if maintenance_end_time <= meeting_start_time || meeting_end_time <= maintenance_start_time
-        {
-            error!(
-                "thre is no overwrap between meeting ({} to {}) and maintenance ({} to {})",
-                meeting_start_time, meeting_end_time, maintenance_start_time, maintenance_end_time
-            );
-            return Err(unexpected_err_resp());
         }
     }
     Ok(())
