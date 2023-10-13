@@ -134,7 +134,7 @@ mod tests {
         }
     }
 
-    fn create_dummy_receipt1(consultation_id: i64) -> ReceiptOfConsultation {
+    fn create_dummy_receipt_of_consultation(consultation_id: i64) -> ReceiptOfConsultation {
         ReceiptOfConsultation {
             consultation_id,
             user_account_id: 14,
@@ -165,7 +165,7 @@ mod tests {
 
     async fn get_receipt_of_consultation_by_consultation_id_internal_success_1_result() {
         let consultation_id = 64431;
-        let rc1 = create_dummy_receipt1(consultation_id);
+        let rc1 = create_dummy_receipt_of_consultation(consultation_id);
         let op_mock = ReceiptOfConsultationOperationMock {
             consultation_id,
             receipt_of_consultation: rc1.clone(),
@@ -183,7 +183,7 @@ mod tests {
 
     async fn get_receipt_of_consultation_by_consultation_id_internal_success_no_result() {
         let consultation_id = 64431;
-        let rc1 = create_dummy_receipt1(consultation_id);
+        let rc1 = create_dummy_receipt_of_consultation(consultation_id);
         let op_mock = ReceiptOfConsultationOperationMock {
             consultation_id,
             receipt_of_consultation: rc1.clone(),
@@ -202,7 +202,7 @@ mod tests {
     async fn get_receipt_of_consultation_by_consultation_id_internal_fail_consultation_id_is_zero()
     {
         let consultation_id = 0;
-        let rc1 = create_dummy_receipt1(consultation_id);
+        let rc1 = create_dummy_receipt_of_consultation(consultation_id);
         let op_mock = ReceiptOfConsultationOperationMock {
             consultation_id,
             receipt_of_consultation: rc1,
@@ -220,7 +220,7 @@ mod tests {
     async fn get_receipt_of_consultation_by_consultation_id_internal_fail_consultation_id_is_negative(
     ) {
         let consultation_id = -1;
-        let rc1 = create_dummy_receipt1(consultation_id);
+        let rc1 = create_dummy_receipt_of_consultation(consultation_id);
         let op_mock = ReceiptOfConsultationOperationMock {
             consultation_id,
             receipt_of_consultation: rc1,
