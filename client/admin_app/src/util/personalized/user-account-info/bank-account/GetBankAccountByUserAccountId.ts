@@ -12,6 +12,6 @@ export async function getBankAccountByUserAccountId (userAccountId: string): Pro
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const bankAccount = await response.json() as BankAccount | null
-  return GetBankAccountByUserAccountIdResp.create(bankAccount)
+  const result = await response.json() as { bank_account: BankAccount | null }
+  return GetBankAccountByUserAccountIdResp.create(result.bank_account)
 }
