@@ -15,6 +15,7 @@ use crate::{
     err::unexpected_err_resp,
     handlers::session::authentication::authenticated_handlers::{
         admin::Admin, convert_date_time_to_rfc3339_string, pagination::Pagination,
+        ReceiptOfConsultation,
     },
 };
 
@@ -32,26 +33,6 @@ pub(crate) async fn get_receipts_of_consultation(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct ReceiptsOfConsultationResult {
     receipts_of_consultation: Vec<ReceiptOfConsultation>,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-struct ReceiptOfConsultation {
-    consultation_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    meeting_at: String, // RFC 3339形式の文字列,
-    fee_per_hour_in_yen: i32,
-    platform_fee_rate_in_percentage: String,
-    transfer_fee_in_yen: i32,
-    reward: i32,
-    sender_name: String,
-    bank_code: String,
-    branch_code: String,
-    account_type: String,
-    account_number: String,
-    account_holder_name: String,
-    withdrawal_confirmed_by: String,
-    created_at: String, // RFC 3339形式の文字列
 }
 
 #[async_trait]
