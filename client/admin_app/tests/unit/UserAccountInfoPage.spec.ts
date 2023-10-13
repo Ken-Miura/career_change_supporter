@@ -16,8 +16,6 @@ import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-
 import { CareersResult } from '@/util/personalized/user-account-info/career/CareersResult'
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
 import { FeePerHourInYenResult } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/FeePerHourInYenResult'
-import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
-import { TenantIdResult } from '@/util/personalized/user-account-info/tenant/TenantIdResult'
 import { GetConsultationReqsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByConsultantIdResp'
 import { ConsultationReqsResult } from '@/util/personalized/user-account-info/consultation-req/ConsultationReqsResult'
 import { GetConsultationReqsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation-req/GetConsultationReqsByUserAccountIdResp'
@@ -39,6 +37,7 @@ import { CareerCreationApprovalRecordsResult } from '@/util/personalized/user-ac
 import { GetConsultationsByUserAccountIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByUserAccountIdResp'
 import { ConsultationsResult } from '@/util/personalized/user-account-info/consultation/ConsultationsResult'
 import { GetConsultationsByConsultantIdResp } from '@/util/personalized/user-account-info/consultation/GetConsultationsByConsultantIdResp'
+import { GetBankAccountByUserAccountIdResp } from '@/util/personalized/user-account-info/bank-account/GetBankAccountByUserAccountIdResp'
 
 const routerPushMock = jest.fn()
 jest.mock('vue-router', () => ({
@@ -94,12 +93,12 @@ jest.mock('@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePe
   })
 }))
 
-const getTenantIdByUserAccountIdDoneMock = ref(true)
-const getTenantIdByUserAccountIdFuncMock = jest.fn()
-jest.mock('@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId', () => ({
-  useGetTenantIdByUserAccountId: () => ({
-    getTenantIdByUserAccountIdDone: getTenantIdByUserAccountIdDoneMock,
-    getTenantIdByUserAccountIdFunc: getTenantIdByUserAccountIdFuncMock
+const getBankAccountByUserAccountIdDoneMock = ref(true)
+const getBankAccountByUserAccountIdFuncMock = jest.fn()
+jest.mock('@/util/personalized/user-account-info/bank-account/useGetBankAccountByUserAccountId', () => ({
+  useGetBankAccountByUserAccountId: () => ({
+    getBankAccountByUserAccountIdDone: getBankAccountByUserAccountIdDoneMock,
+    getBankAccountByUserAccountIdFunc: getBankAccountByUserAccountIdFuncMock
   })
 }))
 
@@ -249,8 +248,8 @@ function prepareInitValue () {
   const resp5 = GetFeePerHourInYenByUserAccountIdResp.create({ fee_per_hour_in_yen: null } as FeePerHourInYenResult)
   getFeePerHourInYenByUserAccountIdFuncMock.mockResolvedValue(resp5)
 
-  const resp6 = GetTenantIdByUserAccountIdResp.create({ tenant_id: null } as TenantIdResult)
-  getTenantIdByUserAccountIdFuncMock.mockResolvedValue(resp6)
+  const resp6 = GetBankAccountByUserAccountIdResp.create(null)
+  getBankAccountByUserAccountIdFuncMock.mockResolvedValue(resp6)
 
   const resp7 = GetConsultationReqsByUserAccountIdResp.create({ consultation_reqs: [] } as ConsultationReqsResult)
   getConsultationReqsByUserAccountIdFuncMock.mockResolvedValue(resp7)
@@ -303,8 +302,8 @@ describe('UserAccountInfoPage.vue', () => {
     getCareersByUserAccountIdFuncMock.mockReset()
     getFeePerHourInYenByUserAccountIdDoneMock.value = true
     getFeePerHourInYenByUserAccountIdFuncMock.mockReset()
-    getTenantIdByUserAccountIdDoneMock.value = true
-    getTenantIdByUserAccountIdFuncMock.mockReset()
+    getBankAccountByUserAccountIdDoneMock.value = true
+    getBankAccountByUserAccountIdFuncMock.mockReset()
     getConsultationReqsByUserAccountIdDoneMock.value = true
     getConsultationReqsByUserAccountIdFuncMock.mockReset()
     getConsultationReqsByConsultantIdDoneMock.value = true
@@ -481,7 +480,7 @@ describe('UserAccountInfoPage.vue', () => {
 
   it('has WaitingCircle and TheHeader during getTenantIdByUserAccountId', async () => {
     prepareInitValue()
-    getTenantIdByUserAccountIdDoneMock.value = false
+    getBankAccountByUserAccountIdDoneMock.value = false
 
     const wrapper = mount(UserAccountInfoPage, {
       global: {

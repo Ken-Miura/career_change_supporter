@@ -167,17 +167,18 @@
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-          <h3 class="font-bold text-2xl">テナント情報（報酬の入金口座、売上関連情報が紐づく識別子の情報）</h3>
-          <div v-if="!tenantIdErrMessage">
-            <div v-if="tenantId" class="mt-6 ml-8 text-2xl">
-              <p>テナントID: {{ tenantId }}</p>
+          <h3 class="font-bold text-2xl">口座情報（報酬の入金を行う口座）</h3>
+          <div v-if="!bankAccountErrMessage">
+            <div v-if="bankAccount" class="mt-6 ml-8 text-2xl">
+              TODO: サーバサイドの修正が完了したら修正する
+              <p>テナントID: {{ bankAccount }}</p>
             </div>
             <div v-else class="m-4 text-2xl">
-              テナント情報は見つかりませんでした
+              口座情報は見つかりませんでした
             </div>
           </div>
           <div v-else>
-            <AlertMessage class="mt-4" v-bind:message="tenantIdErrMessage"/>
+            <AlertMessage class="mt-4" v-bind:message="bankAccountErrMessage"/>
           </div>
         </div>
         <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
@@ -577,8 +578,7 @@ import { Career } from '@/util/personalized/user-account-info/career/Career'
 import { GetCareersByUserAccountIdResp } from '@/util/personalized/user-account-info/career/GetCareersByUserAccountIdResp'
 import { useGetFeePerHourInYenByUserAccountId } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/useGetFeePerHourInYenByUserAccountId'
 import { GetFeePerHourInYenByUserAccountIdResp } from '@/util/personalized/user-account-info/fee-per-hour-in-yen/GetFeePerHourInYenByUserAccountIdResp'
-import { useGetTenantIdByUserAccountId } from '@/util/personalized/user-account-info/tenant/useGetTenantIdByUserAccountId'
-import { GetTenantIdByUserAccountIdResp } from '@/util/personalized/user-account-info/tenant/GetTenantIdByUserAccountIdResp'
+import { useGetBankAccountByUserAccountId } from '@/util/personalized/user-account-info/bank-account/useGetBankAccountByUserAccountId'
 import { useGetAgreementsByUserAccountId } from '@/util/personalized/user-account-info/terms-of-use/useGetAgreementsByUserAccountId'
 import { Agreement } from '@/util/personalized/user-account-info/terms-of-use/Agreement'
 import { GetAgreementsByUserAccountIdResp } from '@/util/personalized/user-account-info/terms-of-use/GetAgreementsByUserAccountIdResp'
@@ -621,6 +621,8 @@ import { usePostDisableUserAccountReq } from '@/util/personalized/user-account-i
 import { PostDisableUserAccountReqResp } from '@/util/personalized/user-account-info/disable-user-account-req/PostDisableUserAccountReqResp'
 import { usePostEnableUserAccountReq } from '@/util/personalized/user-account-info/enable-user-account-req/usePostDisableUserAccountReq'
 import { PostEnableUserAccountReqResp } from '@/util/personalized/user-account-info/enable-user-account-req/PostEnableUserAccountReqResp'
+import { GetBankAccountByUserAccountIdResp } from '@/util/personalized/user-account-info/bank-account/GetBankAccountByUserAccountIdResp'
+import { BankAccount } from '@/util/personalized/user-account-info/bank-account/BankAccount'
 
 export default defineComponent({
   name: 'UserAccountInfoPage',
@@ -911,17 +913,17 @@ export default defineComponent({
       }
     }
 
-    const tenantId = ref(null as string | null)
+    const bankAccount = ref(null as BankAccount | null)
     const {
-      getTenantIdByUserAccountIdDone,
-      getTenantIdByUserAccountIdFunc
-    } = useGetTenantIdByUserAccountId()
-    const tenantIdErrMessage = ref(null as string | null)
+      getBankAccountByUserAccountIdDone,
+      getBankAccountByUserAccountIdFunc
+    } = useGetBankAccountByUserAccountId()
+    const bankAccountErrMessage = ref(null as string | null)
 
-    const findTenantId = async (accountId: number) => {
+    const findBankAccount = async (accountId: number) => {
       try {
-        const response = await getTenantIdByUserAccountIdFunc(accountId.toString())
-        if (!(response instanceof GetTenantIdByUserAccountIdResp)) {
+        const response = await getBankAccountByUserAccountIdFunc(accountId.toString())
+        if (!(response instanceof GetBankAccountByUserAccountIdResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
           }
@@ -930,13 +932,12 @@ export default defineComponent({
             await router.push('/login')
             return
           }
-          tenantIdErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          bankAccountErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        const result = response.getTenantIdResult()
-        tenantId.value = result.tenant_id
+        bankAccount.value = response.getBankAccount()
       } catch (e) {
-        tenantIdErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        bankAccountErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -1339,7 +1340,7 @@ export default defineComponent({
       await findIdentity(accId)
       await findCareers(accId)
       await findFeePerHourInYen(accId)
-      await findTenantId(accId)
+      await findBankAccount(accId)
       await findConsultationReqs(accId)
       await findConsultationOffers(accId)
       await findConsultationsAsUser(accId)
@@ -1360,7 +1361,7 @@ export default defineComponent({
         getIdentityOptionByUserAccountIdDone.value &&
         getCareersByUserAccountIdDone.value &&
         getFeePerHourInYenByUserAccountIdDone.value &&
-        getTenantIdByUserAccountIdDone.value &&
+        getBankAccountByUserAccountIdDone.value &&
         getConsultationReqsByUserAccountIdDone.value &&
         getConsultationReqsByConsultantIdDone.value &&
         getConsultationsByUserAccountIdDone.value &&
@@ -1398,8 +1399,8 @@ export default defineComponent({
       careersErrMessage,
       feePerHourInYen,
       feePerHourInYenErrMessage,
-      tenantId,
-      tenantIdErrMessage,
+      bankAccount,
+      bankAccountErrMessage,
       consultationReqs,
       consultationReqsErrMessage,
       consultationOffers,
