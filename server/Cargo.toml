@@ -8,7 +8,6 @@ members = [
     "delete_expired_deleted_user_accounts",
     "delete_expired_temp_mfa_secrets",
     "delete_expired_pwd_change_reqs",
-    "delete_expired_stopped_settlements",
     "delete_expired_temp_accounts",
     "entity",
     "migration",

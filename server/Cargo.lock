@@ -1577,18 +1577,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "delete_expired_stopped_settlements"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "common",
- "dotenv",
- "entity",
- "tokio",
- "tracing",
-]
-
-[[package]]
 name = "delete_expired_temp_accounts"
 version = "0.1.0"
 dependencies = [

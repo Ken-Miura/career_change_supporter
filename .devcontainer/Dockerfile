@@ -113,10 +113,6 @@ FROM batch-processor-base as delete-expired-pwd-change-reqs
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_pwd_change_reqs ./
 ENTRYPOINT [ "delete_expired_pwd_change_reqs" ]
 
-FROM batch-processor-base as delete-expired-stopped-settlements
-COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_stopped_settlements ./
-ENTRYPOINT [ "delete_expired_stopped_settlements" ]
-
 FROM batch-processor-base as delete-expired-temp-accounts
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_accounts ./
 ENTRYPOINT [ "delete_expired_temp_accounts" ]

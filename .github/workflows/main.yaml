@@ -21,7 +21,6 @@ jobs:
           docker build --target delete-expired-consultation-reqs -t ccs-delete-expired-consultation-reqs:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target delete-expired-deleted-user-accounts -t ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target delete-expired-pwd-change-reqs -t ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
-          docker build --target delete-expired-stopped-settlements -t ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target delete-expired-temp-accounts -t ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target delete-expired-temp-mfa-secrets -t ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
           docker build --target db-initializer -t ccs-db-initializer:"$(git rev-parse HEAD)" -f .devcontainer/Dockerfile server/
@@ -59,8 +58,6 @@ jobs:
           docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-deleted-user-accounts:"$(git rev-parse HEAD)"
           docker tag ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)"
           docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-pwd-change-reqs:"$(git rev-parse HEAD)"
-          docker tag ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)"
-          docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-stopped-settlements:"$(git rev-parse HEAD)"
           docker tag ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)"
           docker push ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-accounts:"$(git rev-parse HEAD)"
           docker tag ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)" ${AWS_ECR_ACCOUNT}/ccs-delete-expired-temp-mfa-secrets:"$(git rev-parse HEAD)"
