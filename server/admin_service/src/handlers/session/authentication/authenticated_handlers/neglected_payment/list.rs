@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+use super::NeglectedPayment;
+
 const VALID_PAGE_SIZE: u64 = 20;
 
 pub(crate) async fn get_neglected_payments(
@@ -32,17 +34,6 @@ pub(crate) async fn get_neglected_payments(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct NeglectedPaymentsResult {
     neglected_payments: Vec<NeglectedPayment>,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-struct NeglectedPayment {
-    consultation_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    meeting_at: String, // RFC 3339形式の文字列,
-    fee_per_hour_in_yen: i32,
-    neglect_confirmed_by: String,
-    created_at: String, // RFC 3339形式の文字列
 }
 
 #[async_trait]
