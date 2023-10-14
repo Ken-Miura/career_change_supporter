@@ -1,5 +1,5 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { LeftAwaitingWithdrawal } from './LeftAwaitingWithdrawal'
+import { LeftAwaitingWithdrawal } from '../LeftAwaitingWithdrawal'
 import { GetLeftAwaitingWithdrawalsResp } from './GetLeftAwaitingWithdrawalsResp'
 
 export async function getLeftAwaitingWithdrawals (page: number, perPage: number): Promise<GetLeftAwaitingWithdrawalsResp | ApiErrorResp> {

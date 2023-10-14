@@ -1,4 +1,4 @@
-import { LeftAwaitingWithdrawal } from './LeftAwaitingWithdrawal'
+import { LeftAwaitingWithdrawal } from '../LeftAwaitingWithdrawal'
 
 export class GetLeftAwaitingWithdrawalsResp {
   // createからアクセスしているため、意味のないコンストラクタではない

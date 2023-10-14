@@ -53,7 +53,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useGetLeftAwaitingWithdrawals } from '@/util/personalized/left-awaiting-withdrawal/useGetLeftAwaitingWithdrawals'
-import { LeftAwaitingWithdrawal } from '@/util/personalized/left-awaiting-withdrawal/LeftAwaitingWithdrawal'
+import { LeftAwaitingWithdrawal } from '@/util/personalized/LeftAwaitingWithdrawal'
 import { GetLeftAwaitingWithdrawalsResp } from '@/util/personalized/left-awaiting-withdrawal/GetLeftAwaitingWithdrawalsResp'
 
 export default defineComponent({
