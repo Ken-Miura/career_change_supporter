@@ -65,7 +65,7 @@ impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
         &self,
         consultation_id: i64,
     ) -> Result<Option<ReceiptOfConsultation>, ErrResp> {
-        let models = entity::receipt_of_consultation::Entity::find_by_id(consultation_id)
+        let model = entity::receipt_of_consultation::Entity::find_by_id(consultation_id)
             .one(&self.pool)
             .await
             .map_err(|e| {
@@ -75,7 +75,7 @@ impl ReceiptOfConsultationOperation for ReceiptOfConsultationOperationImpl {
                 );
                 unexpected_err_resp()
             })?;
-        Ok(models.map(|m| ReceiptOfConsultation {
+        Ok(model.map(|m| ReceiptOfConsultation {
             consultation_id: m.consultation_id,
             user_account_id: m.user_account_id,
             consultant_id: m.consultant_id,

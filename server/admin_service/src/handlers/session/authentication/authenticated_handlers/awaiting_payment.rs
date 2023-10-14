@@ -2,10 +2,11 @@
 
 use serde::Serialize;
 
+pub(crate) mod awaiting_payment_by_consultation_id;
 pub(crate) mod expired_list;
 pub(crate) mod list;
 
-#[derive(Clone, Serialize, Debug, PartialEq)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 struct AwaitingPayment {
     consultation_id: i64,
     consultant_id: i64,
