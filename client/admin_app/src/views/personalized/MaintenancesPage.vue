@@ -103,14 +103,6 @@
             </div>
           </div>
           <button v-bind:disabled="!setMaintenanceConfirmation" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none" type="submit">メンテナンスを設定する</button>
-          <div v-if="reqResult" class="mt-6">
-            <div class="m-4 text-2xl grid grid-cols-3">
-              <div class="mt-2 w-full text-2xl justify-self-start col-span-3">停止対象となった決済件数: {{ reqResult.num_of_target_settlements }}</div>
-              <div v-if="reqResult.failed_to_stop_settlement_ids.length !== 0" class="mt-2 w-full text-2xl justify-self-start col-span-3">
-                <div><span class=" text-red-500">停止に失敗した決済のID: {{ reqResult.failed_to_stop_settlement_ids }}</span></div>
-              </div>
-            </div>
-          </div>
           <div v-if="setMaintenanceErrMessage" class="mt-6">
             <AlertMessage v-bind:message="setMaintenanceErrMessage"/>
           </div>
@@ -160,7 +152,6 @@ import { GetPlannedMaintenancesResp } from '@/util/personalized/planned-maintena
 import { Message } from '@/util/Message'
 import { usePostSetMaintenanceReq } from '@/util/personalized/set-maintenance-req/usePostSetMaintenanceReq'
 import { PostSetMaintenanceReqResp } from '@/util/personalized/set-maintenance-req/PostSetMaintenanceReqResp'
-import { SetMaintenanceReqResult } from '@/util/personalized/set-maintenance-req/SetMaintenanceReqResult'
 import { SetMaintenanceReq } from '@/util/personalized/set-maintenance-req/SetMaintenanceReq'
 import { MaintenanceTime } from '@/util/personalized/set-maintenance-req/MaintenanceTime'
 
@@ -232,7 +223,6 @@ export default defineComponent({
       minute: currentDate.getMinutes()
     })
 
-    const reqResult = ref(null as SetMaintenanceReqResult | null)
     const setMaintenanceErrMessage = ref(null as string | null)
 
     const {
@@ -275,7 +265,6 @@ export default defineComponent({
           setMaintenanceErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        reqResult.value = response.getSetMaintenanceReqResult()
         setMaintenanceErrMessage.value = null
         await getPlannedMaintenances()
       } catch (e) {
@@ -295,7 +284,6 @@ export default defineComponent({
       hourList,
       minuteList,
       setMaintenance,
-      reqResult,
       setMaintenanceErrMessage,
       postSetMaintenanceReqDone,
       startMtForm,

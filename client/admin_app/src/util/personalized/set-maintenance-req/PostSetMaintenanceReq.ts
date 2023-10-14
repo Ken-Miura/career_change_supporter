@@ -1,7 +1,6 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
 import { PostSetMaintenanceReqResp } from './PostSetMaintenanceReqResp'
 import { SetMaintenanceReq } from './SetMaintenanceReq'
-import { SetMaintenanceReqResult } from './SetMaintenanceReqResult'
 
 export async function postSetMaintenanceReq (req: SetMaintenanceReq): Promise<PostSetMaintenanceReqResp | ApiErrorResp> {
   const response = await fetch('/admin/api/set-maintenance-req', {
@@ -13,6 +12,5 @@ export async function postSetMaintenanceReq (req: SetMaintenanceReq): Promise<Po
     const apiErr = await response.json() as { code: number }
     return ApiErrorResp.create(response.status, ApiError.create(apiErr.code))
   }
-  const result = await response.json() as SetMaintenanceReqResult
-  return PostSetMaintenanceReqResp.create(result)
+  return PostSetMaintenanceReqResp.create()
 }
