@@ -252,7 +252,7 @@
                     <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultationAsUser.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
                     <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultationAsUser.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsUser.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
                     <div class="mt-2 w-full justify-self-start col-span-7">
-                      <button v-on:click="moveToConsultationRelatedInfoPage(consultationAsUser.consultation_id)" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">決済、返金、評価状況を確認する</button>
+                      <button v-on:click="moveToConsultationRelatedInfoPage(consultationAsUser.consultation_id)" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金、出金、返金、評価状況を確認する</button>
                     </div>
                   </div>
                 </li>
@@ -280,7 +280,7 @@
                     <div class="mt-2 justify-self-start col-span-3">ユーザー入室日時</div><div v-if="consultationAsConsultant.user_account_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.user_account_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
                     <div class="mt-2 justify-self-start col-span-3">コンサルタント入室日時</div><div v-if="consultationAsConsultant.consultant_entered_at" class="mt-2 justify-self-start col-span-4">{{ consultationAsConsultant.consultant_entered_at }}</div><div v-else class="mt-2 justify-self-start col-span-4">入室記録なし</div>
                     <div class="mt-2 w-full justify-self-start col-span-7">
-                      <button v-on:click="moveToConsultationRelatedInfoPage(consultationAsConsultant.consultation_id)" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">決済、返金、評価状況を確認する</button>
+                      <button v-on:click="moveToConsultationRelatedInfoPage(consultationAsConsultant.consultation_id)" class="mt-4 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金、出金、返金、評価状況を確認する</button>
                     </div>
                   </div>
                 </li>
