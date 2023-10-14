@@ -148,22 +148,25 @@
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">返金情報</h3>
-        <div v-if="!refundErrMessage">
-          <div v-if="refund" class="m-4 text-2xl grid grid-cols-7">
-            <div class="mt-2 justify-self-start col-span-3">返金番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refund_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ refund.consultation_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ refund.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.fee_per_hour_in_yen }}</div>
-            <div class="mt-2 justify-self-start col-span-3">プラットフォーム手数料率（％）</div><div class="mt-2 justify-self-start col-span-4">{{ refund.platform_fee_rate_in_percentage }}</div>
-            <div class="mt-2 justify-self-start col-span-3">支払い確定日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.settled_at }}</div>
-            <div class="mt-2 justify-self-start col-span-3">返金日時</div><div class="mt-2 justify-self-start col-span-4">{{ refund.refunded_at }}</div>
+        <div v-if="!refundedPaymentErrMessage">
+          <div v-if="refundedPayment" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.user_account_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.consultant_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.meeting_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">振込手数料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.transfer_fee_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">入金者</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.sender_name }}</div>
+            <div class="mt-2 justify-self-start col-span-3">返金理由</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.reason }}</div>
+            <div class="mt-2 justify-self-start col-span-3">返金確認者</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.refund_confirmed_by }}</div>
+            <div class="mt-2 justify-self-start col-span-3">返金確認日時</div><div class="mt-2 justify-self-start col-span-4">{{ refundedPayment.created_at }}</div>
           </div>
           <div v-else class="m-4 text-2xl">
             返金情報は見つかりませんでした
           </div>
         </div>
         <div v-else>
-          <AlertMessage class="mt-4" v-bind:message="refundErrMessage"/>
+          <AlertMessage class="mt-4" v-bind:message="refundedPaymentErrMessage"/>
         </div>
       </div>
     </main>
@@ -192,9 +195,6 @@ import { GetUserRatingByConsultationIdResp } from '@/util/personalized/consultat
 import { useGetConsultantRatingByConsultationId } from '@/util/personalized/consultation/consultant-rating/useGetConsultantRatingByConsultationId'
 import { GetConsultantRatingByConsultationIdResp } from '@/util/personalized/consultation/consultant-rating/GetConsultantRatingByConsultationIdResp'
 import { ConsultantRating } from '@/util/personalized/consultation/consultant-rating/ConsultantRating'
-import { Refund } from '@/util/personalized/consultation/refund/Refund'
-import { useGetRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
-import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
 import { AwaitingPayment } from '@/util/personalized/consultation/awaiting-payment/AwaitingPayment'
 import { useGetAwaitingPaymentByConsultationId } from '@/util/personalized/consultation/awaiting-payment/useGetAwaitingPaymentByConsultationId'
 import { GetAwaitingPaymentByConsultationIdResp } from '@/util/personalized/consultation/awaiting-payment/GetAwaitingPaymentByConsultationIdResp'
@@ -207,6 +207,9 @@ import { useGetAwaitingWithdrawalByConsultationId } from '@/util/personalized/co
 import { ReceiptOfConsultation } from '@/util/personalized/ReceiptOfConsultation'
 import { useGetReceiptOfConsultationByConsultationId } from '@/util/personalized/consultation/receipt-of-consultation/useGetReceiptOfConsultationByConsultationId'
 import { GetReceiptOfConsultationByConsultationIdResp } from '@/util/personalized/consultation/receipt-of-consultation/GetReceiptOfConsultationByConsultationIdResp'
+import { RefundedPayment } from '@/util/personalized/RefundedPayment'
+import { useGetRefundedPaymentByConsultationId } from '@/util/personalized/consultation/refunded-payment/useGetRefundedPaymentByConsultationId'
+import { GetRefundedPaymentByConsultationIdResp } from '@/util/personalized/consultation/refunded-payment/GetRefundedPaymentByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -426,18 +429,18 @@ export default defineComponent({
       }
     }
 
-    const refund = ref(null as Refund | null)
-    const refundErrMessage = ref(null as string | null)
+    const refundedPayment = ref(null as RefundedPayment | null)
+    const refundedPaymentErrMessage = ref(null as string | null)
 
     const {
-      getRefundByConsultationIdDone,
-      getRefundByConsultationIdFunc
-    } = useGetRefundByConsultationId()
+      getRefundedPaymentByConsultationIdDone,
+      getRefundedPaymentByConsultationIdFunc
+    } = useGetRefundedPaymentByConsultationId()
 
-    const findRefund = async () => {
+    const findRefundedPayment = async () => {
       try {
-        const response = await getRefundByConsultationIdFunc(consultationId)
-        if (!(response instanceof GetRefundByConsultationIdResp)) {
+        const response = await getRefundedPaymentByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetRefundedPaymentByConsultationIdResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
           }
@@ -446,13 +449,12 @@ export default defineComponent({
             await router.push('/login')
             return
           }
-          refundErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          refundedPaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        const result = response.getRefundResult()
-        refund.value = result.refund
+        refundedPayment.value = response.getRefundedPayment()
       } catch (e) {
-        refundErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        refundedPaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -464,7 +466,7 @@ export default defineComponent({
       await findNeglectedPayment()
       await findAwaitingWithdrawal()
       await findReceiptOfConsultation()
-      await findRefund()
+      await findRefundedPayment()
     })
 
     const requestsDone = computed(() => {
@@ -475,7 +477,7 @@ export default defineComponent({
               getNeglectedPaymentByConsultationIdDone.value &&
               getAwaitingWithdrawalByConsultationIdDone.value &&
               getReceiptOfConsultationByConsultationIdDone.value &&
-              getRefundByConsultationIdDone.value
+              getRefundedPaymentByConsultationIdDone.value
     })
 
     return {
@@ -494,8 +496,8 @@ export default defineComponent({
       awaitingWithdrawalErrMessage,
       receiptOfConsultation,
       receiptOfConsultationErrMessage,
-      refund,
-      refundErrMessage
+      refundedPayment,
+      refundedPaymentErrMessage
     }
   }
 })

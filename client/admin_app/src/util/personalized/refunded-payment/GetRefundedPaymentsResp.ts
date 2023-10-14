@@ -1,4 +1,4 @@
-import { RefundedPayment } from './RefundedPayment'
+import { RefundedPayment } from '../RefundedPayment'
 
 export class GetRefundedPaymentsResp {
   // createからアクセスしているため、意味のないコンストラクタではない

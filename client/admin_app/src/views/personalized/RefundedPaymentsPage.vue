@@ -54,7 +54,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useGetRefundedPayments } from '@/util/personalized/refunded-payment/useGetRefundedPayments'
-import { RefundedPayment } from '@/util/personalized/refunded-payment/RefundedPayment'
+import { RefundedPayment } from '@/util/personalized/RefundedPayment'
 import { GetRefundedPaymentsResp } from '@/util/personalized/refunded-payment/GetRefundedPaymentsResp'
 
 export default defineComponent({
