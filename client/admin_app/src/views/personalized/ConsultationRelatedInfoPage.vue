@@ -58,93 +58,22 @@
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">決済情報（確保した与信枠の情報）</h3>
-        <div v-if="!settlementErrMessage">
-          <div v-if="settlement" class="m-4 text-2xl grid grid-cols-7">
-            <div class="mt-2 justify-self-start col-span-3">決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.settlement_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.consultation_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.fee_per_hour_in_yen }}</div>
-            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.platform_fee_rate_in_percentage }}</div>
-            <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ settlement.credit_facilities_expired_at }}</div>
-            <div class="mt-4 col-span-7">
-              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
-                <p>決済の停止</p>
-              </div>
-              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-                  <div class="col-span-5">決済の停止が適正であることを確認しました</div>
-                  <input v-model="stopSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
-                </div>
-              </div>
-              <div>
-                <button v-on:click="stopSettlement" v-bind:disabled="!stopSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を停止する</button>
-              </div>
-              <div v-if="stopSettlementErrMessage" class="mt-4">
-                <AlertMessage v-bind:message="stopSettlementErrMessage"/>
-              </div>
-            </div>
-            <div class="mt-4 col-span-7">
-              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
-                <p>支払いの確定</p>
-              </div>
-              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-                  <div class="col-span-5">支払いの確定が適正であることを確認しました</div>
-                  <input v-model="makePaymentConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
-                </div>
-              </div>
-              <div>
-                <button v-on:click="makePayment" v-bind:disabled="!makePaymentConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">支払いを確定する</button>
-              </div>
-              <div v-if="makePaymentErrMessage" class="mt-4">
-                <AlertMessage v-bind:message="makePaymentErrMessage"/>
-              </div>
-            </div>
+        <h3 class="font-bold text-2xl">入金待ち情報</h3>
+        <div v-if="!awaitingPaymentErrMessage">
+          <div v-if="awaitingPayment" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.user_account_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.consultant_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.meeting_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">作成日時<br>（相談受け付け承認日時）</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingPayment.created_at }}</div>
           </div>
           <div v-else class="m-4 text-2xl">
-            決済情報（確保した与信枠の情報）は見つかりませんでした
+            入金待ち情報は見つかりませんでした
           </div>
         </div>
         <div v-else>
-          <AlertMessage class="mt-4" v-bind:message="settlementErrMessage"/>
-        </div>
-      </div>
-      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
-        <h3 class="font-bold text-2xl">停止中の決済情報</h3>
-        <div v-if="!stoppedSettlementErrMessage">
-          <div v-if="stoppedSettlement" class="m-4 text-2xl grid grid-cols-7">
-            <div class="mt-2 justify-self-start col-span-3">停止中決済番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_settlement_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.consultation_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">チャージID</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.charge_id }}</div>
-            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.fee_per_hour_in_yen }}</div>
-            <div class="mt-2 justify-self-start col-span-3">プラットフォーム利用手数料割合（%）</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.platform_fee_rate_in_percentage }}</div>
-            <div class="mt-2 justify-self-start col-span-3">与信枠開放日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.credit_facilities_expired_at }}</div>
-            <div class="mt-2 justify-self-start col-span-3">停止日時</div><div class="mt-2 justify-self-start col-span-4">{{ stoppedSettlement.stopped_at }}</div>
-            <div class="mt-4 col-span-7">
-              <div class="text-2xl justify-self-start col-span-6 pt-3 font-bold">
-                <p>決済の再開</p>
-              </div>
-              <div class="mt-2 ml-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
-                <div class="p-4 text-xl grid grid-cols-6 justify-center items-center">
-                  <div class="col-span-5">決済の再開が適正であることを確認しました</div>
-                  <input v-model="resumeSettlementConfirmation" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
-                </div>
-              </div>
-              <div>
-                <button v-on:click="resumeSettlement" v-bind:disabled="!resumeSettlementConfirmation" class="mt-4 ml-2 min-w-full bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200 disabled:bg-slate-100 disabled:text-slate-500 disabled:border-slate-200 disabled:shadow-none">決済を再開する</button>
-              </div>
-              <div v-if="resumeSettlementErrMessage" class="mt-4">
-                <AlertMessage v-bind:message="resumeSettlementErrMessage"/>
-              </div>
-            </div>
-          </div>
-          <div v-else class="m-4 text-2xl">
-            停止中の決済情報は見つかりませんでした
-          </div>
-        </div>
-        <div v-else>
-          <AlertMessage class="mt-4" v-bind:message="stoppedSettlementErrMessage"/>
+          <AlertMessage class="mt-4" v-bind:message="awaitingPaymentErrMessage"/>
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
@@ -229,26 +158,17 @@ import { GetUserRatingByConsultationIdResp } from '@/util/personalized/consultat
 import { useGetConsultantRatingByConsultationId } from '@/util/personalized/consultation/consultant-rating/useGetConsultantRatingByConsultationId'
 import { GetConsultantRatingByConsultationIdResp } from '@/util/personalized/consultation/consultant-rating/GetConsultantRatingByConsultationIdResp'
 import { ConsultantRating } from '@/util/personalized/consultation/consultant-rating/ConsultantRating'
-import { Settlement } from '@/util/personalized/consultation/settlement/Settlement'
-import { useSettlementByConsultationId } from '@/util/personalized/consultation/settlement/useGetSettlementByConsultationId'
-import { GetSettlementByConsultationIdResp } from '@/util/personalized/consultation/settlement/GetSettlementByConsultationIdResp'
-import { useStoppedSettlementByConsultationId } from '@/util/personalized/consultation/stopped_settlement/useGetStoppedSettlementByConsultationId'
-import { GetStoppedSettlementByConsultationIdResp } from '@/util/personalized/consultation/stopped_settlement/GetStoppeSettlementByConsultationIdResp'
-import { StoppedSettlement } from '@/util/personalized/consultation/stopped_settlement/StoppedSettlement'
 import { Receipt } from '@/util/personalized/consultation/receipt/Receipt'
 import { useReceiptByConsultationId } from '@/util/personalized/consultation/receipt/useGetReceiptByConsultationId'
 import { GetReceiptByConsultationIdResp } from '@/util/personalized/consultation/receipt/GetReceiptByConsultationIdResp'
 import { Refund } from '@/util/personalized/consultation/refund/Refund'
 import { useGetRefundByConsultationId } from '@/util/personalized/consultation/refund/useGetRefundByConsultationId'
 import { GetRefundByConsultationIdResp } from '@/util/personalized/consultation/refund/GetRefundByConsultationIdResp'
-import { usePostStopSettlementReq } from '@/util/personalized/consultation/stop_settlement_req/usePostStopSettlementReq'
-import { PostStopSettlementReqResp } from '@/util/personalized/consultation/stop_settlement_req/PostStopSettlementReqResp'
-import { usePostResumeSettlementReq } from '@/util/personalized/consultation/resume_settlement_req/usePostResumeSettlementReq'
-import { PostResumeSettlementReqResp } from '@/util/personalized/consultation/resume_settlement_req/PostResumeSettlementReqResp'
-import { usePostMakePaymentReq } from '@/util/personalized/consultation/make_payment_req/usePostMakePaymentReq'
-import { PostMakePaymentReqResp } from '@/util/personalized/consultation/make_payment_req/PostMakePaymentReqResp'
 import { usePostRefundReq } from '@/util/personalized/consultation/refund_req/usePostRefundReq'
 import { PostRefundReqResp } from '@/util/personalized/consultation/refund_req/PostRefundReqResp'
+import { AwaitingPayment } from '@/util/personalized/consultation/awaiting-payment/AwaitingPayment'
+import { useGetAwaitingPaymentByConsultationId } from '@/util/personalized/consultation/awaiting-payment/useGetAwaitingPaymentByConsultationId'
+import { GetAwaitingPaymentByConsultationIdResp } from '@/util/personalized/consultation/awaiting-payment/GetAwaitingPaymentByConsultationIdResp'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -352,18 +272,18 @@ export default defineComponent({
       }
     }
 
-    const settlement = ref(null as Settlement | null)
-    const settlementErrMessage = ref(null as string | null)
+    const awaitingPayment = ref(null as AwaitingPayment | null)
+    const awaitingPaymentErrMessage = ref(null as string | null)
 
     const {
-      getSettlementByConsultationIdDone,
-      getSettlementByConsultationIdFunc
-    } = useSettlementByConsultationId()
+      getAwaitingPaymentByConsultationIdDone,
+      getAwaitingPaymentByConsultationIdFunc
+    } = useGetAwaitingPaymentByConsultationId()
 
-    const findSettlement = async () => {
+    const findAwaitingPayment = async () => {
       try {
-        const response = await getSettlementByConsultationIdFunc(consultationId)
-        if (!(response instanceof GetSettlementByConsultationIdResp)) {
+        const response = await getAwaitingPaymentByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetAwaitingPaymentByConsultationIdResp)) {
           if (!(response instanceof ApiErrorResp)) {
             throw new Error(`unexpected result on getting request detail: ${response}`)
           }
@@ -372,43 +292,12 @@ export default defineComponent({
             await router.push('/login')
             return
           }
-          settlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          awaitingPaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
           return
         }
-        const result = response.getSettlementResult()
-        settlement.value = result.settlement
+        awaitingPayment.value = response.getAwaitingPayment()
       } catch (e) {
-        settlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-      }
-    }
-
-    const stoppedSettlement = ref(null as StoppedSettlement | null)
-    const stoppedSettlementErrMessage = ref(null as string | null)
-
-    const {
-      getStoppedSettlementByConsultationIdDone,
-      getStoppedSettlementByConsultationIdFunc
-    } = useStoppedSettlementByConsultationId()
-
-    const findStoppedSettlement = async () => {
-      try {
-        const response = await getStoppedSettlementByConsultationIdFunc(consultationId)
-        if (!(response instanceof GetStoppedSettlementByConsultationIdResp)) {
-          if (!(response instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${response}`)
-          }
-          const code = response.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          }
-          stoppedSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
-          return
-        }
-        const result = response.getStoppedSettlementResult()
-        stoppedSettlement.value = result.stopped_settlement
-      } catch (e) {
-        stoppedSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+        awaitingPaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
       }
     }
 
@@ -473,120 +362,6 @@ export default defineComponent({
     }
 
     const {
-      postStopSettlementReqDone,
-      postStopSettlementReqFunc
-    } = usePostStopSettlementReq()
-
-    const stopSettlementConfirmation = ref(false)
-    const stopSettlementErrMessage = ref(null as string | null)
-
-    const stopSettlement = async () => {
-      if (!settlement.value) {
-        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: settlement.value is null`
-        return
-      }
-      const settlementId = settlement.value.settlement_id
-      try {
-        const response = await postStopSettlementReqFunc(settlementId)
-        if (!(response instanceof PostStopSettlementReqResp)) {
-          if (!(response instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${response}`)
-          }
-          const code = response.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          }
-          stopSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
-          return
-        }
-        stopSettlementErrMessage.value = null
-      } catch (e) {
-        stopSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-      } finally {
-        stopSettlementConfirmation.value = false
-      }
-      await findSettlement()
-      await findStoppedSettlement()
-    }
-
-    const {
-      postResumeSettlementReqDone,
-      postResumeSettlementReqFunc
-    } = usePostResumeSettlementReq()
-
-    const resumeSettlementConfirmation = ref(false)
-    const resumeSettlementErrMessage = ref(null as string | null)
-
-    const resumeSettlement = async () => {
-      if (!stoppedSettlement.value) {
-        resumeSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: stoppedSettlement.value is null`
-        return
-      }
-      const stoppedSettlementId = stoppedSettlement.value.stopped_settlement_id
-      try {
-        const response = await postResumeSettlementReqFunc(stoppedSettlementId)
-        if (!(response instanceof PostResumeSettlementReqResp)) {
-          if (!(response instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${response}`)
-          }
-          const code = response.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          }
-          resumeSettlementErrMessage.value = createErrorMessage(response.getApiError().getCode())
-          return
-        }
-        resumeSettlementErrMessage.value = null
-      } catch (e) {
-        resumeSettlementErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-      } finally {
-        resumeSettlementConfirmation.value = false
-      }
-      await findSettlement()
-      await findStoppedSettlement()
-    }
-
-    const {
-      postMakePaymentReqDone,
-      postMakePaymentReqFunc
-    } = usePostMakePaymentReq()
-
-    const makePaymentConfirmation = ref(false)
-    const makePaymentErrMessage = ref(null as string | null)
-
-    const makePayment = async () => {
-      if (!settlement.value) {
-        makePaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: settlement.value is null`
-        return
-      }
-      const settlementId = settlement.value.settlement_id
-      try {
-        const response = await postMakePaymentReqFunc(settlementId)
-        if (!(response instanceof PostMakePaymentReqResp)) {
-          if (!(response instanceof ApiErrorResp)) {
-            throw new Error(`unexpected result on getting request detail: ${response}`)
-          }
-          const code = response.getApiError().getCode()
-          if (code === Code.UNAUTHORIZED) {
-            await router.push('/login')
-            return
-          }
-          makePaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
-          return
-        }
-        makePaymentErrMessage.value = null
-      } catch (e) {
-        makePaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
-      } finally {
-        makePaymentConfirmation.value = false
-      }
-      await findSettlement()
-      await findReceipt()
-    }
-
-    const {
       postRefundReqDone,
       postRefundReqFunc
     } = usePostRefundReq()
@@ -628,8 +403,7 @@ export default defineComponent({
       await findConsultation()
       await findUserRating()
       await findConsultantRating()
-      await findSettlement()
-      await findStoppedSettlement()
+      await findAwaitingPayment()
       await findReceipt()
       await findRefund()
     })
@@ -638,13 +412,9 @@ export default defineComponent({
       return getConsultationByConsultationIdDone.value &&
               getUserRatingByConsultationIdDone.value &&
               getConsultantRatingByConsultationIdDone.value &&
-              getSettlementByConsultationIdDone.value &&
-              getStoppedSettlementByConsultationIdDone.value &&
+              getAwaitingPaymentByConsultationIdDone.value &&
               getReceiptByConsultationIdDone.value &&
               getRefundByConsultationIdDone.value &&
-              postStopSettlementReqDone.value &&
-              postResumeSettlementReqDone.value &&
-              postMakePaymentReqDone.value &&
               postRefundReqDone.value
     })
 
@@ -656,23 +426,12 @@ export default defineComponent({
       userRatingErrMessage,
       consultantRating,
       consultantRatingErrMessage,
-      settlement,
-      settlementErrMessage,
-      stoppedSettlement,
-      stoppedSettlementErrMessage,
+      awaitingPayment,
+      awaitingPaymentErrMessage,
       receipt,
       receiptErrMessage,
       refund,
       refundErrMessage,
-      stopSettlementConfirmation,
-      stopSettlement,
-      stopSettlementErrMessage,
-      resumeSettlementConfirmation,
-      resumeSettlement,
-      resumeSettlementErrMessage,
-      makePaymentConfirmation,
-      makePayment,
-      makePaymentErrMessage,
       refundReqConfirmation,
       refundReq,
       refundReqErrMessage
