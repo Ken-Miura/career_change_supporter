@@ -5,7 +5,7 @@ import { BankAccount } from './BankAccount'
 export async function getBankAccountByUserAccountId (userAccountId: string): Promise<GetBankAccountByUserAccountIdResp | ApiErrorResp> {
   const params = { user_account_id: userAccountId }
   const query = new URLSearchParams(params)
-  const response = await fetch(`/admin/api/bank-account-id-by-user-account-id?${query}`, {
+  const response = await fetch(`/admin/api/bank-account-by-user-account-id?${query}`, {
     method: 'GET'
   })
   if (!response.ok) {

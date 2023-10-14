@@ -170,8 +170,13 @@
           <h3 class="font-bold text-2xl">口座情報（報酬の入金を行う口座）</h3>
           <div v-if="!bankAccountErrMessage">
             <div v-if="bankAccount" class="mt-6 ml-8 text-2xl">
-              TODO: サーバサイドの修正が完了したら修正する
-              <p>テナントID: {{ bankAccount }}</p>
+              <div class="border border-gray-600 rounded bg-white px-4 py-3 text-black text-xl grid grid-cols-3">
+                <div class="mt-2 justify-self-start col-span-1">銀行コード</div><div class="mt-2 justify-self-start col-span-2">{{ bankAccount.bank_code }}</div>
+                <div class="mt-2 justify-self-start col-span-1">支店コード</div><div class="mt-2 justify-self-start col-span-2">{{ bankAccount.branch_code }}</div>
+                <div class="mt-2 justify-self-start col-span-1">口座種別</div><div class="mt-2 justify-self-start col-span-2">{{ bankAccount.account_type }}</div>
+                <div class="mt-2 justify-self-start col-span-1">口座番号</div><div class="mt-2 justify-self-start col-span-2">{{ bankAccount.account_number }}</div>
+                <div class="mt-2 justify-self-start col-span-1">口座名義人</div><div class="mt-2 justify-self-start col-span-2">{{ bankAccount.account_holder_name }}</div>
+              </div>
             </div>
             <div v-else class="m-4 text-2xl">
               口座情報は見つかりませんでした
