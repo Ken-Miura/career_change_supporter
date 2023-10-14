@@ -7,6 +7,7 @@ use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::awaiting_payment_by_consultation_id::get_awaiting_payment_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_withdrawal::awaiting_withdrawal_by_consultation_id::get_awaiting_withdrawal_by_consultation_id;
+use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::left_awaiting_withdrawal_by_consultation_id::get_left_awaiting_withdrawal_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::list::get_left_awaiting_withdrawals;
 use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::post::post_left_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::neglected_payment::neglected_payment_by_consultation_id::get_neglected_payment_by_consultation_id;
@@ -534,6 +535,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/neglected-payment-by-consultation-id",
                     get(get_neglected_payment_by_consultation_id),
+                )
+                .route(
+                    "/left-awaiting-withdrawal-by-consultation-id",
+                    get(get_left_awaiting_withdrawal_by_consultation_id),
                 )
                 .with_state(state),
         )

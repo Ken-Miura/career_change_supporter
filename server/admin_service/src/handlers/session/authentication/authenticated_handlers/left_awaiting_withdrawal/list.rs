@@ -18,6 +18,8 @@ use crate::{
     },
 };
 
+use super::LeftAwaitingWithdrawal;
+
 const VALID_PAGE_SIZE: u64 = 20;
 
 pub(crate) async fn get_left_awaiting_withdrawals(
@@ -32,18 +34,6 @@ pub(crate) async fn get_left_awaiting_withdrawals(
 #[derive(Serialize, Debug, PartialEq)]
 pub(crate) struct LeftAwaitingWithdrawalsResult {
     left_awaiting_withdrawals: Vec<LeftAwaitingWithdrawal>,
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq)]
-struct LeftAwaitingWithdrawal {
-    consultation_id: i64,
-    user_account_id: i64,
-    consultant_id: i64,
-    meeting_at: String, // RFC 3339形式の文字列,
-    fee_per_hour_in_yen: i32,
-    sender_name: String,
-    confirmed_by: String,
-    created_at: String, // RFC 3339形式の文字列
 }
 
 #[async_trait]

@@ -133,9 +133,9 @@ mod tests {
             consultation_id,
             user_account_id: 14,
             consultant_id: 68,
-            meeting_at: "2023-04-13T14:00:00.0000+09:00 ".to_string(),
+            meeting_at: "2023-04-13T14:00:00.0000+09:00".to_string(),
             fee_per_hour_in_yen: 5000,
-            created_at: "2023-03-28T14:00:00.0000+09:00 ".to_string(),
+            created_at: "2023-03-28T14:00:00.0000+09:00".to_string(),
         }
     }
 
