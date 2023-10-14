@@ -6,6 +6,7 @@ mod handlers;
 use crate::handlers::ROOT_PATH;
 use crate::handlers::health::get_health;
 use crate::handlers::session::authentication::authenticated_handlers::awaiting_payment::awaiting_payment_by_consultation_id::get_awaiting_payment_by_consultation_id;
+use crate::handlers::session::authentication::authenticated_handlers::awaiting_withdrawal::awaiting_withdrawal_by_consultation_id::get_awaiting_withdrawal_by_consultation_id;
 use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::list::get_left_awaiting_withdrawals;
 use crate::handlers::session::authentication::authenticated_handlers::left_awaiting_withdrawal::post::post_left_awaiting_withdrawal;
 use crate::handlers::session::authentication::authenticated_handlers::receipt_of_consultation::list::get_receipts_of_consultation;
@@ -524,6 +525,10 @@ async fn main_internal(num_of_cpus: u32) {
                 .route(
                     "/awaiting-payment-by-consultation-id",
                     get(get_awaiting_payment_by_consultation_id),
+                )
+                .route(
+                    "/awaiting-withdrawal-by-consultation-id",
+                    get(get_awaiting_withdrawal_by_consultation_id),
                 )
                 .with_state(state),
         )
