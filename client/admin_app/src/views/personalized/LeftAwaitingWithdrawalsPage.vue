@@ -22,7 +22,7 @@
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">コンサルタントID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.consultant_id }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.meeting_at }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
-                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">入金者</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">確認者</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.confirmed_by }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">確認日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.created_at }}</div>
                 </div>

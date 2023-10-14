@@ -22,10 +22,10 @@
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">コンサルタントID</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.consultant_id }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談日時</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.meeting_at }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">相談料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.fee_per_hour_in_yen }}</div>
-                  <div class="my-1 lg:my-2 justify-self-start col-span-1">プラットフォーム利用手数料率（％）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.platform_fee_rate_in_percentage }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">プラットフォーム手数料率（％）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.platform_fee_rate_in_percentage }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">振込手数料（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.transfer_fee_in_yen }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">報酬（円）</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.reward }}</div>
-                  <div class="my-1 lg:my-2 justify-self-start col-span-1">依頼人名</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
+                  <div class="my-1 lg:my-2 justify-self-start col-span-1">入金者</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.sender_name }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">銀行コード</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.bank_code }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">支店コード</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.branch_code }}</div>
                   <div class="my-1 lg:my-2 justify-self-start col-span-1">口座種別</div><div class="my-1 lg:my-2 justify-self-start col-span-2">{{ item.account_type }}</div>
@@ -62,7 +62,7 @@ import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useGetReceiptsOfConsultation } from '@/util/personalized/receipt-of-consultation/useGetReceiptsOfConsultation'
 import { GetReceiptsOfConsultationResp } from '@/util/personalized/receipt-of-consultation/GetReceiptsOfConsultationResp'
-import { ReceiptOfConsultation } from '@/util/personalized/receipt-of-consultation/ReceiptOfConsultation'
+import { ReceiptOfConsultation } from '@/util/personalized/ReceiptOfConsultation'
 
 export default defineComponent({
   name: 'ReceiptsOfConsultationPage',

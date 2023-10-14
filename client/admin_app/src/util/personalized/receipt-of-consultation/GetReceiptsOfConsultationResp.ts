@@ -1,4 +1,4 @@
-import { ReceiptOfConsultation } from './ReceiptOfConsultation'
+import { ReceiptOfConsultation } from '../ReceiptOfConsultation'
 
 export class GetReceiptsOfConsultationResp {
   // createからアクセスしているため、意味のないコンストラクタではない

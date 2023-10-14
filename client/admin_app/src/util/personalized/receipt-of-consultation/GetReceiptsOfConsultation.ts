@@ -1,5 +1,5 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { ReceiptOfConsultation } from './ReceiptOfConsultation'
+import { ReceiptOfConsultation } from '../ReceiptOfConsultation'
 import { GetReceiptsOfConsultationResp } from './GetReceiptsOfConsultationResp'
 
 export async function getReceiptsOfConsultation (page: number, perPage: number): Promise<GetReceiptsOfConsultationResp | ApiErrorResp> {
