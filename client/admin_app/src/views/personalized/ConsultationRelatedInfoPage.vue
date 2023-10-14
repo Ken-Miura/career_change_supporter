@@ -77,6 +77,26 @@
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">無視された入金情報</h3>
+        <div v-if="!neglectedPaymentErrMessage">
+          <div v-if="neglectedPayment" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.user_account_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.consultant_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.meeting_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">確認者</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.neglect_confirmed_by }}</div>
+            <div class="mt-2 justify-self-start col-span-3">確認日時</div><div class="mt-2 justify-self-start col-span-4">{{ neglectedPayment.created_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            無視された入金情報は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="neglectedPaymentErrMessage"/>
+        </div>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">領収書情報</h3>
         <div v-if="!receiptErrMessage">
           <div v-if="receipt" class="m-4 text-2xl grid grid-cols-7">
@@ -169,6 +189,9 @@ import { PostRefundReqResp } from '@/util/personalized/consultation/refund_req/P
 import { AwaitingPayment } from '@/util/personalized/consultation/awaiting-payment/AwaitingPayment'
 import { useGetAwaitingPaymentByConsultationId } from '@/util/personalized/consultation/awaiting-payment/useGetAwaitingPaymentByConsultationId'
 import { GetAwaitingPaymentByConsultationIdResp } from '@/util/personalized/consultation/awaiting-payment/GetAwaitingPaymentByConsultationIdResp'
+import { useGetNeglectedPaymentByConsultationId } from '@/util/personalized/consultation/neglected-payment/useGetNeglectedPaymentByConsultationId'
+import { GetNeglectedPaymentByConsultationIdResp } from '@/util/personalized/consultation/neglected-payment/GetNeglectedPaymentByConsultationIdResp'
+import { NeglectedPayment } from '@/util/personalized/NeglectedPayment'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -301,6 +324,35 @@ export default defineComponent({
       }
     }
 
+    const neglectedPayment = ref(null as NeglectedPayment | null)
+    const neglectedPaymentErrMessage = ref(null as string | null)
+
+    const {
+      getNeglectedPaymentByConsultationIdDone,
+      getNeglectedPaymentByConsultationIdFunc
+    } = useGetNeglectedPaymentByConsultationId()
+
+    const findNeglectedPayment = async () => {
+      try {
+        const response = await getNeglectedPaymentByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetNeglectedPaymentByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          neglectedPaymentErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        neglectedPayment.value = response.getNeglectedPayment()
+      } catch (e) {
+        neglectedPaymentErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     const receipt = ref(null as Receipt | null)
     const receiptErrMessage = ref(null as string | null)
 
@@ -404,6 +456,7 @@ export default defineComponent({
       await findUserRating()
       await findConsultantRating()
       await findAwaitingPayment()
+      await findNeglectedPayment()
       await findReceipt()
       await findRefund()
     })
@@ -413,6 +466,7 @@ export default defineComponent({
               getUserRatingByConsultationIdDone.value &&
               getConsultantRatingByConsultationIdDone.value &&
               getAwaitingPaymentByConsultationIdDone.value &&
+              getNeglectedPaymentByConsultationIdDone.value &&
               getReceiptByConsultationIdDone.value &&
               getRefundByConsultationIdDone.value &&
               postRefundReqDone.value
@@ -428,6 +482,8 @@ export default defineComponent({
       consultantRatingErrMessage,
       awaitingPayment,
       awaitingPaymentErrMessage,
+      neglectedPayment,
+      neglectedPaymentErrMessage,
       receipt,
       receiptErrMessage,
       refund,

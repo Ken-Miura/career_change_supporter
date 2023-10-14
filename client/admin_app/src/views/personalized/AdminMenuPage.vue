@@ -10,7 +10,7 @@
           <button data-test="move-to-user-account-search-page-button" v-on:click="moveToUserAccountSearchPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">アカウント情報確認</button>
           <button v-on:click="moveToAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金待ちリスト</button>
           <button v-on:click="moveToExpiredAwaitingPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">期限切れ入金待ちリスト</button>
-          <button v-on:click="moveToNeglectedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">入金されなかった支払いのリスト</button>
+          <button v-on:click="moveToNeglectedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">無視された入金リスト</button>
           <button v-on:click="moveToAwaitingWithdrawalsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">出金待ちリスト</button>
           <button v-on:click="moveToReceiptsOfConsultationPagePage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">領収書リスト</button>
           <button v-on:click="moveToRefundedPaymentsPage" class="mt-4 bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-3 rounded shadow-lg hover:shadow-xl transition duration-200">返金済みリスト</button>

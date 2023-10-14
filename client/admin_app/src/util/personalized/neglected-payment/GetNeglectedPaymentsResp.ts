@@ -1,4 +1,4 @@
-import { NeglectedPayment } from './NeglectedPayment'
+import { NeglectedPayment } from '../NeglectedPayment'
 
 export class GetNeglectedPaymentsResp {
   // createからアクセスしているため、意味のないコンストラクタではない

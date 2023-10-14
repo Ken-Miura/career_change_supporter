@@ -52,7 +52,7 @@ import { ApiErrorResp } from '@/util/ApiError'
 import { Code, createErrorMessage } from '@/util/Error'
 import { Message } from '@/util/Message'
 import { useGetNeglectedPayments } from '@/util/personalized/neglected-payment/useGetNeglectedPayments'
-import { NeglectedPayment } from '@/util/personalized/neglected-payment/NeglectedPayment'
+import { NeglectedPayment } from '@/util/personalized/NeglectedPayment'
 import { GetNeglectedPaymentsResp } from '@/util/personalized/neglected-payment/GetNeglectedPaymentsResp'
 
 export default defineComponent({

@@ -1,5 +1,5 @@
 import { ApiError, ApiErrorResp } from '@/util/ApiError'
-import { NeglectedPayment } from './NeglectedPayment'
+import { NeglectedPayment } from '../NeglectedPayment'
 import { GetNeglectedPaymentsResp } from './GetNeglectedPaymentsResp'
 
 export async function getNeglectedPayments (page: number, perPage: number): Promise<GetNeglectedPaymentsResp | ApiErrorResp> {
