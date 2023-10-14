@@ -97,6 +97,27 @@
         </div>
       </div>
       <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
+        <h3 class="font-bold text-2xl">出金待ち情報</h3>
+        <div v-if="!awaitingWithdrawalErrMessage">
+          <div v-if="awaitingWithdrawal" class="m-4 text-2xl grid grid-cols-7">
+            <div class="mt-2 justify-self-start col-span-3">相談番号</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.consultation_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">ユーザーアカウントID</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.user_account_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">コンサルタントID</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.consultant_id }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談日時</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.meeting_at }}</div>
+            <div class="mt-2 justify-self-start col-span-3">相談料（円）</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.fee_per_hour_in_yen }}</div>
+            <div class="mt-2 justify-self-start col-span-3">入金者</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.sender_name }}</div>
+            <div class="mt-2 justify-self-start col-span-3">入金確認者</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.payment_confirmed_by }}</div>
+            <div class="mt-2 justify-self-start col-span-3">入金確認日時</div><div class="mt-2 justify-self-start col-span-4">{{ awaitingWithdrawal.created_at }}</div>
+          </div>
+          <div v-else class="m-4 text-2xl">
+            無視された入金情報は見つかりませんでした
+          </div>
+        </div>
+        <div v-else>
+          <AlertMessage class="mt-4" v-bind:message="awaitingWithdrawalErrMessage"/>
+        </div>
+      </div>
+      <div class="flex flex-col justify-center bg-white max-w-4xl mx-auto p-8 lg:p-12 my-10 rounded-lg shadow-2xl">
         <h3 class="font-bold text-2xl">領収書情報</h3>
         <div v-if="!receiptErrMessage">
           <div v-if="receipt" class="m-4 text-2xl grid grid-cols-7">
@@ -192,6 +213,9 @@ import { GetAwaitingPaymentByConsultationIdResp } from '@/util/personalized/cons
 import { useGetNeglectedPaymentByConsultationId } from '@/util/personalized/consultation/neglected-payment/useGetNeglectedPaymentByConsultationId'
 import { GetNeglectedPaymentByConsultationIdResp } from '@/util/personalized/consultation/neglected-payment/GetNeglectedPaymentByConsultationIdResp'
 import { NeglectedPayment } from '@/util/personalized/NeglectedPayment'
+import { AwaitingWithdrawal } from '@/util/personalized/consultation/awaiting-withdrawal/AwaitingWithdrawal'
+import { GetAwaitingWithdrawalByConsultationIdResp } from '@/util/personalized/consultation/awaiting-withdrawal/GetAwaitingWithdrawalByConsultationIdResp'
+import { useGetAwaitingWithdrawalByConsultationId } from '@/util/personalized/consultation/awaiting-withdrawal/useGetAwaitingWithdrawalByConsultationId'
 
 export default defineComponent({
   name: 'ConsultationRelatedInfoPage',
@@ -353,6 +377,35 @@ export default defineComponent({
       }
     }
 
+    const awaitingWithdrawal = ref(null as AwaitingWithdrawal | null)
+    const awaitingWithdrawalErrMessage = ref(null as string | null)
+
+    const {
+      getAwaitingWithdrawalByConsultationIdDone,
+      getAwaitingWithdrawalByConsultationIdFunc
+    } = useGetAwaitingWithdrawalByConsultationId()
+
+    const findAwaitingWithdrawal = async () => {
+      try {
+        const response = await getAwaitingWithdrawalByConsultationIdFunc(consultationId)
+        if (!(response instanceof GetAwaitingWithdrawalByConsultationIdResp)) {
+          if (!(response instanceof ApiErrorResp)) {
+            throw new Error(`unexpected result on getting request detail: ${response}`)
+          }
+          const code = response.getApiError().getCode()
+          if (code === Code.UNAUTHORIZED) {
+            await router.push('/login')
+            return
+          }
+          awaitingWithdrawalErrMessage.value = createErrorMessage(response.getApiError().getCode())
+          return
+        }
+        awaitingWithdrawal.value = response.getAwaitingWithdrawal()
+      } catch (e) {
+        awaitingWithdrawalErrMessage.value = `${Message.UNEXPECTED_ERR}: ${e}`
+      }
+    }
+
     const receipt = ref(null as Receipt | null)
     const receiptErrMessage = ref(null as string | null)
 
@@ -457,6 +510,7 @@ export default defineComponent({
       await findConsultantRating()
       await findAwaitingPayment()
       await findNeglectedPayment()
+      await findAwaitingWithdrawal()
       await findReceipt()
       await findRefund()
     })
@@ -467,6 +521,7 @@ export default defineComponent({
               getConsultantRatingByConsultationIdDone.value &&
               getAwaitingPaymentByConsultationIdDone.value &&
               getNeglectedPaymentByConsultationIdDone.value &&
+              getAwaitingWithdrawalByConsultationIdDone.value &&
               getReceiptByConsultationIdDone.value &&
               getRefundByConsultationIdDone.value &&
               postRefundReqDone.value
@@ -484,6 +539,8 @@ export default defineComponent({
       awaitingPaymentErrMessage,
       neglectedPayment,
       neglectedPaymentErrMessage,
+      awaitingWithdrawal,
+      awaitingWithdrawalErrMessage,
       receipt,
       receiptErrMessage,
       refund,
