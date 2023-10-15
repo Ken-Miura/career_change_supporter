@@ -107,6 +107,8 @@ describe('DeleteAccountConfirmationPage.spec.vue', () => {
     expect(confirmationDescription.text()).toContain('私は下記に記載の内容を理解した上でアカウントの削除を行います。')
     const firstConfirmation = wrapper.find('[data-test="first-confirmation"]')
     expect(firstConfirmation.text()).toContain('未入金の報酬を受け取れなくなる可能性があることを理解しています。')
+    const secondConfirmation = wrapper.find('[data-test="second-confirmation"]')
+    expect(secondConfirmation.text()).toContain('相談料の返金依頼ができなくなることを理解しています。')
     const deleteAccountButton = wrapper.find('[data-test="delete-account-button"]')
     expect(deleteAccountButton.text()).toContain('アカウントを削除する')
     const buttonDisabledAttr = deleteAccountButton.attributes('disabled')

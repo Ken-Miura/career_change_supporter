@@ -19,6 +19,7 @@
             <div class="col-span-5">
               <ul class="ml-4 space-y-2 list-disc">
                 <li data-test="first-confirmation">未入金の報酬を受け取れなくなる可能性があることを理解しています。</li>
+                <li data-test="second-confirmation">相談料の返金依頼ができなくなることを理解しています。</li>
               </ul>
             </div>
             <input data-test="account-delete-confirmed" v-model="accountDeleteConfirmed" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
