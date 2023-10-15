@@ -413,7 +413,7 @@ Resources:
             ManagedRuleGroupStatement:
               VendorName: "AWS"
               Name: "AWSManagedRulesCommonRuleSet"
-              RuleActionOverrides:
+              RuleActionOverrides: # APサーバはデフォルトでボディサイズのチェックしているのでそれに任せる（https://docs.rs/axum/latest/axum/extract/struct.DefaultBodyLimit.html#difference-between-defaultbodylimit-and-requestbodylimit）
                 - Name: "SizeRestrictions_BODY"
                   ActionToUse:
                     Count: {}
