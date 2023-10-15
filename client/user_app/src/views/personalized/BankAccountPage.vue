@@ -47,7 +47,12 @@
             </div>
             <div class="mt-2 min-w-full justify-self-start col-span-6 pt-2 rounded bg-gray-200">
               <div class="m-4 text-lg grid grid-cols-6 justify-center items-center">
-                <div class="col-span-5">私は営利目的の事業者、または個人事業主ではありません</div>
+                <div class="col-span-5">
+                  <ul class="ml-4 space-y-2 list-disc">
+                    <li data-test="first-confirmation">私は営利目的の事業者、または個人事業主ではありません。</li>
+                    <li data-test="second-confirmation">記載した口座情報に誤りはありません（※記載の誤りにより報酬が入金されなかった場合、再入金はされません）</li>
+                  </ul>
+                </div>
                 <input data-test="no-profit-objective-check" v-model="noProfitObjective" type="checkbox" class="ml-5 col-span-1 bg-gray-200 rounded h-6 w-6 text-gray-700 focus:outline-none border-b-4 border-gray-300 focus:border-gray-600 transition duration-500">
               </div>
             </div>
