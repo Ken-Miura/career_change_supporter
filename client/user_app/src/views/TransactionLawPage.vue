@@ -15,8 +15,7 @@
         <h2 class="font-bold text-lg lg:text-xl">事業者の所在</h2>
         <p class="ml-2 text-base lg:text-lg">〒{{ businessOperatorZipCode }}</p>
         <p class="ml-2 text-base lg:text-lg">{{ businessOperatorAddress }}</p>
-        <p class="ml-2 text-base lg:text-lg">電話番号: {{ businessOperatorPhoneNumber }}</p>
-        <p class="ml-2 text-base lg:text-lg">※ お問い合わせは下記のメールアドレスからのみ受け付けています。</p>
+        <p class="ml-2 text-base lg:text-lg">電話番号: 電話番号開示を希望される場合はお問い合わせ先よりメールでご連絡いただければ遅延なく開示いたします（※ お問い合わせは下記のメールアドレスからのみ受け付けています）</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-lg lg:text-xl">お問い合わせ先</h2>
@@ -26,7 +25,7 @@
         <h2 class="font-bold text-lg lg:text-xl">相談料と手数料</h2>
         <p class="ml-2 text-base lg:text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
         <ol class="list-disc ml-8 text-base lg:text-lg">
-          <li>プラットフォーム利用料：相談１回につき、相談料の{{ platformFeeInPercentage }}パーセント</li>
+          <li>プラットフォーム利用料：相談１回につき、相談料の{{ platformFeeRateInPercentage }}パーセント</li>
           <li>振込手数料：報酬の振込の際に{{ transferFeeInYen }}円</li>
         </ol>
       </div>
@@ -70,18 +69,16 @@ export default defineComponent({
     const businessOperatorName = process.env.VUE_APP_BUSINESS_OPERATOR_NAME
     const businessOperatorZipCode = process.env.VUE_APP_BUSINESS_OPERATOR_ZIP_CODE
     const businessOperatorAddress = process.env.VUE_APP_BUSINESS_OPERATOR_ADDRESS
-    const businessOperatorPhoneNumber = process.env.VUE_APP_BUSINESS_OPERATOR_PHONE_NUMBER
     const businessOperatorInquiryEmailAddress = process.env.VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS
-    const platformFeeInPercentage = process.env.VUE_APP_PLATFORM_FEE_IN_PERCENTAGE
+    const platformFeeRateInPercentage = process.env.VUE_APP_PLATFORM_FEE_RATE_IN_PERCENTAGE
     const transferFeeInYen = process.env.VUE_APP_TRANSFER_FEE_IN_YEN
 
     return {
       businessOperatorName,
       businessOperatorZipCode,
       businessOperatorAddress,
-      businessOperatorPhoneNumber,
       businessOperatorInquiryEmailAddress,
-      platformFeeInPercentage,
+      platformFeeRateInPercentage,
       transferFeeInYen
     }
   }
