@@ -23,15 +23,15 @@
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-lg lg:text-xl">相談料と手数料</h2>
-        <p class="ml-2 text-base lg:text-lg">相談料は消費税を含む価格で表示されています。相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。コンサルタントに対して、以下の手数料が課されます。</p>
+        <p class="ml-2 text-base lg:text-lg">相談料は、相談を受け付けるユーザー（コンサルタント）の詳細に記載されています。相談を行ったコンサルタントに対しては、相談料から以下の手数料が差し引かれた金額が、コンサルタントの指定する口座に振り込まれます。</p>
         <ol class="list-disc ml-8 text-base lg:text-lg">
           <li>プラットフォーム利用料：相談１回につき、相談料の{{ platformFeeRateInPercentage }}パーセント</li>
-          <li>振込手数料：報酬の振込の際に{{ transferFeeInYen }}円</li>
+          <li>振込手数料：{{ transferFeeInYen }}円</li>
         </ol>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-lg lg:text-xl">お支払い方法</h2>
-        <p class="ml-2 text-base lg:text-lg">クレジットカード（Visa/Master/American Express/JCB/Diners Club/Discover）</p>
+        <h2 class="font-bold text-lg lg:text-xl">相談料のお支払い方法</h2>
+        <p class="ml-2 text-base lg:text-lg">銀行口座振込（相談申し込みがコンサルタントに承認された際、本サービスが管理する口座を振込先として、その口座情報をメールでお知らせ致します）</p>
       </div>
       <div class="mt-4 ml-2">
         <h2 class="font-bold text-lg lg:text-xl">個人情報の取扱について</h2>
@@ -42,12 +42,8 @@
         <p class="ml-2 text-base lg:text-lg">相談を申し込みたい方と相談を受け付けたい方が合意した開始時刻に相談を行うことが可能になります。</p>
       </div>
       <div class="mt-4 ml-2">
-        <h2 class="font-bold text-lg lg:text-xl">支払い確定の時期</h2>
-        <p class="ml-2 text-base lg:text-lg">下記のいずれかで相談を申し込んだユーザーの相談料の支払いが確定します。</p>
-        <ol class="list-disc ml-8 text-base lg:text-lg">
-          <li>相談を申し込んだユーザーが相談を受け付けたユーザー（コンサルタント）を評価したとき支払いが確定します（評価は相談終了時刻以降から可能になります）</li>
-          <li>相談を申し込んだユーザーが相談終了時刻から7日経過してもコンサルタントの評価を行っていない場合、任意のタイミングで支払いが確定されます</li>
-        </ol>
+        <h2 class="font-bold text-lg lg:text-xl">相談料支払いの確定時期</h2>
+        <p class="ml-2 text-base lg:text-lg">相談終了時刻から{{ waitingPeriodBeforeWithdrawalToConsultantInDays }}日経過後に相談を申し込んだユーザーの相談料の支払いが確定します。相談終了時刻から{{ waitingPeriodBeforeWithdrawalToConsultantInDays }}日経過後以降、相談料から手数料を差し引いた金額がコンサルタントの指定した口座に順次振り込まれます。</p>
         <div class="mt-4 ml-2">
           <h2 class="font-bold text-lg lg:text-xl">返金、キャンセルについて</h2>
           <p class="ml-2 text-base lg:text-lg">サービスの特性上、決済後の返金・キャンセルはお受けできません。</p>
@@ -72,6 +68,7 @@ export default defineComponent({
     const businessOperatorInquiryEmailAddress = process.env.VUE_APP_BUSINESS_OPERATOR_INQUIRY_EMAIL_ADDRESS
     const platformFeeRateInPercentage = process.env.VUE_APP_PLATFORM_FEE_RATE_IN_PERCENTAGE
     const transferFeeInYen = process.env.VUE_APP_TRANSFER_FEE_IN_YEN
+    const waitingPeriodBeforeWithdrawalToConsultantInDays = process.env.VUE_APP_WAITING_PERIOD_BEFORE_WITHDRAWAL_TO_CONSULTANT_IN_DAYS
 
     return {
       businessOperatorName,
@@ -79,7 +76,8 @@ export default defineComponent({
       businessOperatorAddress,
       businessOperatorInquiryEmailAddress,
       platformFeeRateInPercentage,
-      transferFeeInYen
+      transferFeeInYen,
+      waitingPeriodBeforeWithdrawalToConsultantInDays
     }
   }
 })
