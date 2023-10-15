@@ -1,9 +1,11 @@
 # 構築順
 依存関係があるため構築順序の通りに構築する必要がある。
-- network.yaml
-- static-files.yaml
-- load-balancer.yaml
-- request-controller.yaml
+<ol>
+  <li>network.yaml</li>
+  <li>static-files.yaml</li>
+  <li>load-balancer.yaml</li>
+  <li>request-controller.yaml</li>
+</ol>
 
 # 構築リージョン
 ## ap-northeast-1
