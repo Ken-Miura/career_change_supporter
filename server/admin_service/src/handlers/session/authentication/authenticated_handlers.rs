@@ -44,7 +44,7 @@ static TRANSFER_FEE_IN_YEN: Lazy<i32> = Lazy::new(|| {
     let transfer_fee_in_yen = std::env::var(KEY_TO_TRANSFER_FEE_IN_YEN).unwrap_or_else(|_| {
         // 単体テスト実行時に環境変数がないため、初期値として記載しておく。
         // サービスとして起動するときは環境変数を記載することは必須。
-        "250".to_string()
+        "300".to_string()
     });
     transfer_fee_in_yen
         .parse()
