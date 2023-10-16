@@ -1,19 +1,24 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Metadata:
-  Generator: "former2"
-Description: ""
+Parameters:
+  # prodの場合はスタック名に"ProdDataStore"、devの場合はスタック名に"DevDataStore"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  RDSDBCluster:
+  CcsDbCluster:
     Type: "AWS::RDS::DBCluster"
     Properties:
       AvailabilityZones:
         - !Sub "${AWS::Region}c"
         - !Sub "${AWS::Region}a"
-        - !Sub "${AWS::Region}d"
       BackupRetentionPeriod: 7
-      DBClusterIdentifier: "prod-ccs-db"
+      DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
       DBClusterParameterGroupName: "default.aurora-postgresql15"
-      DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
+      DBSubnetGroupName: !Ref CcsDbSubnetGroup
       Engine: "aurora-postgresql"
       Port: !GetAtt RDSDBInstance.Endpoint.Port
       MasterUsername: "postgres"
@@ -54,7 +59,7 @@ Resources:
       EnablePerformanceInsights: true
       PerformanceInsightsKMSKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
       PerformanceInsightsRetentionPeriod: 7
-      DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
+      DBSubnetGroupName: !Ref CcsDbSubnetGroup
       VPCSecurityGroups:
         - "sg-032d69dcd4971628b"
       DBParameterGroupName: "default.aurora-postgresql15"
@@ -63,7 +68,7 @@ Resources:
       EnableCloudwatchLogsExports:
         - "postgresql"
       CACertificateIdentifier: "rds-ca-2019"
-  RDSDBSubnetGroup:
+  CcsDbSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
       DBSubnetGroupDescription: "Created from the RDS Management Console"
