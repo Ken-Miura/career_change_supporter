@@ -2,7 +2,7 @@ services:
 
   # Use postgres/example user/password credentials
   db:
-    image: postgres:14.9
+    image: postgres:15.3
     restart: always
     ports:
       - "5432:5432"
