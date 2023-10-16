@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  Generator: "former2"
+Description: ""
+Resources:
+  RDSDBCluster:
+    Type: "AWS::RDS::DBCluster"
+    Properties:
+      AvailabilityZones:
+        - !Sub "${AWS::Region}c"
+        - !Sub "${AWS::Region}a"
+        - !Sub "${AWS::Region}d"
+      BackupRetentionPeriod: 7
+      DBClusterIdentifier: "prod-ccs-db"
+      DBClusterParameterGroupName: "default.aurora-postgresql15"
+      DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
+      Engine: "aurora-postgresql"
+      Port: !GetAtt RDSDBInstance.Endpoint.Port
+      MasterUsername: "postgres"
+      MasterUserPassword: "REPLACEME"
+      PreferredBackupWindow: "16:30-17:00"
+      PreferredMaintenanceWindow: "tue:20:17-tue:20:47"
+      VpcSecurityGroupIds:
+        - "sg-032d69dcd4971628b"
+      StorageEncrypted: true
+      KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      EngineVersion: "15.3"
+      EnableIAMDatabaseAuthentication: false
+      EnableCloudwatchLogsExports:
+        - "postgresql"
+      EngineMode: "provisioned"
+      DeletionProtection: true
+      EnableHttpEndpoint: false
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceIdentifier: "prod-ccs-db-instance-1"
+      DBInstanceClass: "db.serverless"
+      Engine: "aurora-postgresql"
+      PreferredBackupWindow: "16:30-17:00"
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      PreferredMaintenanceWindow: "sat:14:40-sat:15:10"
+      MultiAZ: false
+      EngineVersion: "15.3"
+      AutoMinorVersionUpgrade: false
+      LicenseModel: "postgresql-license"
+      PubliclyAccessible: false
+      StorageType: "aurora"
+      Port: 5432
+      DBClusterIdentifier: "prod-ccs-db"
+      KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      MonitoringInterval: 60
+      PromotionTier: 1
+      EnablePerformanceInsights: true
+      PerformanceInsightsKMSKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
+      PerformanceInsightsRetentionPeriod: 7
+      DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
+      VPCSecurityGroups:
+        - "sg-032d69dcd4971628b"
+      DBParameterGroupName: "default.aurora-postgresql15"
+      OptionGroupName: "default:aurora-postgresql-15"
+      MonitoringRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/rds-monitoring-role"
+      EnableCloudwatchLogsExports:
+        - "postgresql"
+      CACertificateIdentifier: "rds-ca-2019"
+  RDSDBSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: "Created from the RDS Management Console"
+      DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
+      SubnetIds:
+        - "subnet-015cd3d2c6d3c5756"
+        - "subnet-0cbdf8447e7d21585"
+        - "subnet-05600d62019a771d2"
+        - "subnet-0740986c17927aef2"
+  ElastiCacheCacheCluster:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      CacheNodeType: "cache.t4g.micro"
+      Engine: "redis"
+      EngineVersion: "7.0.7"
+      NumCacheNodes: 1
+      PreferredAvailabilityZone: !Sub "${AWS::Region}a"
+      PreferredMaintenanceWindow: "wed:17:00-wed:18:00"
+      CacheParameterGroupName: "default.redis7.cluster.on"
+      CacheSubnetGroupName: "ccs-redis"
+      AutoMinorVersionUpgrade: false
+      VpcSecurityGroupIds:
+        - "sg-09f3c47ec642834b5"
+      SnapshotRetentionLimit: 0
+      SnapshotWindow: "16:00-17:00"
+      ClusterName: "prod-ccs-redis-cluster-0001-001"
+  ElastiCacheReplicationGroup:
+    Type: "AWS::ElastiCache::ReplicationGroup"
+    Properties:
+      ReplicationGroupId: "prod-ccs-redis-cluster"
+      ReplicationGroupDescription: " "
+      NumNodeGroups: 1
+      AutomaticFailoverEnabled: true
+      Port: 6379
+      SnapshotRetentionLimit: 1
+      SnapshotWindow: "16:00-17:00"
+      CacheNodeType: "cache.t4g.micro"
+      TransitEncryptionEnabled: false
+      AtRestEncryptionEnabled: false
+      MultiAZEnabled: false
+  ElastiCacheSubnetGroup:
+    Type: "AWS::ElastiCache::SubnetGroup"
+    Properties:
+      Description: " "
+      CacheSubnetGroupName: "ccs-redis"
+      SubnetIds:
+        - "subnet-015cd3d2c6d3c5756"
+        - "subnet-0cbdf8447e7d21585"
+        - "subnet-0740986c17927aef2"
+        - "subnet-05600d62019a771d2"
+  ElastiCacheUser:
+    Type: "AWS::ElastiCache::User"
+    Properties:
+      UserId: "default"
+      UserName: "default"
+      Engine: "redis"
+      AccessString: "on ~* +@all"
+      NoPasswordRequired: true
+  OpenSearchServiceDomain:
+    Type: "AWS::OpenSearchService::Domain"
+    Properties:
+      DomainName: "prod-ccs-opensearch"
+      EngineVersion: "OpenSearch_2.9"
+      ClusterConfig:
+        ColdStorageOptions:
+          Enabled: false
+        DedicatedMasterEnabled: false
+        InstanceCount: 1
+        InstanceType: "t3.small.elasticsearch"
+        ZoneAwarenessEnabled: false
+        WarmEnabled: false
+      AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/prod-ccs-opensearch/*\"}]}"
+      SnapshotOptions: {}
+      snapshot_options: {}
+      VPCOptions:
+        SecurityGroupIds:
+          - "sg-0e200a1cecad58743"
+        SubnetIds:
+          - "subnet-05600d62019a771d2"
+      EncryptionAtRestOptions:
+        Enabled: true
+        KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
+      NodeToNodeEncryptionOptions:
+        Enabled: true
+      AdvancedOptions:
+        "indices.fielddata.cache.size": "20"
+        "indices.query.bool.max_clause_count": "1024"
+        override_main_response_version: "false"
+        "rest.action.multi.allow_explicit_index": "true"
+      EBSOptions:
+        EBSEnabled: true
+        VolumeType: "gp3"
+        VolumeSize: 100
+        Iops: 3000
+        Throughput: 125
+      CognitoOptions:
+        Enabled: false
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+        CustomEndpointEnabled: false
+      AdvancedSecurityOptions:
+        Enabled: true
+        InternalUserDatabaseEnabled: true
+        AnonymousAuthEnabled: false
+  S3Bucket:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: "ccs-career-images"
+  S3Bucket2:
+    Type: "AWS::S3::Bucket"
+    Properties:
+      BucketName: "ccs-identity-images"
