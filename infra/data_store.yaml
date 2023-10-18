@@ -67,16 +67,13 @@ Resources:
   #     EnableCloudwatchLogsExports:
   #       - "postgresql"
   #     CACertificateIdentifier: "rds-ca-2019"
-  # CcsDbSubnetGroup:
-  #   Type: "AWS::RDS::DBSubnetGroup"
-  #   Properties:
-  #     DBSubnetGroupDescription: "Created from the RDS Management Console"
-  #     DBSubnetGroupName: "default-vpc-09ffe701d81f51409"
-  #     SubnetIds:
-  #       - "subnet-015cd3d2c6d3c5756"
-  #       - "subnet-0cbdf8447e7d21585"
-  #       - "subnet-05600d62019a771d2"
-  #       - "subnet-0740986c17927aef2"
+  CcsDbSubnetGroup:
+    Type: "AWS::RDS::DBSubnetGroup"
+    Properties:
+      DBSubnetGroupDescription: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-subnet-group"]]
+      SubnetIds:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
   # ElastiCacheCacheCluster:
   #   Type: "AWS::ElastiCache::CacheCluster"
   #   Properties:
