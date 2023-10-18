@@ -40,3 +40,8 @@ Route53（Hosted Zone）、SES、ECR、CI結果を格納するS3バケットはC
 - opensearch.yaml
 - rds.yaml
 - task-def.yml
+
+DBパラメータグループに関してクラスタレベルとインスタンスレベルのどちらに指定するべきか確認する
+https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Instance
+
+スロークエリのログ、長時間ロック待ちしているクエリのログは出力するようにする
