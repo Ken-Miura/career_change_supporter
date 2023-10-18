@@ -18,10 +18,10 @@ Resources:
     Type: "AWS::RDS::DBCluster"
     Properties:
       DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
-      DeletionProtection: !If [IsProd, true, !Ref 'AWS::NoValue']
+      DeletionProtection: !If [IsProd, true, false]
       Engine: "aurora-postgresql"
       EngineVersion: "15.3"
-      DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup # or "default.aurora-postgresql15"
+      DBClusterParameterGroupName: "default.aurora-postgresql15"
       DBSubnetGroupName: !Ref CcsDbSubnetGroup
       VpcSecurityGroupIds:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
