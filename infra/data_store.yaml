@@ -52,41 +52,25 @@ Resources:
       DBClusterIdentifier: !Ref CcsDbCluster
       DBInstanceClass: db.serverless
       Engine: "aurora-postgresql"
+      AutoMinorVersionUpgrade: false
       DBParameterGroupName: "default.aurora-postgresql15"
       EnablePerformanceInsights: true
-      PreferredMaintenanceWindow: Thu:19:05-Thu:19:35
+      PerformanceInsightsRetentionPeriod: 7
+      PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
       PromotionTier: 0
-      AvailabilityZone: !Select
-        - 0
-        - !GetAZs
-          Ref: AWS::Region
-  #   Type: "AWS::RDS::DBInstance"
-  #   Properties:
-  #     PreferredBackupWindow: "16:30-17:00"
-  #     AvailabilityZone: !Sub "${AWS::Region}a"
-  #     PreferredMaintenanceWindow: "sat:14:40-sat:15:10"
-  #     MultiAZ: false
-  #     EngineVersion: "15.3"
-  #     AutoMinorVersionUpgrade: false
-  #     LicenseModel: "postgresql-license"
-  #     PubliclyAccessible: false
-  #     StorageType: "aurora"
-  #     Port: 5432
-  #     KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
-  #     MonitoringInterval: 60
-  #     PromotionTier: 1
-  #     EnablePerformanceInsights: true
-  #     PerformanceInsightsKMSKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
-  #     PerformanceInsightsRetentionPeriod: 7
-  #     DBSubnetGroupName: !Ref CcsDbSubnetGroup
-  #     VPCSecurityGroups:
-  #       - "sg-032d69dcd4971628b"
-  #     DBParameterGroupName: "default.aurora-postgresql15"
-  #     OptionGroupName: "default:aurora-postgresql-15"
-  #     MonitoringRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/rds-monitoring-role"
-  #     EnableCloudwatchLogsExports:
-  #       - "postgresql"
-  #     CACertificateIdentifier: "rds-ca-2019"
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      PubliclyAccessible: false
+      CACertificateIdentifier: "rds-ca-ecc384-g1"
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt 'CcsRdsMonitoringRole.Arn'
+  CcsRdsMonitoringRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "rds-monitoring-role"]]
+      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+        - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
   CcsDbSubnetGroup:
     Type: "AWS::RDS::DBSubnetGroup"
     Properties:
