@@ -21,7 +21,7 @@ Resources:
       DeletionProtection: !If [IsProd, true, false]
       Engine: "aurora-postgresql"
       EngineVersion: "15.3"
-      DBClusterParameterGroupName: "default.aurora-postgresql15"
+      DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
       DBSubnetGroupName: !Ref CcsDbSubnetGroup
       VpcSecurityGroupIds:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
@@ -35,12 +35,33 @@ Resources:
       ServerlessV2ScalingConfiguration:
         MaxCapacity: 32
         MinCapacity: 0.5
-  # RDSDBInstance:
+  CcsDbClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Properties:
+      Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster-parameter-group"]]
+      Family: aurora-postgresql15
+      Parameters:
+        log_statement: all
+        log_min_duration_statement: 2000
+        log_min_error_statement: error
+        deadlock_timeout: 10000
+        log_lock_waits: 1
+  CcsDbInstance1:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBClusterIdentifier: !Ref CcsDbCluster
+      DBInstanceClass: db.serverless
+      Engine: "aurora-postgresql"
+      DBParameterGroupName: "default.aurora-postgresql15"
+      EnablePerformanceInsights: true
+      PreferredMaintenanceWindow: Thu:19:05-Thu:19:35
+      PromotionTier: 0
+      AvailabilityZone: !Select
+        - 0
+        - !GetAZs
+          Ref: AWS::Region
   #   Type: "AWS::RDS::DBInstance"
   #   Properties:
-  #     DBInstanceIdentifier: "prod-ccs-db-instance-1"
-  #     DBInstanceClass: "db.serverless"
-  #     Engine: "aurora-postgresql"
   #     PreferredBackupWindow: "16:30-17:00"
   #     AvailabilityZone: !Sub "${AWS::Region}a"
   #     PreferredMaintenanceWindow: "sat:14:40-sat:15:10"
@@ -51,7 +72,6 @@ Resources:
   #     PubliclyAccessible: false
   #     StorageType: "aurora"
   #     Port: 5432
-  #     DBClusterIdentifier: "prod-ccs-db"
   #     KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/fb30b6c1-c01f-4e8c-bc38-12d3eaed56f5"
   #     MonitoringInterval: 60
   #     PromotionTier: 1
