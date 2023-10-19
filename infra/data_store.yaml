@@ -52,6 +52,7 @@ Resources:
       DBClusterIdentifier: !Ref CcsDbCluster
       DBInstanceClass: db.serverless
       Engine: "aurora-postgresql"
+      AllowMajorVersionUpgrade: false
       AutoMinorVersionUpgrade: false
       DBParameterGroupName: "default.aurora-postgresql15"
       EnablePerformanceInsights: true
