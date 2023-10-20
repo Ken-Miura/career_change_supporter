@@ -14,71 +14,71 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  CcsDbCluster:
-    Type: "AWS::RDS::DBCluster"
-    Properties:
-      DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
-      DeletionProtection: !If [IsProd, true, false]
-      Engine: "aurora-postgresql"
-      EngineVersion: "15.3"
-      DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
-      DBSubnetGroupName: !Ref CcsDbSubnetGroup
-      VpcSecurityGroupIds:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
-      PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
-      PreferredBackupWindow: 19:00-19:30
-      BackupRetentionPeriod: 7
-      MasterUsername: !Ref DbMasterUsername
-      MasterUserPassword: !Ref DbMasterUserPassword
-      EnableCloudwatchLogsExports:
-        - "postgresql"
-      ServerlessV2ScalingConfiguration:
-        MaxCapacity: 32
-        MinCapacity: 0.5
-  CcsDbClusterParameterGroup:
-    Type: AWS::RDS::DBClusterParameterGroup
-    Properties:
-      Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster-parameter-group"]]
-      Family: aurora-postgresql15
-      Parameters:
-        log_statement: all
-        log_min_duration_statement: 2000
-        log_min_error_statement: error
-        deadlock_timeout: 10000
-        log_lock_waits: 1
-  CcsDbInstance1:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      DBClusterIdentifier: !Ref CcsDbCluster
-      DBInstanceClass: db.serverless
-      Engine: "aurora-postgresql"
-      AllowMajorVersionUpgrade: false
-      AutoMinorVersionUpgrade: false
-      DBParameterGroupName: "default.aurora-postgresql15"
-      EnablePerformanceInsights: true
-      PerformanceInsightsRetentionPeriod: 7
-      PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
-      PromotionTier: 0
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      PubliclyAccessible: false
-      CACertificateIdentifier: "rds-ca-ecc384-g1"
-      MonitoringInterval: 60
-      MonitoringRoleArn: !GetAtt 'CcsRdsMonitoringRole.Arn'
-  CcsRdsMonitoringRole:
-    Type: "AWS::IAM::Role"
-    Properties:
-      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "rds-monitoring-role"]]
-      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
-      MaxSessionDuration: 3600
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-  CcsDbSubnetGroup:
-    Type: "AWS::RDS::DBSubnetGroup"
-    Properties:
-      DBSubnetGroupDescription: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-subnet-group"]]
-      SubnetIds:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
+  # CcsDbCluster:
+  #   Type: "AWS::RDS::DBCluster"
+  #   Properties:
+  #     DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
+  #     DeletionProtection: !If [IsProd, true, false]
+  #     Engine: "aurora-postgresql"
+  #     EngineVersion: "15.3"
+  #     DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
+  #     DBSubnetGroupName: !Ref CcsDbSubnetGroup
+  #     VpcSecurityGroupIds:
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
+  #     PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
+  #     PreferredBackupWindow: 19:00-19:30
+  #     BackupRetentionPeriod: 7
+  #     MasterUsername: !Ref DbMasterUsername
+  #     MasterUserPassword: !Ref DbMasterUserPassword
+  #     EnableCloudwatchLogsExports:
+  #       - "postgresql"
+  #     ServerlessV2ScalingConfiguration:
+  #       MaxCapacity: 32
+  #       MinCapacity: 0.5
+  # CcsDbClusterParameterGroup:
+  #   Type: AWS::RDS::DBClusterParameterGroup
+  #   Properties:
+  #     Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster-parameter-group"]]
+  #     Family: aurora-postgresql15
+  #     Parameters:
+  #       log_statement: all
+  #       log_min_duration_statement: 2000
+  #       log_min_error_statement: error
+  #       deadlock_timeout: 10000
+  #       log_lock_waits: 1
+  # CcsDbInstance1:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     DBClusterIdentifier: !Ref CcsDbCluster
+  #     DBInstanceClass: db.serverless
+  #     Engine: "aurora-postgresql"
+  #     AllowMajorVersionUpgrade: false
+  #     AutoMinorVersionUpgrade: false
+  #     DBParameterGroupName: "default.aurora-postgresql15"
+  #     EnablePerformanceInsights: true
+  #     PerformanceInsightsRetentionPeriod: 7
+  #     PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
+  #     PromotionTier: 0
+  #     AvailabilityZone: !Sub "${AWS::Region}a"
+  #     PubliclyAccessible: false
+  #     CACertificateIdentifier: "rds-ca-ecc384-g1"
+  #     MonitoringInterval: 60
+  #     MonitoringRoleArn: !GetAtt 'CcsRdsMonitoringRole.Arn'
+  # CcsRdsMonitoringRole:
+  #   Type: "AWS::IAM::Role"
+  #   Properties:
+  #     RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "rds-monitoring-role"]]
+  #     AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+  #     MaxSessionDuration: 3600
+  #     ManagedPolicyArns:
+  #       - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+  # CcsDbSubnetGroup:
+  #   Type: "AWS::RDS::DBSubnetGroup"
+  #   Properties:
+  #     DBSubnetGroupDescription: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-subnet-group"]]
+  #     SubnetIds:
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
   # ElastiCacheCacheCluster:
   #   Type: "AWS::ElastiCache::CacheCluster"
   #   Properties:
@@ -201,7 +201,7 @@ Resources:
         Version: "2012-10-17"
         Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
         Statement:
-          - Sid: ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-statement-sid"]]
+          - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesStatementSid"]]
             Effect: "Deny"
             Principal: "*"
             Action: "s3:*"
@@ -238,7 +238,7 @@ Resources:
         Version: "2012-10-17"
         Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
         Statement:
-          - Sid: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-statement-sid"]]
+          - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareerImagesStatementSid"]]
             Effect: "Deny"
             Principal: "*"
             Action: "s3:*"
