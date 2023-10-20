@@ -199,9 +199,9 @@ Resources:
       Bucket: !Ref CcsIdentityImagesBucket
       PolicyDocument:
         Version: "2012-10-17"
-        Id: "VPCe"
+        Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
         Statement:
-          - Sid: "VPCe"
+          - Sid: ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-statement-sid"]]
             Effect: "Deny"
             Principal: "*"
             Action: "s3:*"
@@ -236,9 +236,9 @@ Resources:
       Bucket: !Ref CcsCareerImagesBucket
       PolicyDocument:
         Version: "2012-10-17"
-        Id: "VPCe"
+        Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
         Statement:
-          - Sid: "VPCe"
+          - Sid: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-statement-sid"]]
             Effect: "Deny"
             Principal: "*"
             Action: "s3:*"
