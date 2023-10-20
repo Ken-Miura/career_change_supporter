@@ -1,4 +1,13 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameters
+        Parameters:
+          - Environment
+          - DbMasterUsername
+          - DbMasterUserPassword
 Parameters:
   # prodの場合はスタック名に"ProdDataStore"、devの場合はスタック名に"DevDataStore"を指定する
   Environment:
