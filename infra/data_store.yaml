@@ -175,11 +175,77 @@ Resources:
   #       Enabled: true
   #       InternalUserDatabaseEnabled: true
   #       AnonymousAuthEnabled: false
-  # S3Bucket:
-  #   Type: "AWS::S3::Bucket"
-  #   Properties:
-  #     BucketName: "ccs-career-images"
-  # S3Bucket2:
-  #   Type: "AWS::S3::Bucket"
-  #   Properties:
-  #     BucketName: "ccs-identity-images"
+  CcsIdentityImagesBucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  CcsIdentityImagesBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref CcsIdentityImagesBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "VPCe"
+        Statement:
+          - Sid: "VPCe"
+            Effect: "Deny"
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}"
+              - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}/*"
+            Condition:
+              StringNotEquals:
+                "aws:SourceVpce":
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
+  CcsCareerImagesBucket:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Retain
+    Properties:
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  CcsCareerImagesBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref CcsCareerImagesBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Id: "VPCe"
+        Statement:
+          - Sid: "VPCe"
+            Effect: "Deny"
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}"
+              - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}/*"
+            Condition:
+              StringNotEquals:
+                "aws:SourceVpce":
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
