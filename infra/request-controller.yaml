@@ -174,7 +174,7 @@ Resources:
     Properties:
       Bucket: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app"]]
       PolicyDocument:
-        Version: "2008-10-17"
+        Version: "2012-10-17"
         Id: "PolicyForCloudFrontPrivateContent"
         Statement:
           - Sid: "AllowCloudFrontServicePrincipal"
@@ -327,7 +327,7 @@ Resources:
     Properties:
       Bucket: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app"]]
       PolicyDocument:
-        Version: "2008-10-17"
+        Version: "2012-10-17"
         Id: "PolicyForCloudFrontPrivateContent"
         Statement:
           - Sid: "AllowCloudFrontServicePrincipal"
