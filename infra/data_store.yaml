@@ -26,7 +26,7 @@ Resources:
       VpcSecurityGroupIds:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
       PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
-      PreferredBackupWindow: 19:00-19:30
+      PreferredBackupWindow: 18:00-18:30
       BackupRetentionPeriod: 7
       MasterUsername: !Ref DbMasterUsername
       MasterUserPassword: !Ref DbMasterUserPassword
