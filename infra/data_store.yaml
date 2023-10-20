@@ -177,7 +177,7 @@ Resources:
   #       AnonymousAuthEnabled: false
   CcsIdentityImagesBucket:
     Type: "AWS::S3::Bucket"
-    DeletionPolicy: Retain
+    DeletionPolicy: !If [IsProd, Retain, Delete]
     Properties:
       BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
       BucketEncryption:
@@ -214,7 +214,7 @@ Resources:
                   Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
   CcsCareerImagesBucket:
     Type: "AWS::S3::Bucket"
-    DeletionPolicy: Retain
+    DeletionPolicy: !If [IsProd, Retain, Delete]
     Properties:
       BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
       BucketEncryption:
