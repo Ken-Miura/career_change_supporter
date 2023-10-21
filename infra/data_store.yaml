@@ -94,20 +94,38 @@ Resources:
   CcsCacheCluster:
     Type: "AWS::ElastiCache::CacheCluster"
     Properties:
-      CacheNodeType: "cache.t4g.micro"
+      ClusterName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-cache-cluster"]]
       Engine: "redis"
       EngineVersion: "7.0.7"
-      NumCacheNodes: 1
+      AutoMinorVersionUpgrade: false
+      CacheNodeType: !If [IsProd, "cache.t4g.small", "cache.t4g.micro"]
+      CacheParameterGroupName: "default.redis7" # TODO: slow-log向けのパラメータ（slowlog-log-slower-thanとslowlog-max-len）を確認する。cluster.onのサフィックスについて確認する
+      CacheSubnetGroupName: !Ref CcsCacheSubnetGroup
+      NetworkType: "ipv4"
+      LogDeliveryConfigurationRequest:
+        - DestinationDetails:
+            - CloudWatchLogsDetails:
+                - LogGroup: !Sub
+                    - "/elastic-cache/${ENGINE_LOG_SUFFIX}"
+                    - ENGINE_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-engine-log"]]
+          DestinationType: "cloudwatch-logs"
+          LogFormat: "json"
+          LogType: "engine-log"
+        - DestinationDetails:
+            - CloudWatchLogsDetails:
+                - LogGroup: !Sub
+                    - "/elastic-cache/${SLOW_LOG_SUFFIX}"
+                    - SLOW_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-slow-log"]]
+          DestinationType: "cloudwatch-logs"
+          LogFormat: "json"
+          LogType: "slow-log"
+      NumCacheNodes: 1 # TODO: このプロパティから確認
       PreferredAvailabilityZone: !Sub "${AWS::Region}a"
       PreferredMaintenanceWindow: "wed:17:00-wed:18:00"
-      CacheParameterGroupName: "default.redis7.cluster.on"
-      CacheSubnetGroupName: "ccs-redis"
-      AutoMinorVersionUpgrade: false
       VpcSecurityGroupIds:
         - "sg-09f3c47ec642834b5"
       SnapshotRetentionLimit: 0
       SnapshotWindow: "16:00-17:00"
-      ClusterName: "prod-ccs-redis-cluster-0001-001"
   ElastiCacheReplicationGroup:
     Type: "AWS::ElastiCache::ReplicationGroup"
     Properties:
@@ -122,16 +140,13 @@ Resources:
       TransitEncryptionEnabled: false
       AtRestEncryptionEnabled: false
       MultiAZEnabled: false
-  ElastiCacheSubnetGroup:
+  CcsCacheSubnetGroup:
     Type: "AWS::ElastiCache::SubnetGroup"
     Properties:
-      Description: " "
-      CacheSubnetGroupName: "ccs-redis"
+      Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-cache-subnet-group"]]
       SubnetIds:
-        - "subnet-015cd3d2c6d3c5756"
-        - "subnet-0cbdf8447e7d21585"
-        - "subnet-0740986c17927aef2"
-        - "subnet-05600d62019a771d2"
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
   ElastiCacheUser:
     Type: "AWS::ElastiCache::User"
     Properties:
