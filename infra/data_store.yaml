@@ -29,7 +29,7 @@ Resources:
       DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
       DeletionProtection: !If [IsProd, true, false]
       Engine: "aurora-postgresql"
-      EngineVersion: "15.3"
+      EngineVersion: "15.4"
       DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
       DBSubnetGroupName: !Ref CcsDbSubnetGroup
       VpcSecurityGroupIds:
