@@ -24,249 +24,258 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  CcsDbCluster:
-    Type: "AWS::RDS::DBCluster"
+  # TODO: 他のリソースの確認を終えたらコメント解除
+  # CcsDbCluster:
+  #   Type: "AWS::RDS::DBCluster"
+  #   Properties:
+  #     DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
+  #     DeletionProtection: !If [IsProd, true, false]
+  #     Engine: "aurora-postgresql"
+  #     EngineVersion: "15.4"
+  #     DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
+  #     DBSubnetGroupName: !Ref CcsDbSubnetGroup
+  #     VpcSecurityGroupIds:
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
+  #     PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
+  #     PreferredBackupWindow: 18:00-18:30
+  #     BackupRetentionPeriod: 7
+  #     MasterUsername: !Ref DbMasterUsername
+  #     MasterUserPassword: !Ref DbMasterUserPassword
+  #     StorageEncrypted: true # デフォルトのマスターキーを利用するのでKMS IDは指定しない。SourceDBClusterIdentifierまたはSnapshotIdentifierを指定する際はこのプロパティを外すか確認する。
+  #     EnableCloudwatchLogsExports:
+  #       - "postgresql"
+  #     ServerlessV2ScalingConfiguration:
+  #       MaxCapacity: 32
+  #       MinCapacity: 0.5
+  # CcsDbClusterParameterGroup:
+  #   Type: AWS::RDS::DBClusterParameterGroup
+  #   Properties:
+  #     Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster-parameter-group"]]
+  #     Family: aurora-postgresql15
+  #     Parameters:
+  #       log_statement: all
+  #       log_min_duration_statement: 2000
+  #       log_min_error_statement: error
+  #       deadlock_timeout: 10000
+  #       log_lock_waits: 1
+  # CcsDbInstance1:
+  #   Type: AWS::RDS::DBInstance
+  #   Properties:
+  #     DBClusterIdentifier: !Ref CcsDbCluster
+  #     DBInstanceClass: db.serverless
+  #     Engine: "aurora-postgresql"
+  #     AllowMajorVersionUpgrade: false
+  #     AutoMinorVersionUpgrade: false
+  #     DBParameterGroupName: "default.aurora-postgresql15"
+  #     EnablePerformanceInsights: true
+  #     PerformanceInsightsRetentionPeriod: 7
+  #     PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
+  #     PromotionTier: 0
+  #     AvailabilityZone: !Sub "${AWS::Region}a"
+  #     PubliclyAccessible: false
+  #     CACertificateIdentifier: "rds-ca-ecc384-g1"
+  #     MonitoringInterval: 60
+  #     MonitoringRoleArn: !GetAtt 'CcsRdsMonitoringRole.Arn'
+  # CcsRdsMonitoringRole:
+  #   Type: "AWS::IAM::Role"
+  #   Properties:
+  #     RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "rds-monitoring-role"]]
+  #     AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+  #     MaxSessionDuration: 3600
+  #     ManagedPolicyArns:
+  #       - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
+  # CcsDbSubnetGroup:
+  #   Type: "AWS::RDS::DBSubnetGroup"
+  #   Properties:
+  #     DBSubnetGroupDescription: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-subnet-group"]]
+  #     SubnetIds:
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
+  #       - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
+  CcsCacheCluster:
+    Type: "AWS::ElastiCache::CacheCluster"
     Properties:
-      DBClusterIdentifier: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster"]]
-      DeletionProtection: !If [IsProd, true, false]
-      Engine: "aurora-postgresql"
-      EngineVersion: "15.4"
-      DBClusterParameterGroupName: !Ref CcsDbClusterParameterGroup
-      DBSubnetGroupName: !Ref CcsDbSubnetGroup
-      VpcSecurityGroupIds:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "DbSecurityGroupId"]]
-      PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
-      PreferredBackupWindow: 18:00-18:30
-      BackupRetentionPeriod: 7
-      MasterUsername: !Ref DbMasterUsername
-      MasterUserPassword: !Ref DbMasterUserPassword
-      StorageEncrypted: true # デフォルトのマスターキーを利用するのでKMS IDは指定しない。SourceDBClusterIdentifierまたはSnapshotIdentifierを指定する際はこのプロパティを外すか確認する。
-      EnableCloudwatchLogsExports:
-        - "postgresql"
-      ServerlessV2ScalingConfiguration:
-        MaxCapacity: 32
-        MinCapacity: 0.5
-  CcsDbClusterParameterGroup:
-    Type: AWS::RDS::DBClusterParameterGroup
-    Properties:
-      Description: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-cluster-parameter-group"]]
-      Family: aurora-postgresql15
-      Parameters:
-        log_statement: all
-        log_min_duration_statement: 2000
-        log_min_error_statement: error
-        deadlock_timeout: 10000
-        log_lock_waits: 1
-  CcsDbInstance1:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      DBClusterIdentifier: !Ref CcsDbCluster
-      DBInstanceClass: db.serverless
-      Engine: "aurora-postgresql"
-      AllowMajorVersionUpgrade: false
+      CacheNodeType: "cache.t4g.micro"
+      Engine: "redis"
+      EngineVersion: "7.0.7"
+      NumCacheNodes: 1
+      PreferredAvailabilityZone: !Sub "${AWS::Region}a"
+      PreferredMaintenanceWindow: "wed:17:00-wed:18:00"
+      CacheParameterGroupName: "default.redis7.cluster.on"
+      CacheSubnetGroupName: "ccs-redis"
       AutoMinorVersionUpgrade: false
-      DBParameterGroupName: "default.aurora-postgresql15"
-      EnablePerformanceInsights: true
-      PerformanceInsightsRetentionPeriod: 7
-      PreferredMaintenanceWindow: Fri:19:00-Fri:19:30
-      PromotionTier: 0
-      AvailabilityZone: !Sub "${AWS::Region}a"
-      PubliclyAccessible: false
-      CACertificateIdentifier: "rds-ca-ecc384-g1"
-      MonitoringInterval: 60
-      MonitoringRoleArn: !GetAtt 'CcsRdsMonitoringRole.Arn'
-  CcsRdsMonitoringRole:
-    Type: "AWS::IAM::Role"
+      VpcSecurityGroupIds:
+        - "sg-09f3c47ec642834b5"
+      SnapshotRetentionLimit: 0
+      SnapshotWindow: "16:00-17:00"
+      ClusterName: "prod-ccs-redis-cluster-0001-001"
+  ElastiCacheReplicationGroup:
+    Type: "AWS::ElastiCache::ReplicationGroup"
     Properties:
-      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "rds-monitoring-role"]]
-      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
-      MaxSessionDuration: 3600
-      ManagedPolicyArns:
-        - "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-  CcsDbSubnetGroup:
-    Type: "AWS::RDS::DBSubnetGroup"
+      ReplicationGroupId: "prod-ccs-redis-cluster"
+      ReplicationGroupDescription: " "
+      NumNodeGroups: 1
+      AutomaticFailoverEnabled: true
+      Port: 6379
+      SnapshotRetentionLimit: 1
+      SnapshotWindow: "16:00-17:00"
+      CacheNodeType: "cache.t4g.micro"
+      TransitEncryptionEnabled: false
+      AtRestEncryptionEnabled: false
+      MultiAZEnabled: false
+  ElastiCacheSubnetGroup:
+    Type: "AWS::ElastiCache::SubnetGroup"
     Properties:
-      DBSubnetGroupDescription: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-subnet-group"]]
+      Description: " "
+      CacheSubnetGroupName: "ccs-redis"
       SubnetIds:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet2Id"]]
-          # ElastiCacheCacheCluster:
-          #   Type: "AWS::ElastiCache::CacheCluster"
-          #   Properties:
-          #     CacheNodeType: "cache.t4g.micro"
-          #     Engine: "redis"
-          #     EngineVersion: "7.0.7"
-          #     NumCacheNodes: 1
-          #     PreferredAvailabilityZone: !Sub "${AWS::Region}a"
-          #     PreferredMaintenanceWindow: "wed:17:00-wed:18:00"
-          #     CacheParameterGroupName: "default.redis7.cluster.on"
-          #     CacheSubnetGroupName: "ccs-redis"
-          #     AutoMinorVersionUpgrade: false
-          #     VpcSecurityGroupIds:
-          #       - "sg-09f3c47ec642834b5"
-          #     SnapshotRetentionLimit: 0
-          #     SnapshotWindow: "16:00-17:00"
-          #     ClusterName: "prod-ccs-redis-cluster-0001-001"
-          # ElastiCacheReplicationGroup:
-          #   Type: "AWS::ElastiCache::ReplicationGroup"
-          #   Properties:
-          #     ReplicationGroupId: "prod-ccs-redis-cluster"
-          #     ReplicationGroupDescription: " "
-          #     NumNodeGroups: 1
-          #     AutomaticFailoverEnabled: true
-          #     Port: 6379
-          #     SnapshotRetentionLimit: 1
-          #     SnapshotWindow: "16:00-17:00"
-          #     CacheNodeType: "cache.t4g.micro"
-          #     TransitEncryptionEnabled: false
-          #     AtRestEncryptionEnabled: false
-          #     MultiAZEnabled: false
-          # ElastiCacheSubnetGroup:
-          #   Type: "AWS::ElastiCache::SubnetGroup"
-          #   Properties:
-          #     Description: " "
-          #     CacheSubnetGroupName: "ccs-redis"
-          #     SubnetIds:
-          #       - "subnet-015cd3d2c6d3c5756"
-          #       - "subnet-0cbdf8447e7d21585"
-          #       - "subnet-0740986c17927aef2"
-          #       - "subnet-05600d62019a771d2"
-          # ElastiCacheUser:
-          #   Type: "AWS::ElastiCache::User"
-          #   Properties:
-          #     UserId: "default"
-          #     UserName: "default"
-          #     Engine: "redis"
-          #     AccessString: "on ~* +@all"
-          #     NoPasswordRequired: true
-          # OpenSearchServiceDomain:
-          #   Type: "AWS::OpenSearchService::Domain"
-          #   Properties:
-          #     DomainName: "prod-ccs-opensearch"
-          #     EngineVersion: "OpenSearch_2.9"
-          #     ClusterConfig:
-          #       ColdStorageOptions:
-          #         Enabled: false
-          #       DedicatedMasterEnabled: false
-          #       InstanceCount: 1
-          #       InstanceType: "t3.small.elasticsearch"
-          #       ZoneAwarenessEnabled: false
-          #       WarmEnabled: false
-          #     AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/prod-ccs-opensearch/*\"}]}"
-          #     SnapshotOptions: {}
-          #     snapshot_options: {}
-          #     VPCOptions:
-          #       SecurityGroupIds:
-          #         - "sg-0e200a1cecad58743"
-          #       SubnetIds:
-          #         - "subnet-05600d62019a771d2"
-          #     EncryptionAtRestOptions:
-          #       Enabled: true
-          #       KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
-          #     NodeToNodeEncryptionOptions:
-          #       Enabled: true
-          #     AdvancedOptions:
-          #       "indices.fielddata.cache.size": "20"
-          #       "indices.query.bool.max_clause_count": "1024"
-          #       override_main_response_version: "false"
-          #       "rest.action.multi.allow_explicit_index": "true"
-          #     EBSOptions:
-          #       EBSEnabled: true
-          #       VolumeType: "gp3"
-          #       VolumeSize: 100
-          #       Iops: 3000
-          #       Throughput: 125
-          #     CognitoOptions:
-          #       Enabled: false
-          #     DomainEndpointOptions:
-          #       EnforceHTTPS: true
-          #       TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
-          #       CustomEndpointEnabled: false
-          #     AdvancedSecurityOptions:
-          #       Enabled: true
-          #       InternalUserDatabaseEnabled: true
-          #       AnonymousAuthEnabled: false
-          # TODO: 他のリソースの確認を終えたらコメント解除
-          # CcsIdentityImagesBucket:
-          #   Type: "AWS::S3::Bucket"
-          #   DeletionPolicy: !If [IsProd, Retain, Delete]
-          #   Properties:
-          #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
-          #     BucketEncryption:
-          #       ServerSideEncryptionConfiguration:
-          #         - ServerSideEncryptionByDefault:
-          #             SSEAlgorithm: "AES256"
-          #           BucketKeyEnabled: true
-          #     OwnershipControls:
-          #       Rules:
-          #         - ObjectOwnership: "BucketOwnerEnforced"
-          #     PublicAccessBlockConfiguration:
-          #       BlockPublicAcls: true
-          #       BlockPublicPolicy: true
-          #       IgnorePublicAcls: true
-          #       RestrictPublicBuckets: true
-          # CcsIdentityImagesBucketPolicy:
-          #   Type: "AWS::S3::BucketPolicy"
-          #   Properties:
-          #     Bucket: !Ref CcsIdentityImagesBucket
-          #     PolicyDocument:
-          #       Version: "2012-10-17"
-          #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
-          #       Statement:
-          #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesStatementSid"]]
-          #           Effect: "Deny"
-          #           Principal: "*"
-          #           Action: "s3:*"
-          #           Resource:
-          #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}"
-          #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}/*"
-          #           Condition:
-          #             StringNotEquals:
-          #               "aws:SourceVpce":
-          #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
-          # CcsCareerImagesBucket:
-          #   Type: "AWS::S3::Bucket"
-          #   DeletionPolicy: !If [IsProd, Retain, Delete]
-          #   Properties:
-          #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
-          #     BucketEncryption:
-          #       ServerSideEncryptionConfiguration:
-          #         - ServerSideEncryptionByDefault:
-          #             SSEAlgorithm: "AES256"
-          #           BucketKeyEnabled: true
-          #     OwnershipControls:
-          #       Rules:
-          #         - ObjectOwnership: "BucketOwnerEnforced"
-          #     PublicAccessBlockConfiguration:
-          #       BlockPublicAcls: true
-          #       BlockPublicPolicy: true
-          #       IgnorePublicAcls: true
-          #       RestrictPublicBuckets: true
-          # CcsCareerImagesBucketPolicy:
-          #   Type: "AWS::S3::BucketPolicy"
-          #   Properties:
-          #     Bucket: !Ref CcsCareerImagesBucket
-          #     PolicyDocument:
-          #       Version: "2012-10-17"
-          #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
-          #       Statement:
-          #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareerImagesStatementSid"]]
-          #           Effect: "Deny"
-          #           Principal: "*"
-          #           Action: "s3:*"
-          #           Resource:
-          #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}"
-          #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}/*"
-          #           Condition:
-          #             StringNotEquals:
-          #               "aws:SourceVpce":
-          #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
+        - "subnet-015cd3d2c6d3c5756"
+        - "subnet-0cbdf8447e7d21585"
+        - "subnet-0740986c17927aef2"
+        - "subnet-05600d62019a771d2"
+  ElastiCacheUser:
+    Type: "AWS::ElastiCache::User"
+    Properties:
+      UserId: "default"
+      UserName: "default"
+      Engine: "redis"
+      AccessString: "on ~* +@all"
+      NoPasswordRequired: true
+      # OpenSearchServiceDomain:
+      #   Type: "AWS::OpenSearchService::Domain"
+      #   Properties:
+      #     DomainName: "prod-ccs-opensearch"
+      #     EngineVersion: "OpenSearch_2.9"
+      #     ClusterConfig:
+      #       ColdStorageOptions:
+      #         Enabled: false
+      #       DedicatedMasterEnabled: false
+      #       InstanceCount: 1
+      #       InstanceType: "t3.small.elasticsearch"
+      #       ZoneAwarenessEnabled: false
+      #       WarmEnabled: false
+      #     AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/prod-ccs-opensearch/*\"}]}"
+      #     SnapshotOptions: {}
+      #     snapshot_options: {}
+      #     VPCOptions:
+      #       SecurityGroupIds:
+      #         - "sg-0e200a1cecad58743"
+      #       SubnetIds:
+      #         - "subnet-05600d62019a771d2"
+      #     EncryptionAtRestOptions:
+      #       Enabled: true
+      #       KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
+      #     NodeToNodeEncryptionOptions:
+      #       Enabled: true
+      #     AdvancedOptions:
+      #       "indices.fielddata.cache.size": "20"
+      #       "indices.query.bool.max_clause_count": "1024"
+      #       override_main_response_version: "false"
+      #       "rest.action.multi.allow_explicit_index": "true"
+      #     EBSOptions:
+      #       EBSEnabled: true
+      #       VolumeType: "gp3"
+      #       VolumeSize: 100
+      #       Iops: 3000
+      #       Throughput: 125
+      #     CognitoOptions:
+      #       Enabled: false
+      #     DomainEndpointOptions:
+      #       EnforceHTTPS: true
+      #       TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
+      #       CustomEndpointEnabled: false
+      #     AdvancedSecurityOptions:
+      #       Enabled: true
+      #       InternalUserDatabaseEnabled: true
+      #       AnonymousAuthEnabled: false
+      # TODO: 他のリソースの確認を終えたらコメント解除
+      # CcsIdentityImagesBucket:
+      #   Type: "AWS::S3::Bucket"
+      #   DeletionPolicy: !If [IsProd, Retain, Delete]
+      #   Properties:
+      #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
+      #     BucketEncryption:
+      #       ServerSideEncryptionConfiguration:
+      #         - ServerSideEncryptionByDefault:
+      #             SSEAlgorithm: "AES256"
+      #           BucketKeyEnabled: true
+      #     OwnershipControls:
+      #       Rules:
+      #         - ObjectOwnership: "BucketOwnerEnforced"
+      #     PublicAccessBlockConfiguration:
+      #       BlockPublicAcls: true
+      #       BlockPublicPolicy: true
+      #       IgnorePublicAcls: true
+      #       RestrictPublicBuckets: true
+      # CcsIdentityImagesBucketPolicy:
+      #   Type: "AWS::S3::BucketPolicy"
+      #   Properties:
+      #     Bucket: !Ref CcsIdentityImagesBucket
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
+      #       Statement:
+      #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesStatementSid"]]
+      #           Effect: "Deny"
+      #           Principal: "*"
+      #           Action: "s3:*"
+      #           Resource:
+      #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}"
+      #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}/*"
+      #           Condition:
+      #             StringNotEquals:
+      #               "aws:SourceVpce":
+      #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
+      # CcsCareerImagesBucket:
+      #   Type: "AWS::S3::Bucket"
+      #   DeletionPolicy: !If [IsProd, Retain, Delete]
+      #   Properties:
+      #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
+      #     BucketEncryption:
+      #       ServerSideEncryptionConfiguration:
+      #         - ServerSideEncryptionByDefault:
+      #             SSEAlgorithm: "AES256"
+      #           BucketKeyEnabled: true
+      #     OwnershipControls:
+      #       Rules:
+      #         - ObjectOwnership: "BucketOwnerEnforced"
+      #     PublicAccessBlockConfiguration:
+      #       BlockPublicAcls: true
+      #       BlockPublicPolicy: true
+      #       IgnorePublicAcls: true
+      #       RestrictPublicBuckets: true
+      # CcsCareerImagesBucketPolicy:
+      #   Type: "AWS::S3::BucketPolicy"
+      #   Properties:
+      #     Bucket: !Ref CcsCareerImagesBucket
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
+      #       Statement:
+      #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareerImagesStatementSid"]]
+      #           Effect: "Deny"
+      #           Principal: "*"
+      #           Action: "s3:*"
+      #           Resource:
+      #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}"
+      #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}/*"
+      #           Condition:
+      #             StringNotEquals:
+      #               "aws:SourceVpce":
+      #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
 Outputs:
-  DbHost:
-    Value: !GetAtt CcsDbCluster.Endpoint.Address
+  # DbHost:
+  #   Value: !GetAtt CcsDbCluster.Endpoint.Address
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-DbHost"
+  # DbPort:
+  #   Value: !GetAtt CcsDbCluster.Endpoint.Port
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-DbPort"
+  CacheHost:
+    Value: !GetAtt CcsCacheCluster.RedisEndpoint.Address
     Export:
-      Name: !Sub "${AWS::StackName}-DbHost"
-  DbPort:
-    Value: !GetAtt CcsDbCluster.Endpoint.Port
+      Name: !Sub "${AWS::StackName}-CacheHost"
+  CachePort:
+    Value: !GetAtt CcsCacheCluster.RedisEndpoint.Port
     Export:
-      Name: !Sub "${AWS::StackName}-DbPort"
+      Name: !Sub "${AWS::StackName}-CachePort"
