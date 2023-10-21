@@ -10,6 +10,8 @@ Metadata:
           - DbMasterUserPassword
 Parameters:
   # prodの場合はスタック名に"ProdDataStore"、devの場合はスタック名に"DevDataStore"を指定する
+  # ユーザー名、パスワードはNoEchoとしたいが、そうした場合後から確認できないため、NoEchoを避けている
+  # (SSMでSecureStringとして一元管理も検討したが、SecureStringはCFnから作成できない、かつCFnから参照はできるが参照できるリソースの型が限定されている。従ってその利用も見送った）
   Environment:
     Type: String
     AllowedValues:
@@ -19,7 +21,6 @@ Parameters:
     Type: String
   DbMasterUserPassword:
     Type: String
-    NoEcho: true
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
