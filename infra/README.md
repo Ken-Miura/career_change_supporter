@@ -39,8 +39,3 @@ Route53（Hosted Zone）、SES、ECR、CI結果を格納するS3バケットはC
 - elasticcache.yaml
 - opensearch.yaml
 - task-def.yml
-
-DBパラメータグループに関してクラスタレベルとインスタンスレベルのどちらに指定するべきか確認する
-https://docs.aws.amazon.com/ja_jp/AmazonRDS/latest/AuroraUserGuide/AuroraPostgreSQL.Reference.ParameterGroups.html#AuroraPostgreSQL.Reference.Parameters.Instance
-
-DBクラスターパタメータグループが、DBパタメータグループを上書きするか改めて確認
