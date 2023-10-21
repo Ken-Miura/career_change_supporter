@@ -39,6 +39,7 @@ Resources:
       BackupRetentionPeriod: 7
       MasterUsername: !Ref DbMasterUsername
       MasterUserPassword: !Ref DbMasterUserPassword
+      StorageEncrypted: true # デフォルトのマスターキーを利用するのでKMS IDは指定しない。SourceDBClusterIdentifierまたはSnapshotIdentifierを指定する際はこのプロパティを外すか確認する。
       EnableCloudwatchLogsExports:
         - "postgresql"
       ServerlessV2ScalingConfiguration:
