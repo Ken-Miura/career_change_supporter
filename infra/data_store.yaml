@@ -106,7 +106,7 @@ Resources:
       VpcSecurityGroupIds:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "RedisSecurityGroupId"]]
       NetworkType: "ipv4"
-      LogDeliveryConfigurationRequest:
+      LogDeliveryConfigurations:
         - DestinationDetails:
             - CloudWatchLogsDetails:
                 - LogGroup: !Sub
