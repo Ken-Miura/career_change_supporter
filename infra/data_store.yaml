@@ -96,7 +96,7 @@ Resources:
     Properties:
       ClusterName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-cache-cluster"]]
       Engine: "redis"
-      EngineVersion: "7.0.7"
+      EngineVersion: "7.0"
       AutoMinorVersionUpgrade: false
       CacheNodeType: !If [IsProd, "cache.t4g.small", "cache.t4g.micro"]
       NumCacheNodes: 1 # 複数ノード用意したくなった場合、CacheClusterではなくReplicationGroupを使うように変更する
@@ -108,18 +108,18 @@ Resources:
       NetworkType: "ipv4"
       LogDeliveryConfigurations:
         - DestinationDetails:
-            - CloudWatchLogsDetails:
-                - LogGroup: !Sub
-                    - "/elastic-cache/${ENGINE_LOG_SUFFIX}"
-                    - ENGINE_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-engine-log"]]
+            CloudWatchLogsDetails:
+              LogGroup: !Sub
+                - "/elastic-cache/${ENGINE_LOG_SUFFIX}"
+                - ENGINE_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-engine-log"]]
           DestinationType: "cloudwatch-logs"
           LogFormat: "json"
           LogType: "engine-log"
         - DestinationDetails:
-            - CloudWatchLogsDetails:
-                - LogGroup: !Sub
-                    - "/elastic-cache/${SLOW_LOG_SUFFIX}"
-                    - SLOW_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-slow-log"]]
+            CloudWatchLogsDetails:
+              LogGroup: !Sub
+                - "/elastic-cache/${SLOW_LOG_SUFFIX}"
+                - SLOW_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-redis-slow-log"]]
           DestinationType: "cloudwatch-logs"
           LogFormat: "json"
           LogType: "slow-log"
