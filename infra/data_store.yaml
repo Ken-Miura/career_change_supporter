@@ -99,8 +99,12 @@ Resources:
       EngineVersion: "7.0.7"
       AutoMinorVersionUpgrade: false
       CacheNodeType: !If [IsProd, "cache.t4g.small", "cache.t4g.micro"]
+      NumCacheNodes: 1
       CacheParameterGroupName: "default.redis7" # TODO: slow-log向けのパラメータ（slowlog-log-slower-thanとslowlog-max-len）を確認する。cluster.onのサフィックスについて確認する
       CacheSubnetGroupName: !Ref CcsCacheSubnetGroup
+      TransitEncryptionEnabled: false
+      VpcSecurityGroupIds:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "RedisSecurityGroupId"]]
       NetworkType: "ipv4"
       LogDeliveryConfigurationRequest:
         - DestinationDetails:
@@ -119,11 +123,8 @@ Resources:
           DestinationType: "cloudwatch-logs"
           LogFormat: "json"
           LogType: "slow-log"
-      NumCacheNodes: 1 # TODO: このプロパティから確認
       PreferredAvailabilityZone: !Sub "${AWS::Region}a"
-      PreferredMaintenanceWindow: "wed:17:00-wed:18:00"
-      VpcSecurityGroupIds:
-        - "sg-09f3c47ec642834b5"
+      PreferredMaintenanceWindow: "sat:18:00-sat:19:00"
       SnapshotRetentionLimit: 0
       SnapshotWindow: "16:00-17:00"
   ElastiCacheReplicationGroup:
