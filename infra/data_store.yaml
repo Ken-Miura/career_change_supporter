@@ -8,6 +8,8 @@ Metadata:
           - Environment
           - DbMasterUsername
           - DbMasterUserPassword
+          - IndexMasterUsername
+          - IndexMasterUserPassword
 Parameters:
   # prodの場合はスタック名に"ProdDataStore"、devの場合はスタック名に"DevDataStore"を指定する
   # ユーザー名、パスワードはNoEchoとしたいが、そうした場合後から確認できないため、NoEchoを避けている
@@ -20,6 +22,10 @@ Parameters:
   DbMasterUsername:
     Type: String
   DbMasterUserPassword:
+    Type: String
+  IndexMasterUsername:
+    Type: String
+  IndexMasterUserPassword:
     Type: String
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
@@ -148,17 +154,14 @@ Resources:
   CcsIndex:
     Type: "AWS::OpenSearchService::Domain"
     Properties:
-      DomainName: "prod-ccs-opensearch"
+      DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
       EngineVersion: "OpenSearch_2.9"
       ClusterConfig:
-        ColdStorageOptions:
-          Enabled: false
-        DedicatedMasterEnabled: false
+        DedicatedMasterEnabled: false # お金がかかるのでそもそも複数インスタンスは使わない。従って専用マスターノードは無効
         InstanceCount: 1
-        InstanceType: "t3.small.elasticsearch"
-        ZoneAwarenessEnabled: false
+        InstanceType: !If [IsProd, "t3.medium.search", "t3.small.elasticsearch"]
         WarmEnabled: false
-      AccessPolicies: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/prod-ccs-opensearch/*\"}]}"
+        ZoneAwarenessEnabled: false
       SnapshotOptions: {}
       snapshot_options: {}
       VPCOptions:
@@ -172,10 +175,10 @@ Resources:
       NodeToNodeEncryptionOptions:
         Enabled: true
       AdvancedOptions:
-        "indices.fielddata.cache.size": "20"
+        "rest.action.multi.allow_explicit_index": "true"
+        "indices.fielddata.cache.size": "40" # 検索速度に関わるパラメターのため、運用中に問題があった場合は変更する TODO: indices.fielddata.breaker.limit の値もチェック
         "indices.query.bool.max_clause_count": "1024"
         override_main_response_version: "false"
-        "rest.action.multi.allow_explicit_index": "true"
       EBSOptions:
         EBSEnabled: true
         VolumeType: "gp3"
@@ -191,6 +194,9 @@ Resources:
       AdvancedSecurityOptions:
         Enabled: true
         InternalUserDatabaseEnabled: true
+        MasterUserOptions:
+          MasterUserName: !Ref IndexMasterUsername
+          MasterUserPassword: !Ref IndexMasterUserPassword
         AnonymousAuthEnabled: false
         # TODO: 他のリソースの確認を終えたらコメント解除
         # CcsIdentityImagesBucket:
