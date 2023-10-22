@@ -155,6 +155,10 @@ Resources:
     Type: "AWS::OpenSearchService::Domain"
     Properties:
       DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
+      DomainEndpointOptions:
+        EnforceHTTPS: true
+        TLSSecurityPolicy: "Policy-Min-TLS-1-2-2019-07"
+        CustomEndpointEnabled: false
       EngineVersion: "OpenSearch_2.9"
       ClusterConfig:
         DedicatedMasterEnabled: false # お金がかかるのでそもそも複数インスタンスは使わない。従って専用マスターノードは無効
@@ -169,7 +173,7 @@ Resources:
           - "sg-0e200a1cecad58743"
         SubnetIds:
           - "subnet-05600d62019a771d2"
-      EncryptionAtRestOptions:
+      EncryptionAtRestOptions: # TODO: この項目からチェック
         Enabled: true
         KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
       NodeToNodeEncryptionOptions:
@@ -182,15 +186,11 @@ Resources:
       EBSOptions:
         EBSEnabled: true
         VolumeType: "gp3"
-        VolumeSize: 100
+        VolumeSize: !If [IsProd, 200, 100] # NOTE: InstanceTypeに応じて指定可能な最大値が変わる
         Iops: 3000
         Throughput: 125
       CognitoOptions:
         Enabled: false
-      DomainEndpointOptions:
-        EnforceHTTPS: true
-        TLSSecurityPolicy: "Policy-Min-TLS-1-0-2019-07"
-        CustomEndpointEnabled: false
       AdvancedSecurityOptions:
         Enabled: true
         InternalUserDatabaseEnabled: true
