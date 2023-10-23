@@ -187,7 +187,7 @@ Resources:
         VolumeType: "gp3"
         VolumeSize: !If [IsProd, 200, 100] # NOTE: InstanceTypeに応じて指定可能な最大値が変わる
         Iops: 3000
-        Throughput: 125
+        Throughput: !If [IsProd, 250, 125] # NOTE: InstanceTypeに応じて指定可能な最大値が変わる
       CognitoOptions:
         Enabled: false
       SoftwareUpdateOptions:
