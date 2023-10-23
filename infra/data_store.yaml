@@ -163,7 +163,7 @@ Resources:
       ClusterConfig:
         DedicatedMasterEnabled: false # お金がかかるのでそもそも複数インスタンスは使わない。従って専用マスターノードは無効
         InstanceCount: 1
-        InstanceType: !If [IsProd, "t3.medium.search", "t3.small.elasticsearch"]
+        InstanceType: !If [IsProd, "t3.medium.search", "t3.small.search"]
         WarmEnabled: false
         ZoneAwarenessEnabled: false
       VPCOptions:
