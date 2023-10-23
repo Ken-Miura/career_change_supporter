@@ -166,16 +166,14 @@ Resources:
         InstanceType: !If [IsProd, "t3.medium.search", "t3.small.elasticsearch"]
         WarmEnabled: false
         ZoneAwarenessEnabled: false
-      SnapshotOptions: {}
-      snapshot_options: {}
       VPCOptions:
         SecurityGroupIds:
-          - "sg-0e200a1cecad58743"
+          - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "OpenSearchSecurityGroupId"]]
         SubnetIds:
-          - "subnet-05600d62019a771d2"
-      EncryptionAtRestOptions: # TODO: この項目からチェック
+          - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PrivateSubnet1Id"]]
+      EncryptionAtRestOptions:
         Enabled: true
-        KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463"
+        KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/ab6485f8-49d9-4af0-8901-2888229d4463" # 利用するアカウントにおけるデフォルトキー。他のアカウントで使うときは書き換えが必要
       NodeToNodeEncryptionOptions:
         Enabled: true
       AdvancedOptions:
@@ -191,6 +189,8 @@ Resources:
         Throughput: 125
       CognitoOptions:
         Enabled: false
+      SoftwareUpdateOptions:
+        AutoSoftwareUpdateEnabled: false
       AdvancedSecurityOptions:
         Enabled: true
         InternalUserDatabaseEnabled: true
@@ -198,81 +198,122 @@ Resources:
           MasterUserName: !Ref IndexMasterUsername
           MasterUserPassword: !Ref IndexMasterUserPassword
         AnonymousAuthEnabled: false
-        # TODO: 他のリソースの確認を終えたらコメント解除
-        # CcsIdentityImagesBucket:
-        #   Type: "AWS::S3::Bucket"
-        #   DeletionPolicy: !If [IsProd, Retain, Delete]
-        #   Properties:
-        #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
-        #     BucketEncryption:
-        #       ServerSideEncryptionConfiguration:
-        #         - ServerSideEncryptionByDefault:
-        #             SSEAlgorithm: "AES256"
-        #           BucketKeyEnabled: true
-        #     OwnershipControls:
-        #       Rules:
-        #         - ObjectOwnership: "BucketOwnerEnforced"
-        #     PublicAccessBlockConfiguration:
-        #       BlockPublicAcls: true
-        #       BlockPublicPolicy: true
-        #       IgnorePublicAcls: true
-        #       RestrictPublicBuckets: true
-        # CcsIdentityImagesBucketPolicy:
-        #   Type: "AWS::S3::BucketPolicy"
-        #   Properties:
-        #     Bucket: !Ref CcsIdentityImagesBucket
-        #     PolicyDocument:
-        #       Version: "2012-10-17"
-        #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
-        #       Statement:
-        #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesStatementSid"]]
-        #           Effect: "Deny"
-        #           Principal: "*"
-        #           Action: "s3:*"
-        #           Resource:
-        #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}"
-        #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}/*"
-        #           Condition:
-        #             StringNotEquals:
-        #               "aws:SourceVpce":
-        #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
-        # CcsCareerImagesBucket:
-        #   Type: "AWS::S3::Bucket"
-        #   DeletionPolicy: !If [IsProd, Retain, Delete]
-        #   Properties:
-        #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
-        #     BucketEncryption:
-        #       ServerSideEncryptionConfiguration:
-        #         - ServerSideEncryptionByDefault:
-        #             SSEAlgorithm: "AES256"
-        #           BucketKeyEnabled: true
-        #     OwnershipControls:
-        #       Rules:
-        #         - ObjectOwnership: "BucketOwnerEnforced"
-        #     PublicAccessBlockConfiguration:
-        #       BlockPublicAcls: true
-        #       BlockPublicPolicy: true
-        #       IgnorePublicAcls: true
-        #       RestrictPublicBuckets: true
-        # CcsCareerImagesBucketPolicy:
-        #   Type: "AWS::S3::BucketPolicy"
-        #   Properties:
-        #     Bucket: !Ref CcsCareerImagesBucket
-        #     PolicyDocument:
-        #       Version: "2012-10-17"
-        #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
-        #       Statement:
-        #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareerImagesStatementSid"]]
-        #           Effect: "Deny"
-        #           Principal: "*"
-        #           Action: "s3:*"
-        #           Resource:
-        #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}"
-        #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}/*"
-        #           Condition:
-        #             StringNotEquals:
-        #               "aws:SourceVpce":
-        #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
+      LogPublishingOptions:
+        SEARCH_SLOW_LOGS:
+          Enabled: true
+          CloudWatchLogsLogGroupArn: !GetAtt CcsIndexSearchSlowLogGroup.Arn
+        ES_APPLICATION_LOGS:
+          Enabled: true
+          CloudWatchLogsLogGroupArn: !GetAtt CcsIndexEsApplicationLogGroup.Arn
+        INDEX_SLOW_LOGS:
+          Enabled: true
+          CloudWatchLogsLogGroupArn: !GetAtt CcsIndexIndexSlowLogGroup.Arn
+        AUDIT_LOGS:
+          Enabled: true
+          CloudWatchLogsLogGroupArn: !GetAtt CcsIndexAuditLogGroup.Arn
+  CcsIndexSearchSlowLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub
+        - "/opensearch/${SEARCH_SLOW_LOG_SUFFIX}"
+        - SEARCH_SLOW_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-search-slow-log"]]
+      RetentionInDays: 3653
+  CcsIndexEsApplicationLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub
+        - "/opensearch/${ES_APPLICATION_LOG_SUFFIX}"
+        - ES_APPLICATION_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-es-application-log"]]
+      RetentionInDays: 3653
+  CcsIndexIndexSlowLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub
+        - "/opensearch/${INDEX_SLOW_LOG_SUFFIX}"
+        - INDEX_SLOW_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-index-slow-log"]]
+      RetentionInDays: 3653
+  CcsIndexAuditLogGroup:
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Sub
+        - "/opensearch/${AUDIT_LOG_SUFFIX}"
+        - AUDIT_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-audit-log"]]
+      RetentionInDays: 3653
+      # TODO: 他のリソースの確認を終えたらコメント解除
+      # CcsIdentityImagesBucket:
+      #   Type: "AWS::S3::Bucket"
+      #   DeletionPolicy: !If [IsProd, Retain, Delete]
+      #   Properties:
+      #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images"]]
+      #     BucketEncryption:
+      #       ServerSideEncryptionConfiguration:
+      #         - ServerSideEncryptionByDefault:
+      #             SSEAlgorithm: "AES256"
+      #           BucketKeyEnabled: true
+      #     OwnershipControls:
+      #       Rules:
+      #         - ObjectOwnership: "BucketOwnerEnforced"
+      #     PublicAccessBlockConfiguration:
+      #       BlockPublicAcls: true
+      #       BlockPublicPolicy: true
+      #       IgnorePublicAcls: true
+      #       RestrictPublicBuckets: true
+      # CcsIdentityImagesBucketPolicy:
+      #   Type: "AWS::S3::BucketPolicy"
+      #   Properties:
+      #     Bucket: !Ref CcsIdentityImagesBucket
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-identity-images-policy-document-id"]]
+      #       Statement:
+      #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesStatementSid"]]
+      #           Effect: "Deny"
+      #           Principal: "*"
+      #           Action: "s3:*"
+      #           Resource:
+      #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}"
+      #             - !Sub "arn:aws:s3:::${CcsIdentityImagesBucket}/*"
+      #           Condition:
+      #             StringNotEquals:
+      #               "aws:SourceVpce":
+      #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
+      # CcsCareerImagesBucket:
+      #   Type: "AWS::S3::Bucket"
+      #   DeletionPolicy: !If [IsProd, Retain, Delete]
+      #   Properties:
+      #     BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images"]]
+      #     BucketEncryption:
+      #       ServerSideEncryptionConfiguration:
+      #         - ServerSideEncryptionByDefault:
+      #             SSEAlgorithm: "AES256"
+      #           BucketKeyEnabled: true
+      #     OwnershipControls:
+      #       Rules:
+      #         - ObjectOwnership: "BucketOwnerEnforced"
+      #     PublicAccessBlockConfiguration:
+      #       BlockPublicAcls: true
+      #       BlockPublicPolicy: true
+      #       IgnorePublicAcls: true
+      #       RestrictPublicBuckets: true
+      # CcsCareerImagesBucketPolicy:
+      #   Type: "AWS::S3::BucketPolicy"
+      #   Properties:
+      #     Bucket: !Ref CcsCareerImagesBucket
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-career-images-policy-document-id"]]
+      #       Statement:
+      #         - Sid: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareerImagesStatementSid"]]
+      #           Effect: "Deny"
+      #           Principal: "*"
+      #           Action: "s3:*"
+      #           Resource:
+      #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}"
+      #             - !Sub "arn:aws:s3:::${CcsCareerImagesBucket}/*"
+      #           Condition:
+      #             StringNotEquals:
+      #               "aws:SourceVpce":
+      #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
 Outputs:
 # DbHost:
 #   Value: !GetAtt CcsDbCluster.Endpoint.Address
