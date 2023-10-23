@@ -315,23 +315,23 @@ Resources:
       #               "aws:SourceVpce":
       #                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "S3VpcEndpointId"]]
 Outputs:
-# DbHost:
-#   Value: !GetAtt CcsDbCluster.Endpoint.Address
-#   Export:
-#     Name: !Sub "${AWS::StackName}-DbHost"
-# DbPort:
-#   Value: !GetAtt CcsDbCluster.Endpoint.Port
-#   Export:
-#     Name: !Sub "${AWS::StackName}-DbPort"
-# CacheHost:
-#   Value: !GetAtt CcsCacheCluster.RedisEndpoint.Address
-#   Export:
-#     Name: !Sub "${AWS::StackName}-CacheHost"
-# CachePort:
-#   Value: !GetAtt CcsCacheCluster.RedisEndpoint.Port
-#   Export:
-#     Name: !Sub "${AWS::StackName}-CachePort"
-IndexHost:
-  Value: !GetAtt CcsIndex.DomainEndpoint
-  Export:
-    Name: !Sub "${AWS::StackName}-IndexHost"
+  # DbHost:
+  #   Value: !GetAtt CcsDbCluster.Endpoint.Address
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-DbHost"
+  # DbPort:
+  #   Value: !GetAtt CcsDbCluster.Endpoint.Port
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-DbPort"
+  # CacheHost:
+  #   Value: !GetAtt CcsCacheCluster.RedisEndpoint.Address
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-CacheHost"
+  # CachePort:
+  #   Value: !GetAtt CcsCacheCluster.RedisEndpoint.Port
+  #   Export:
+  #     Name: !Sub "${AWS::StackName}-CachePort"
+  IndexHost:
+    Value: !GetAtt CcsIndex.DomainEndpoint
+    Export:
+      Name: !Sub "${AWS::StackName}-IndexHost"
