@@ -36,5 +36,4 @@ Route53（Hosted Zone）、SES、ECR、CI結果を格納するS3バケットはC
 
 上記に記載の一時的に残しているテンプレート
 - ecs_service.yml
-- opensearch.yaml
 - task-def.yml
