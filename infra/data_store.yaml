@@ -153,6 +153,7 @@ Resources:
   #     RetentionInDays: 3653
   CcsIndex:
     Type: "AWS::OpenSearchService::Domain"
+    DependsOn: CcsIndexLogsResourcePolicy
     Properties:
       DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
       DomainEndpointOptions:
@@ -239,6 +240,11 @@ Resources:
         - "/opensearch/${AUDIT_LOG_SUFFIX}"
         - AUDIT_LOG_SUFFIX: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-audit-log"]]
       RetentionInDays: 3653
+  CcsIndexLogsResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-logs-resource-policy"]]
+      PolicyDocument: !Sub "{\"Version\":\"2012-10-17\", \"Statement\":[{\"Effect\":\"Allow\", \"Principal\":{\"Service\":[\"opensearchservice.amazonaws.com\"]}, \"Action\":[\"logs:PutLogEvents\", \"logs:CreateLogStream\"], \"Resource\":\"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/opensearch/*\"}]}"
       # TODO: 他のリソースの確認を終えたらコメント解除
       # CcsIdentityImagesBucket:
       #   Type: "AWS::S3::Bucket"
