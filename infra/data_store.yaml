@@ -156,6 +156,9 @@ Resources:
     DependsOn: CcsIndexLogsResourcePolicy
     Properties:
       DomainName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
+      AccessPolicies: !Sub
+        - "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"es:*\",\"Resource\":\"arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DOMAIN_NAME}/*\"}]}"
+        - DOMAIN_NAME: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
       DomainEndpointOptions:
         EnforceHTTPS: true
         TLSSecurityPolicy: "Policy-Min-TLS-1-2-2019-07"
@@ -244,7 +247,7 @@ Resources:
     Type: AWS::Logs::ResourcePolicy
     Properties:
       PolicyName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-logs-resource-policy"]]
-      PolicyDocument: !Sub "{\"Version\":\"2012-10-17\", \"Statement\":[{\"Effect\":\"Allow\", \"Principal\":{\"Service\":[\"opensearchservice.amazonaws.com\"]}, \"Action\":[\"logs:PutLogEvents\", \"logs:CreateLogStream\"], \"Resource\":\"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/opensearch/*\"}]}"
+      PolicyDocument: !Sub "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":[\"opensearchservice.amazonaws.com\"]},\"Action\":[\"logs:PutLogEvents\",\"logs:CreateLogStream\"],\"Resource\":\"arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/opensearch/*\"}]}"
       # TODO: 他のリソースの確認を終えたらコメント解除
       # CcsIdentityImagesBucket:
       #   Type: "AWS::S3::Bucket"
