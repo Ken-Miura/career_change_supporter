@@ -3,6 +3,7 @@
 <ol>
   <li>network.yaml</li>
   <li>static-files.yaml</li>
+  <li>data-store.yaml</li>
   <li>load-balancer.yaml</li>
   <li>request-controller.yaml</li>
 </ol>
@@ -12,6 +13,7 @@
 - network.yaml
 - load-balancer.yaml
 - static-files.yaml
+- data-store.yaml
 
 ## us-east-1
 - request-controller.yaml (CloudFrontに紐づくWebACLやACMがus-east-1でしか構築できないため)
