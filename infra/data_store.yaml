@@ -179,7 +179,7 @@ Resources:
         Enabled: true
       AdvancedOptions:
         "rest.action.multi.allow_explicit_index": "true"
-        "indices.fielddata.cache.size": "40" # 検索速度に関わるパラメターのため、運用中に問題があった場合は変更する TODO: indices.fielddata.breaker.limit の値もチェック
+        "indices.fielddata.cache.size": "35" # 検索速度に関わるパラメータのため、運用中に問題があった場合は変更する。indices.breaker.fielddata.limit のデフォルト値が40なので40以上にする場合は注意する。
         "indices.query.bool.max_clause_count": "1024"
         override_main_response_version: "false"
       EBSOptions:
