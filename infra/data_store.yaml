@@ -159,13 +159,13 @@ Resources:
       AccessPolicies:
         Version: "2012-10-17"
         Statement:
-          Effect: "Allow"
-          Principal:
-            AWS: "*"
-          Action: "es:*"
-          Resource: !Sub
-            - "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DOMAIN_NAME}/*}]}"
-            - DOMAIN_NAME: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
+          - Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action: "es:*"
+            Resource: !Sub
+              - "arn:aws:es:${AWS::Region}:${AWS::AccountId}:domain/${DOMAIN_NAME}/*"
+              - DOMAIN_NAME: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index"]]
       DomainEndpointOptions:
         EnforceHTTPS: true
         TLSSecurityPolicy: "Policy-Min-TLS-1-2-2019-07"
