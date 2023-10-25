@@ -14,6 +14,8 @@ Metadata:
           - ServiceDomainName
 Parameters:
   # prodの場合はスタック名に"ProdRequestController"、devの場合はスタック名に"DevRequestController"を指定する
+  # カスタムヘッダーの値はNoEchoとしたいが、そうした場合後から確認できないため、NoEchoを避けている
+  # (SSMでSecureStringとして一元管理も検討したが、SecureStringはCFnから作成できない、かつCFnから参照はできるが参照できるリソースの型が限定されている。従ってその利用も見送った）
   Environment:
     Type: String
     AllowedValues:
@@ -28,12 +30,10 @@ Parameters:
       api.${ServiceDomainName} for prod or api.dev.${ServiceDomainName} for dev is used for api access
     AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
   UserServiceAccessRestrictionCustomHeaderValue:
-    NoEcho: true
     Type: String
     Description: Enter same value as the one you set on ALB for user service
     AllowedPattern: ^[a-zA-Z0-9]{32}$
   AdminServiceAccessRestrictionCustomHeaderValue:
-    NoEcho: true
     Type: String
     Description: Enter same value as the one you set on ALB for admin service
     AllowedPattern: ^[a-zA-Z0-9]{32}$
