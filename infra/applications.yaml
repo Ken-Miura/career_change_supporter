@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdApplications"、devの場合はスタック名に"DevApplications"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsApplicationCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-application-cluster"]]
