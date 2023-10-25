@@ -13,3 +13,12 @@ Resources:
     Type: "AWS::ECS::Cluster"
     Properties:
       ClusterName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-application-cluster"]]
+      CapacityProviders:
+        - "FARGATE"
+        - "FARGATE_SPOT" # 料金節約のために利用を許可する。ユーザービリティに明確に悪影響があると判断した際には削除する。
+      ClusterSettings:
+        - Name: "containerInsights" # 料金が高いためcontainerInsightsは無効化。コンテナの状況は基本モニタリングのメトリクス、詳細モニタリングのメトリクスでチェックする。
+          Value: "disabled"
+      Configuration:
+        ExecuteCommandConfiguration:
+          Logging: "DEFAULT"
