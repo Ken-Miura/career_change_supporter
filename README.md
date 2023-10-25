@@ -18,8 +18,6 @@ WAFで用意したRate Limitが適切に動作するか確認する
 
 WAFのAWSマネージドのルールに関して、クエリ、パスのサイズを制限するものに引っかからないか確認する
 
-AWS内部の通信（ELB→APサーバ、APサーバ→SMTPサーバ、APサーバ→Redis、APサーバ→DB、APサーバ→OpenSearch）にTLSを用いるかどうか検討する
-
 クライアント側のコードでオーディオを使うためにgetUserMediaを使う。インターネット上にデプロイした際にその関数を使う際にFeature-Policyが必要確認する。
 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
