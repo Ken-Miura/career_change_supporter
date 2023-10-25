@@ -8,6 +8,8 @@ Metadata:
           - Environment
           - UserServiceAccessRestrictionCustomHeaderValue
           - AdminServiceAccessRestrictionCustomHeaderValue
+          - AllowedIpV4Addresses
+          - AllowedIpV6Addresses
       - Label:
           default: Optional parameter
         Parameters:
@@ -37,6 +39,18 @@ Parameters:
     Type: String
     Description: Enter same value as the one you set on ALB for admin service
     AllowedPattern: ^[a-zA-Z0-9]{32}$
+  AllowedIpV4Addresses:
+    Description: |-
+      Enter white list IPv4 addresses for admin servcie in prod and both user service and admin service in dev as comma separated list format
+      ex1. 106.72.35.128/32
+      ex2. 106.72.35.128/32, 106.72.35.129/32
+    Type: CommaDelimitedList
+  AllowedIpV6Addresses:
+    Description: |-
+      Enter white list IPv6 addresses for admin servcie in prod and both user service and admin service in dev as comma separated list format
+      ex1. 240b:0010:2380:5800:a8c3:317b:57ca:cee1/128
+      ex2. 240b:0010:2380:5800:a8c3:317b:57ca:cee1/128, 240b:0010:2380:5800:a8c3:317b:57ca:cee2/128
+    Type: CommaDelimitedList
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 # CloudFrontで利用するACMとWAFはus-east1でしか作成できないため、us-east1で作成する
@@ -504,16 +518,14 @@ Resources:
     Properties:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV4"]]
       IPAddressVersion: "IPV4"
-      Addresses:
-        - "106.72.35.128/32" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
+      Addresses: !Ref AllowedIpV4Addresses
       Scope: "CLOUDFRONT"
   CcsIpV6Set:
     Type: "AWS::WAFv2::IPSet"
     Properties:
       Name: !Join ["", [!If [IsProd, "Prod", "Dev"], "MyIpV6"]]
       IPAddressVersion: "IPV6"
-      Addresses:
-        - "240b:0010:2380:5800:a8c3:317b:57ca:cee1/128" # NOTE: 固定IPでないので構築後、必要に応じてWeb UIで変更する（ドリフトは許容する）
+      Addresses: !Ref AllowedIpV6Addresses
       Scope: "CLOUDFRONT"
   CcsGeneralRateLimit:
     Type: "AWS::WAFv2::RuleGroup"
