@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-  # prodの場合はスタック名に"ProdApplications"、devの場合はスタック名に"DevApplications"を指定する
+  # prodの場合はスタック名に"ProdApplicationCluster"、devの場合はスタック名に"DevApplicationCluster"を指定する
   Environment:
     Type: String
     AllowedValues:
@@ -22,13 +22,8 @@ Resources:
       Configuration:
         ExecuteCommandConfiguration:
           Logging: "DEFAULT"
-  CcsAdminService:
-    Type: "AWS::ECS::Service"
-    Properties:
-      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
-      Cluster: !GetAtt 'CcsApplicationCluster.Arn'
-      LoadBalancers:
-        - TargetGroupArn:
-            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
-          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
-          ContainerPort: 3001
+Outputs:
+  ApplicationCluster:
+    Value: !GetAtt CcsApplicationCluster.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationCluster"

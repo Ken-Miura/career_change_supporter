@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdAdminService"、devの場合はスタック名に"DevAdminService"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsAdminService:
+    Type: "AWS::ECS::Service"
+    Properties:
+      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+      Cluster:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+      LoadBalancers:
+        - TargetGroupArn:
+            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
+          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+          ContainerPort: 3001
+      CapacityProviderStrategy:
+        - CapacityProvider: !If [IsProd, "FARGATE", "FARGATE_SPOT"]
+          Weight: 1
+          Base: 0
+      DeploymentConfiguration:
+        MinimumHealthyPercent: 100
+        MaximumPercent: 200
+        DeploymentCircuitBreaker:
+          Enable: true
+          Rollback: true
+        Alarms: TODO
