@@ -6,6 +6,10 @@ Parameters:
     AllowedValues:
       - prod
       - dev
+  InstanceCount:
+    Type: Number
+    Description: Enter the number of admin service instances. If you want to stop the service, set 0 to this value.
+    MinValue: 0
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
@@ -13,6 +17,7 @@ Resources:
     Type: "AWS::ECS::Service"
     Properties:
       ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+      TaskDefinition: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service-task"]] # TODO: revision指定なしの場合でデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
       Cluster:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
       LoadBalancers:
@@ -20,6 +25,14 @@ Resources:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
           ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
           ContainerPort: 3001
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: "ENABLED"
+          SecurityGroups:
+            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "AdminServiceSecurityGroupId"]]
+          Subnets:
+            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
+            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
       CapacityProviderStrategy:
         - CapacityProvider: !If [IsProd, "FARGATE", "FARGATE_SPOT"]
           Weight: 1
@@ -30,4 +43,10 @@ Resources:
         DeploymentCircuitBreaker:
           Enable: true
           Rollback: true
-        Alarms: TODO
+      DeploymentController:
+        Type: "ECS"
+      DesiredCount: !Ref InstanceCount
+      HealthCheckGracePeriodSeconds: 1
+      LaunchType: "FARGATE"
+      SchedulingStrategy: "REPLICA"
+      PlatformVersion: "1.4.0"
