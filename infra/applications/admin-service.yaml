@@ -56,8 +56,10 @@ Resources:
       Family: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service-task"]]
       Cpu: !If [IsProd, "1024", "512"]
       Memory: !If [IsProd, "2048", "1024"]
-      ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskExecutionRole"
-      TaskRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/ecsTaskRoleForCCS"
+      ExecutionRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      TaskRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
         - Environment:
             - Name: "SYSTEM_EMAIL_ADDRESS"
