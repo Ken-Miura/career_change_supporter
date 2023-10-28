@@ -64,7 +64,21 @@ Resources:
       TaskRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
-        - Environment:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:1b087bad827e53026159522731c6f62e72f5b904" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: "/ecs/admin-service"
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          PortMappings:
+            - ContainerPort: 3001
+              HostPort: 3001
+              Protocol: "tcp"
+          Environment:
             - Name: "SYSTEM_EMAIL_ADDRESS"
               Value: "no-reply@career-change-supporter.com"
             - Name: "REDIS_HOST"
@@ -105,20 +119,6 @@ Resources:
               Value: "admin_app"
             - Name: "CAREER_IMAGES_BUCKET_NAME"
               Value: "ccs-career-images"
-          Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:1b087bad827e53026159522731c6f62e72f5b904"
-          LogConfiguration:
-            LogDriver: "awslogs"
-            Options:
-              awslogs-create-group: "true"
-              awslogs-group: "/ecs/admin-service"
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: "ecs"
-          Name: "admin-service"
-          PortMappings:
-            - ContainerPort: 3001
-              HostPort: 3001
-              Protocol: "tcp"
           Secrets:
             - Name: "DB_ADMIN_PASSWORD"
               ValueFrom: "db-admin-app-password"
