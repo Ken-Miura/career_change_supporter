@@ -56,6 +56,9 @@ Resources:
       Family: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service-task"]]
       Cpu: !If [IsProd, "1024", "512"]
       Memory: !If [IsProd, "2048", "1024"]
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
       ExecutionRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       TaskRoleArn:
@@ -129,6 +132,3 @@ Resources:
               ValueFrom: "payjp-api-password"
             - Name: "PAYMENT_PLATFORM_API_USERNAME"
               ValueFrom: "payjp-api-username"
-      NetworkMode: "awsvpc"
-      RequiresCompatibilities:
-        - "FARGATE"
