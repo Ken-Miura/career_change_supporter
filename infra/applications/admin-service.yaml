@@ -75,7 +75,9 @@ Resources:
             LogDriver: "awslogs"
             Options:
               awslogs-create-group: "true"
-              awslogs-group: "/ecs/admin-service"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-admin-service"
+                - ENV: !If [IsProd, "prod", "dev"]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
           PortMappings:
