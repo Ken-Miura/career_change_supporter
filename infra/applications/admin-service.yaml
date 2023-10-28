@@ -101,8 +101,6 @@ Resources:
               Value: !Sub "ccs-db-cluster-1.cluster-cm0p7cp5jzll.${AWS::Region}.rds.amazonaws.com"
             - Name: "AWS_S3_REGION"
               Value: !Ref AWS::Region
-            - Name: "PAYMENT_PLATFORM_API_URL"
-              Value: "https://api.pay.jp"
             - Name: "INQUIRY_EMAIL_ADDRESS"
               Value: "inquiry-desk@career-change-supporter.com"
             - Name: "SOCKET_FOR_ADMIN_APP"
@@ -128,7 +126,3 @@ Resources:
               ValueFrom: "index-master-password"
             - Name: "OPENSEARCH_USERNAME"
               ValueFrom: "index-master-user"
-            - Name: "PAYMENT_PLATFORM_API_PASSWORD"
-              ValueFrom: "payjp-api-password"
-            - Name: "PAYMENT_PLATFORM_API_USERNAME"
-              ValueFrom: "payjp-api-username"
