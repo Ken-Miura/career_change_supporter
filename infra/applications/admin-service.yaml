@@ -10,6 +10,10 @@ Parameters:
     Type: Number
     Description: Enter the number of admin service instances. If you want to stop the service, set 0 to this value.
     MinValue: 0
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for admin service
+    AllowedPattern: ^[a-f0-9]{40}$
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
@@ -66,7 +70,7 @@ Resources:
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:1b087bad827e53026159522731c6f62e72f5b904" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
             LogDriver: "awslogs"
             Options:
