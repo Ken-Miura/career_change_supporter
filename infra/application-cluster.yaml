@@ -132,3 +132,11 @@ Outputs:
     Value: !GetAtt CcsApplicationCluster.Arn
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationCluster"
+  TaskExecutionRole:
+    Value: !GetAtt CcsTaskExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TaskExecutionRole"
+  TaskRole:
+    Value: !GetAtt CcsTaskRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-TaskRole"
