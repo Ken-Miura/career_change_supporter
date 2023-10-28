@@ -84,7 +84,9 @@ Resources:
   CcsRdsMonitoringRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-rds-monitoring-role"]]
+      RoleName: !Sub
+        - "${ENV}-ccs-rds-monitoring-role-${AWS::Region}"
+        - ENV: !If [IsProd, "prod", "dev"]
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"monitoring.rds.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
