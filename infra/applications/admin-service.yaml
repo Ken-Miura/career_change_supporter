@@ -84,9 +84,9 @@ Resources:
             - ContainerPort: 3001
               Protocol: "tcp"
           Ulimit:
-            Name: "nofile" # 受け付け可能なリクエストの数（オープン可能なファイルディスクリプタの数）に関わるので大きめに変更する
-            SoftLimit: 65535
-            HardLimit: 65535
+            - Name: "nofile" # 受け付け可能なリクエストの数（オープン可能なファイルディスクリプタの数）に関わるので大きめに変更する
+              SoftLimit: 65535
+              HardLimit: 65535
           Environment:
             - Name: "SYSTEM_EMAIL_ADDRESS"
               Value: "no-reply@career-change-supporter.com"
