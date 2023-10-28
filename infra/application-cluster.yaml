@@ -25,7 +25,9 @@ Resources:
   CcsTaskExecutionRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-task-execution-role"]]
+      RoleName: !Sub
+        - "${ENV}-ccs-task-execution-role-${AWS::Region}"
+        - ENV: !If [IsProd, "prod", "dev"]
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
@@ -33,7 +35,9 @@ Resources:
   CcsTaskExecutionPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
-      ManagedPolicyName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsTaskExecutionPolicy"]]
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsTaskExecutionPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
       PolicyDocument: |
         {
             "Version": "2012-10-17",
@@ -57,70 +61,72 @@ Resources:
   CcsTaskRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-task-role"]]
+      RoleName: !Sub
+        - "${ENV}-ccs-task-role-${AWS::Region}"
+        - ENV: !If [IsProd, "prod", "dev"]
       AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
         - !Ref CcsIdentityImagesAccessPolicy
         - !Ref CcsCareersImagesAccessPolicy
         - !Ref CcsSendMailAccessPolicy
-    CcsIdentityImagesAccessPolicy:
-      Type: "AWS::IAM::ManagedPolicy"
-      Properties:
-        ManagedPolicyName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsIdentityImagesAccessPolicy"]]
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Sid: "ListObjectsInBucket"
-              Effect: "Allow"
-              Action:
-                - "s3:ListBucket"
-              Resource:
-                - !Sub
-                  - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}"
-                  - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
-            - Sid: "AllObjectActions"
-              Effect: "Allow"
-              Action: "s3:*Object"
-              Resource:
-                - !Sub
-                  - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}/*"
-                  - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
-    CcsCareersImagesAccessPolicy:
-      Type: "AWS::IAM::ManagedPolicy"
-      Properties:
-        ManagedPolicyName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsCareersImagesAccessPolicy"]]
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Sid: "ListObjectsInBucket"
-              Effect: "Allow"
-              Action:
-                - "s3:ListBucket"
-              Resource:
-                - !Sub
-                  - "arn:aws:s3:::${CCS_CAREER_IMAGES}"
-                  - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
-            - Sid: "AllObjectActions"
-              Effect: "Allow"
-              Action: "s3:*Object"
-              Resource:
-                - !Sub
-                  - "arn:aws:s3:::${CCS_CAREER_IMAGES}/*"
-                  - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
-    CcsSendMailAccessPolicy:
-      Type: "AWS::IAM::ManagedPolicy"
-      Properties:
-        ManagedPolicyName: !Join ["", [!If [IsProd, "Prod", "Dev"], "CcsSendMailAccessPolicy"]]
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Sid: "SendMailStatement"
-              Effect: "Allow"
-              Action:
-                - "ses:SendEmail"
-                - "ses:SendRawEmail"
-              Resource: !Sub "arn:aws:ses:*:${AWS::AccountId}:identity/*"
+  CcsIdentityImagesAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsIdentityImagesAccessPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "ListObjectsInBucket"
+            Effect: "Allow"
+            Action: "s3:ListBucket"
+            Resource: !Sub
+              - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}"
+              - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
+          - Sid: "AllObjectActions"
+            Effect: "Allow"
+            Action: "s3:*Object"
+            Resource: !Sub
+              - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}/*"
+              - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
+  CcsCareersImagesAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsCareersImagesAccessPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "ListObjectsInBucket"
+            Effect: "Allow"
+            Action: "s3:ListBucket"
+            Resource: !Sub
+              - "arn:aws:s3:::${CCS_CAREER_IMAGES}"
+              - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
+          - Sid: "AllObjectActions"
+            Effect: "Allow"
+            Action: "s3:*Object"
+            Resource: !Sub
+              - "arn:aws:s3:::${CCS_CAREER_IMAGES}/*"
+              - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
+  CcsSendMailAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsSendMailAccessPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "SendMailStatement"
+            Effect: "Allow"
+            Action:
+              - "ses:SendEmail"
+              - "ses:SendRawEmail"
+            Resource: !Sub "arn:aws:ses:*:${AWS::AccountId}:identity/*"
 Outputs:
   ApplicationCluster:
     Value: !GetAtt CcsApplicationCluster.Arn
