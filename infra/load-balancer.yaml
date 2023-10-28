@@ -9,7 +9,7 @@ Metadata:
           - UserServiceAccessRestrictionCustomHeaderValue
           - AdminServiceAccessRestrictionCustomHeaderValue
       - Label:
-          default: Optional parameter
+          default: Parameter basically using default value
         Parameters:
           - ServiceDomainName
 Parameters:
