@@ -1,7 +1,7 @@
 # 構築順
 依存関係があるため構築順序の通りに構築する必要がある。
 <ol>
-  <li>[NOTE](#NOTE)に記載のリソースを手動で構築</li>
+  <li>NOTEに記載のリソースを手動で構築</li>
   <li>network.yaml</li>
   <li>static-files.yaml</li>
   <li>data-store.yaml</li>
