@@ -16,7 +16,7 @@ Resources:
   CcsInitializeDbTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "migrate-db-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool-task"]]
       Cpu: "1024"
       Memory: "2048"
       NetworkMode: "awsvpc"
@@ -25,7 +25,7 @@ Resources:
       ExecutionRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "migration-tool"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool"]]
           Command:
             - "migrate"
             - "up"
@@ -36,7 +36,7 @@ Resources:
             Options:
               awslogs-create-group: "true"
               awslogs-group: !Sub
-                - "/ecs/${ENV}-ccs-db-initializer"
+                - "/ecs/${ENV}-ccs-migration-tool"
                 - ENV: !If [IsProd, "prod", "dev"]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"

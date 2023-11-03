@@ -16,7 +16,7 @@ Resources:
   CcsInitializeDbTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "initilize-db-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-initializer-task"]]
       Cpu: "256"
       Memory: "512"
       NetworkMode: "awsvpc"
@@ -25,7 +25,7 @@ Resources:
       ExecutionRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "db-initializer"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-db-initializer"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-db-initializer:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:

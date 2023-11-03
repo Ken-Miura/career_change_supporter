@@ -16,7 +16,7 @@ Resources:
   CcsInitializeIndexTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "initilize-index-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-initializer-task"]]
       Cpu: "256"
       Memory: "512"
       NetworkMode: "awsvpc"
@@ -25,7 +25,7 @@ Resources:
       ExecutionRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "index-initializer"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-initializer"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-index-initializer:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:

@@ -86,7 +86,7 @@ Resources:
   CcsAdminServiceTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service-task"]]
       Cpu: !If [IsProd, "1024", "512"]
       Memory: !If [IsProd, "2048", "1024"]
       NetworkMode: "awsvpc"
@@ -97,7 +97,7 @@ Resources:
       TaskRoleArn:
         - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
