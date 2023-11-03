@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdMigrateDbTask"、devの場合はスタック名に"DevMigrateDbTask"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for migration tool
+    AllowedPattern: ^[a-f0-9]{40}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsInitializeDbTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "migrate-db-task"]]
+      Cpu: "1024"
+      Memory: "2048"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      ContainerDefinitions:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "migration-tool"]]
+          Command:
+            - "migrate"
+            - "up"
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-db-initializer"
+                - ENV: !If [IsProd, "prod", "dev"]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Secrets:
+            - Name: "DATABASE_URL" # URLにユーザー名、パスワードを含むのでシークレットとする
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-url-for-migration"]]
