@@ -1,4 +1,19 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameters
+        Parameters:
+          - Environment
+          - InstanceCount
+          - ImageTag
+      - Label:
+          default: Parameter basically using default value
+        Parameters:
+          - SystemEmailAddress
+          - InquiryEmailAddress
+          - ServiceDomainName
 Parameters:
   # prodの場合はスタック名に"ProdAdminService"、devの場合はスタック名に"DevAdminService"を指定する
   Environment:
@@ -14,6 +29,20 @@ Parameters:
     Type: String
     Description: Enter ECR image tag for admin service
     AllowedPattern: ^[a-f0-9]{40}$
+  SystemEmailAddress:
+    Type: String
+    Default: no-reply@career-change-supporter.com
+  InquiryEmailAddress:
+    Type: String
+    Default: inquiry-desk@career-change-supporter.com
+  ServiceDomainName:
+    Type: String
+    Default: career-change-supporter.com
+    Description: |-
+      admin.${ServiceDomainName} are registered for prod.
+      admin.dev.${ServiceDomainName} are registered for dev.
+      In this template, those domain names are used for TOTP issuer.
+    AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
@@ -89,31 +118,38 @@ Resources:
               HardLimit: 65535
           Environment:
             - Name: "DB_HOST"
-              Value: !Sub "ccs-db-cluster-1.cluster-cm0p7cp5jzll.${AWS::Region}.rds.amazonaws.com"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
             - Name: "DB_PORT"
-              Value: "5432"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
             - Name: "DB_NAME"
               Value: "ccs_db"
             - Name: "REDIS_HOST"
-              Value: "master.ccs-redis-cluster.ppvswp.apne1.cache.amazonaws.com"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CacheHost"]]
             - Name: "REDIS_PORT"
-              Value: "6582"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CachePort"]]
             - Name: "AWS_S3_REGION"
               Value: !Ref AWS::Region
             - Name: "AWS_S3_ENDPOINT_URI"
               Value: !Sub "https://s3.${AWS::Region}.amazonaws.com"
             - Name: "IDENTITY_IMAGES_BUCKET_NAME"
-              Value: "ccs-identity-images"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
             - Name: "CAREER_IMAGES_BUCKET_NAME"
-              Value: "ccs-career-images"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
             - Name: "OPENSEARCH_ENDPOINT_URI"
-              Value: !Sub "https://vpc-ccs-opensearch-domain-5pt7jcwjcun2jtjgjxnb5cwi2u.${AWS::Region}.es.amazonaws.com"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IndexHost"]]
             - Name: "OPENSEARCH_AUTH"
               Value: "true"
             - Name: "SYSTEM_EMAIL_ADDRESS"
-              Value: "no-reply@career-change-supporter.com"
+              Value: !Ref SystemEmailAddress
             - Name: "INQUIRY_EMAIL_ADDRESS"
-              Value: "inquiry-desk@career-change-supporter.com"
+              Value: !Ref InquiryEmailAddress
             - Name: "AWS_SES_REGION"
               Value: "us-east-1"
             - Name: "AWS_SES_ENDPOINT_URI"
@@ -123,7 +159,7 @@ Resources:
             - Name: "SOCKET_FOR_ADMIN_APP"
               Value: "0.0.0.0:3001"
             - Name: "ADMIN_TOTP_ISSUER"
-              Value: "admin.career-change-supporter.com"
+              Value: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
             - Name: "TRANSFER_FEE_IN_YEN"
               Value: "300"
             - Name: "PLATFORM_FEE_RATE_IN_PERCENTAGE"
