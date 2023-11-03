@@ -156,6 +156,8 @@ Resources:
               Value: "https://email.us-east-1.amazonaws.com"
             - Name: "USE_ECS_TASK_ROLE"
               Value: "true"
+            - Name: "DB_ADMIN_NAME"
+              Value: "admin_app"
             - Name: "SOCKET_FOR_ADMIN_APP"
               Value: "0.0.0.0:3001"
             - Name: "ADMIN_TOTP_ISSUER"
@@ -166,17 +168,10 @@ Resources:
               Value: "50.0"
           Secrets:
             - Name: "OPENSEARCH_USERNAME"
-              ValueFrom:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
             - Name: "OPENSEARCH_PASSWORD"
-              ValueFrom:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-password"]]
-            - Name: "DB_ADMIN_NAME"
-              ValueFrom:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-username"]]
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-password"]]
             - Name: "DB_ADMIN_PASSWORD"
-              ValueFrom:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
             - Name: "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP"
-              ValueFrom:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "key-of-signed-cookie-for-admin-app"]]
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "key-of-signed-cookie-for-admin-app"]]

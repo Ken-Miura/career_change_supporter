@@ -1,0 +1,55 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdInitializeDbTask"、devの場合はスタック名に"DevInitializeDbTask"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for db initializer
+    AllowedPattern: ^[a-f0-9]{40}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsInitializeDbTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "initilize-db-task"]]
+      Cpu: "256"
+      Memory: "512"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      ContainerDefinitions:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "db-initializer"]]
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-db-initializer:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-db-initializer"
+                - ENV: !If [IsProd, "prod", "dev"]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Environment:
+            - Name: "DB_HOST"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+            - Name: "DB_PORT"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
+          Secrets:
+            - Name: "DB_ADMIN_USER"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
+            - Name: "DB_ADMIN_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-password"]]
+            - Name: "USER_APP_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-user-app-password"]]
+            - Name: "ADMIN_APP_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
