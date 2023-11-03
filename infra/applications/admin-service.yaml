@@ -166,12 +166,17 @@ Resources:
               Value: "50.0"
           Secrets:
             - Name: "OPENSEARCH_USERNAME"
-              ValueFrom: "index-master-user"
+              ValueFrom:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
             - Name: "OPENSEARCH_PASSWORD"
-              ValueFrom: "index-master-password"
+              ValueFrom:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-password"]]
             - Name: "DB_ADMIN_NAME"
-              ValueFrom: "db-admin-app-username"
+              ValueFrom:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-username"]]
             - Name: "DB_ADMIN_PASSWORD"
-              ValueFrom: "db-admin-app-password"
+              ValueFrom:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
             - Name: "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP"
-              ValueFrom: "key-of-signed-cookie-for-admin-app"
+              ValueFrom:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "prod", "dev"], "key-of-signed-cookie-for-admin-app"]]
