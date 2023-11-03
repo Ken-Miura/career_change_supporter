@@ -166,7 +166,6 @@ Resources:
         - "FARGATE"
       Cpu: "1024"
       Memory: "3072"
-
   ECSTaskDefinition2:
     Type: "AWS::ECS::TaskDefinition"
     Properties:

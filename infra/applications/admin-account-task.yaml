@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameters
+        Parameters:
+          - Environment
+          - ImageTag
+      - Label:
+          default: Parameter basically using default value
+        Parameters:
+          - ServiceDomainName
+Parameters:
+  # prodの場合はスタック名に"ProdAdminAccountTask"、devの場合はスタック名に"DevAdminAccountTask"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for admin account
+    AllowedPattern: ^[a-f0-9]{40}$
+  ServiceDomainName:
+    Type: String
+    Default: career-change-supporter.com
+    Description: |-
+      admin.${ServiceDomainName} are registered for prod.
+      admin.dev.${ServiceDomainName} are registered for dev.
+      In this template, those domain names are used for TOTP issuer.
+    AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsInitializeDbTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-account-task"]]
+      Cpu: "512"
+      Memory: "1024"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      ContainerDefinitions:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-account"]]
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-account:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-admin-account"
+                - ENV: !If [IsProd, "prod", "dev"]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Environment:
+            - Name: "DB_HOST"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+            - Name: "DB_PORT"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
+            - Name: "DB_NAME"
+              Value: "ccs_db"
+            - Name: "DB_ADMIN_NAME"
+              Value: "admin_app"
+            - Name: "ADMIN_TOTP_ISSUER"
+              Value: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
+          Secrets:
+            - Name: "DB_ADMIN_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
