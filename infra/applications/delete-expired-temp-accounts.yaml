@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdDeleteExpiredTempAccounts"、devの場合はスタック名に"DevDeleteExpiredTempAccounts"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for delete expired temp accounts
+    AllowedPattern: ^[a-f0-9]{40}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
