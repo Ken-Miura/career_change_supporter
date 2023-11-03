@@ -1,4 +1,17 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Required parameters
+        Parameters:
+          - Environment
+          - ImageTag
+          - AdminEmailAddress
+      - Label:
+          default: Parameter basically using default value
+        Parameters:
+          - SystemEmailAddress
 Parameters:
   # prodの場合はスタック名に"ProdDeleteExpiredTempAccounts"、devの場合はスタック名に"DevDeleteExpiredTempAccounts"を指定する
   Environment:
@@ -10,6 +23,65 @@ Parameters:
     Type: String
     Description: Enter ECR image tag for delete expired temp accounts
     AllowedPattern: ^[a-f0-9]{40}$
+  AdminEmailAddress:
+    Type: String
+    Description: Enter email address to receive notification when error happens
+  SystemEmailAddress:
+    Type: String
+    Default: no-reply@career-change-supporter.com
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
+  CcsDeleteExpiredTempAccounts:
+    Type: AWS::Events::Rule
+    Properties: TODO
+  CcsDeleteExpiredTempAccountsTask:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-task"]]
+      Cpu: "1024"
+      Memory: "2048"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      TaskRoleArn:
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
+      ContainerDefinitions:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts"]]
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-delete-expired-temp-accounts:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-delete-expired-temp-accounts"
+                - ENV: !If [IsProd, "prod", "dev"]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Environment:
+            - Name: "DB_HOST"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+            - Name: "DB_PORT"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
+            - Name: "DB_NAME"
+              Value: "ccs_db"
+            - Name: "DB_ADMIN_NAME"
+              Value: "admin_app"
+            - Name: "ADMIN_EMAIL_ADDRESS"
+              Value: !Ref AdminEmailAddress
+            - Name: "SYSTEM_EMAIL_ADDRESS"
+              Value: !Ref SystemEmailAddress
+            - Name: "AWS_SES_REGION"
+              Value: "us-east-1"
+            - Name: "AWS_SES_ENDPOINT_URI"
+              Value: "https://email.us-east-1.amazonaws.com"
+            - Name: "USE_ECS_TASK_ROLE"
+              Value: "true"
+          Secrets:
+            - Name: "DB_ADMIN_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
