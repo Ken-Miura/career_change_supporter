@@ -42,8 +42,8 @@ use uuid::Uuid;
 
 use crate::err::{unexpected_err_resp, Code};
 
-/// 身分証の画像ファイルのバイト単位での最大値（4MB）
-pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
+/// 身分証の画像ファイルのバイト単位での最大値
+pub(crate) const MAX_CAREER_IMAGE_SIZE_IN_BYTES: usize = 8 * 1024 * 1024;
 
 pub(crate) async fn career(
     VerifiedUser { user_info }: VerifiedUser,

@@ -59,7 +59,7 @@ export namespace Message {
     export const INVALID_UTF8_SEQUENCE_MESSAGE = 'UTF-8として不正な文字列です。エンコーディング方式にUTF-8を用いてください'
     export const INVALID_IDENTITY_JSON_MESSAGE = '不正な形式のユーザー情報です'
     export const NO_JPEG_EXTENSION_MESSAGE = '画像のファイル名がJPEGを示す拡張子ではありません。ファイル名は".jpg"、".jpeg"、".JPG"、".JPEG"または".jpe"で終わる必要があります'
-    export const EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE = '画像のファイルサイズが4MBを超えています'
+    export const EXCEED_MAX_IDENTITY_IMAGE_SIZE_LIMIT_MESSAGE = '画像のファイルサイズが許容されているサイズを超えています'
     export const INVALID_JPEG_IMAGE_MESSAGE = '身分証明書の画像がJPEG以外の形式です。身分証明書の画像にはJPEG形式をご利用下さい'
     export const NO_IDENTITY_FOUND_MESSAGE = 'ユーザー情報が含まれていない不正なリクエストです'
     export const NO_IDENTITY_IMAGE1_FOUND_MESSAGE = '身分証明書の表面の画像が含まれていない不正なリクエストです'

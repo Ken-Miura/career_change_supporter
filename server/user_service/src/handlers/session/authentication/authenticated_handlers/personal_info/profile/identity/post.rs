@@ -39,8 +39,8 @@ use crate::err::{self, unexpected_err_resp, Code};
 
 use super::identity_validator::{validate_identity, IdentityValidationError};
 
-/// 身分証の画像ファイルのバイト単位での最大値（4MB）
-pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 4 * 1024 * 1024;
+/// 身分証の画像ファイルのバイト単位での最大値
+pub(crate) const MAX_IDENTITY_IMAGE_SIZE_IN_BYTES: usize = 8 * 1024 * 1024;
 
 pub(crate) async fn post_identity(
     User { user_info }: User,

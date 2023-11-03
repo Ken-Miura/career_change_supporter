@@ -153,7 +153,7 @@ describe('AddCareerPage.vue', () => {
     expect(careerImageLabel.text()).toContain('証明書類')
     const careerImageDescription = wrapper.find('[data-test="career-image-description"]')
     expect(careerImageDescription.exists()).toBe(true)
-    expect(careerImageDescription.text()).toContain('勤務先名称に記載した勤め先にご本人が勤務されていた証明として、書類をアップロードしていただきます。証明書類として、名刺、給与・賞与明細、源泉徴収票、在職証明書、退職証明書または離職票をご利用になれます。証明書類の画像は、jpegかつサイズが4MB以下で、勤務先名称に記載した内容とご本人のお名前が記載されている必要があります。マイナンバーが記載されている書類は、アップロード前にマイナンバーの箇所が隠されていることをご確認下さい。表面、裏面のある書類は表面のアップロードは必須、裏面のアップロードは任意となります。')
+    expect(careerImageDescription.text()).toContain('勤務先名称に記載した勤め先にご本人が勤務されていた証明として、書類をアップロードしていただきます。証明書類として、名刺、給与・賞与明細、源泉徴収票、在職証明書、退職証明書または離職票をご利用になれます。証明書類の画像は、jpegかつサイズが8MB以下で、勤務先名称に記載した内容とご本人のお名前が記載されている必要があります。マイナンバーが記載されている書類は、アップロード前にマイナンバーの箇所が隠されていることをご確認下さい。表面、裏面のある書類は表面のアップロードは必須、裏面のアップロードは任意となります。')
     const careerImage1Label = wrapper.find('[data-test="career-image1-label"]')
     expect(careerImage1Label.exists()).toBe(true)
     expect(careerImage1Label.text()).toContain('表面')

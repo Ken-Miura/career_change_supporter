@@ -126,7 +126,7 @@
               証明書類
             </div>
             <div data-test="career-image-description" class="mt-2 text-base lg:text-lg justify-self-start col-span-6 pt-1 lg:pt-3 pl-1 lg:pl-3">
-              勤務先名称に記載した勤め先にご本人が勤務されていた証明として、書類をアップロードしていただきます。証明書類として、<span class=" text-red-500">名刺、給与・賞与明細、源泉徴収票、在職証明書、退職証明書または離職票</span>をご利用になれます。証明書類の画像は、<span class=" text-red-500">jpegかつサイズが4MB以下</span>で、勤務先名称に記載した内容とご本人のお名前が記載されている必要があります。マイナンバーが記載されている書類は、アップロード前にマイナンバーの箇所が隠されていることをご確認下さい。表面、裏面のある書類は表面のアップロードは必須、裏面のアップロードは任意となります。
+              勤務先名称に記載した勤め先にご本人が勤務されていた証明として、書類をアップロードしていただきます。証明書類として、<span class=" text-red-500">名刺、給与・賞与明細、源泉徴収票、在職証明書、退職証明書または離職票</span>をご利用になれます。証明書類の画像は、<span class=" text-red-500">jpegかつサイズが8MB以下</span>で、勤務先名称に記載した内容とご本人のお名前が記載されている必要があります。マイナンバーが記載されている書類は、アップロード前にマイナンバーの箇所が隠されていることをご確認下さい。表面、裏面のある書類は表面のアップロードは必須、裏面のアップロードは任意となります。
             </div>
             <div class="mt-2 w-full justify-self-start col-span-6 pt-3 rounded bg-gray-200">
               <label data-test="career-image1-label" class="block text-gray-700 text-base lg:text-2xl font-bold mb-0 lg:mb-2 ml-3">表面</label>
