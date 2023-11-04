@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-  # prodの場合はスタック名に"ProdInitializeIndexTask"、devの場合はスタック名に"DevInitializeIndexTask"を指定する
+  # prodの場合はスタック名に"ProdIndexInitializerTask"、devの場合はスタック名に"DevIndexInitializerTask"を指定する
   Environment:
     Type: String
     AllowedValues:
@@ -23,7 +23,7 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       ExecutionRoleArn:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-index-initializer"]]
           Essential: true
