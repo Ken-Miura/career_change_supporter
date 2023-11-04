@@ -36,6 +36,7 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
 下記の対応を行う
 - CAレコードを作成する
 - DNSSECに対応させる（DNSSECに対応させる際、KSKの管理にKMS上にCMKを作ることになる）
+- DNSSECを有効にした際に監視すべき指標をCloudWatch Alarmに設定しておく
 
 ## Systems Manager
 下記のSecureStringパラメータを作成する
@@ -45,6 +46,7 @@ TODO
 下記の対応を行う
 - 問い合わせを受け付けるためのメールアドレスを用意し、アカウントを作成する。そして、メールの受信ができるようにRoute53にレコードを作成する
 - DMARCに対応させる（SPF、DKIMの対応を行う）
+- バウンスレートの指標をCloudWatch Alarmに設定しておく
 
 ## ECR
 TODO
