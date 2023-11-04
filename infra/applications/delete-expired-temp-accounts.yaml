@@ -60,11 +60,11 @@ Resources:
             NetworkConfiguration:
               AwsVpcConfiguration:
                 AssignPublicIp: "ENABLED"
-              SecurityGroups:
-                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "ToolSecurityGroupId"]]
-              Subnets:
-                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
-                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
+                SecurityGroups:
+                  - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "ToolSecurityGroupId"]]
+                Subnets:
+                  - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
+                  - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
             PlatformVersion: "1.4.0"
             TaskCount: !Ref InstanceCount
   CcsDeleteExpiredTempAccountsTask:
@@ -77,9 +77,9 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       ExecutionRoleArn:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       TaskRoleArn:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts"]]
           Essential: true
