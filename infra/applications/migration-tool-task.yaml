@@ -29,6 +29,11 @@ Resources:
           Command:
             - "migrate"
             - "up"
+            - "-u"
+            - !Sub
+              - "postgres://${!DB_ADMIN_USER}:${!DB_ADMIN_PASSWORD}@${DB_HOST}/ccs_db"
+              - DB_HOST:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
@@ -41,5 +46,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
           Secrets:
-            - Name: "DATABASE_URL" # URLにユーザー名、パスワードを含むのでシークレットとする
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-url-for-migration"]]
+            - Name: "DB_ADMIN_USER"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
+            - Name: "DB_ADMIN_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-password"]]
