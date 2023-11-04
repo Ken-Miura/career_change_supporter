@@ -49,14 +49,14 @@ Resources:
   CcsAdminService:
     Type: "AWS::ECS::Service"
     Properties:
-      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
       TaskDefinition: !Ref CcsAdminServiceTaskDefinition # TODO: タスク定義更新後にデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
       Cluster:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
       LoadBalancers:
         - TargetGroupArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
-          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "admin-service"]]
+          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
           ContainerPort: 3001
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -80,7 +80,6 @@ Resources:
         Type: "ECS"
       DesiredCount: !Ref InstanceCount
       HealthCheckGracePeriodSeconds: 1
-      LaunchType: "FARGATE"
       SchedulingStrategy: "REPLICA"
       PlatformVersion: "1.4.0"
   CcsAdminServiceTaskDefinition:
@@ -93,9 +92,9 @@ Resources:
       RequiresCompatibilities:
         - "FARGATE"
       ExecutionRoleArn:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       TaskRoleArn:
-        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
           Essential: true
@@ -112,7 +111,7 @@ Resources:
           PortMappings:
             - ContainerPort: 3001
               Protocol: "tcp"
-          Ulimit:
+          Ulimits:
             - Name: "nofile" # 受け付け可能なリクエストの数（オープン可能なファイルディスクリプタの数）に関わるので大きめに変更する
               SoftLimit: 65535
               HardLimit: 65535
