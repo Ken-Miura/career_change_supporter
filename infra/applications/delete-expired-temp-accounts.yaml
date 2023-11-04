@@ -8,6 +8,7 @@ Metadata:
           - Environment
           - ImageTag
           - AdminEmailAddress
+          - InstanceCount
       - Label:
           default: Parameter basically using default value
         Parameters:
@@ -29,12 +30,43 @@ Parameters:
   SystemEmailAddress:
     Type: String
     Default: no-reply@career-change-supporter.com
+  InstanceCount:
+    Type: Number
+    Description: Enter the number of delete expired temp acoounts instances. If you want to stop the scheduled task, set 0 to this value.
+    MinValue: 0
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
   CcsDeleteExpiredTempAccounts:
     Type: AWS::Events::Rule
-    Properties: TODO
+    Properties:
+      Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-scheduled-task"]]
+      RoleArn:
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      ScheduleExpression: "cron(0 18 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-scheduled-task"]]
+          Arn:
+            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+          RoleArn:
+            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+          EcsParameters:
+            TaskDefinitionArn: !Ref CcsDeleteExpiredTempAccountsTask
+            CapacityProviderStrategy:
+              - CapacityProvider: !If [IsProd, "FARGATE", "FARGATE_SPOT"]
+                Weight: 1
+                Base: 0
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                AssignPublicIp: "ENABLED"
+              SecurityGroups:
+                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "ToolSecurityGroupId"]]
+              Subnets:
+                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
+                - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
+            PlatformVersion: "1.4.0"
+            TaskCount: !Ref InstanceCount
   CcsDeleteExpiredTempAccountsTask:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
