@@ -31,7 +31,7 @@ Resources:
             - "up"
             - "-u"
             - !Sub
-              - "postgres://${!DB_ADMIN_USER}:${!DB_ADMIN_PASSWORD}@${DB_HOST}/ccs_db"
+              - "postgres://${!DB_MASTER_USER}:${!DB_MASTER_PASSWORD}@${DB_HOST}/ccs_db"
               - DB_HOST:
                   Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
           Essential: true
@@ -46,7 +46,7 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
           Secrets:
-            - Name: "DB_ADMIN_USER"
+            - Name: "DB_MASTER_USER"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
-            - Name: "DB_ADMIN_PASSWORD"
+            - Name: "DB_MASTER_PASSWORD"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-password"]]

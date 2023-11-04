@@ -45,9 +45,9 @@ Resources:
               Value:
                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
           Secrets:
-            - Name: "DB_ADMIN_USER"
+            - Name: "DB_MASTER_USER"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
-            - Name: "DB_ADMIN_PASSWORD"
+            - Name: "DB_MASTER_PASSWORD"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-password"]]
             - Name: "USER_APP_PASSWORD"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-user-app-password"]]

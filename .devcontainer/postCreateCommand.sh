@@ -20,8 +20,8 @@ echo "db initialization start"
 # ロールの追加、DBインスタンスの作成を実施
 export DB_HOST=db
 export DB_PORT=5432
-export DB_ADMIN_USER=postgres
-export DB_ADMIN_PASSWORD=example
+export DB_MASTER_USER=postgres
+export DB_MASTER_PASSWORD=example
 export USER_APP_PASSWORD=test1234
 export ADMIN_APP_PASSWORD=test13579
 ./data_store_setup_files/initdb/init.sh > /dev/null;
