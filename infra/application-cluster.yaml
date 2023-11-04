@@ -28,7 +28,15 @@ Resources:
       RoleName: !Sub
         - "${ENV}-ccs-task-execution-role-${AWS::Region}"
         - ENV: !If [IsProd, "prod", "dev"]
-      AssumeRolePolicyDocument: "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"ecs-tasks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+                - "events.amazonaws.com"
+            Action: "sts:AssumeRole"
       MaxSessionDuration: 3600
       ManagedPolicyArns:
         - !Ref CcsTaskExecutionPolicy
