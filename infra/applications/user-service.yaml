@@ -15,7 +15,7 @@ Metadata:
           - InquiryEmailAddress
           - ServiceDomainName
 Parameters:
-  # prodの場合はスタック名に"ProdAdminService"、devの場合はスタック名に"DevAdminService"を指定する
+  # prodの場合はスタック名に"ProdUserService"、devの場合はスタック名に"DevUserService"を指定する
   Environment:
     Type: String
     AllowedValues:
@@ -23,11 +23,11 @@ Parameters:
       - dev
   InstanceCount:
     Type: Number
-    Description: Enter the number of admin service instances. If you want to stop the service, set 0 to this value.
+    Description: Enter the number of user service instances. If you want to stop the service, set 0 to this value.
     MinValue: 0
   ImageTag:
     Type: String
-    Description: Enter ECR image tag for admin service
+    Description: Enter ECR image tag for user service
     AllowedPattern: ^[a-f0-9]{40}$
   SystemEmailAddress:
     Type: String
@@ -46,23 +46,23 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  CcsAdminService:
+  CcsUserService:
     Type: "AWS::ECS::Service"
     Properties:
-      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
-      TaskDefinition: !Ref CcsAdminServiceTaskDefinition # TODO: タスク定義更新後にデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
+      ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service"]]
+      TaskDefinition: !Ref CcsUserServiceTaskDefinition # TODO: タスク定義更新後にデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
       Cluster:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
       LoadBalancers:
         - TargetGroupArn:
-            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
-          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
+            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "UserServiceTg"]]
+          ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service"]]
           ContainerPort: 3001
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: "ENABLED"
           SecurityGroups:
-            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "AdminServiceSecurityGroupId"]]
+            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "UserServiceSecurityGroupId"]]
           Subnets:
             - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
             - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
@@ -82,10 +82,10 @@ Resources:
       HealthCheckGracePeriodSeconds: 1
       SchedulingStrategy: "REPLICA"
       PlatformVersion: "1.4.0"
-  CcsAdminServiceTaskDefinition:
+  CcsUserServiceTaskDefinition:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service-task"]]
       Cpu: !If [IsProd, "1024", "512"]
       Memory: !If [IsProd, "2048", "1024"]
       NetworkMode: "awsvpc"
@@ -96,15 +96,15 @@ Resources:
       TaskRoleArn:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-admin-service:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-user-service:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
             LogDriver: "awslogs"
             Options:
               awslogs-create-group: "true"
               awslogs-group: !Sub
-                - "/ecs/${ENV}-ccs-admin-service"
+                - "/ecs/${ENV}-ccs-user-service"
                 - ENV: !If [IsProd, "prod", "dev"]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
