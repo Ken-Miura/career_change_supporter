@@ -47,8 +47,9 @@ Resources:
       State: "ENABLED"
       Targets:
         - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-scheduled-task"]]
-          Arn:
-            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+          Arn: !GetAtt
+            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+            - Arn
           RoleArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
           EcsParameters:

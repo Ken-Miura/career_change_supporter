@@ -51,8 +51,9 @@ Resources:
     Properties:
       ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
       TaskDefinition: !Ref CcsAdminServiceTaskDefinition # TODO: タスク定義更新後にデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
-      Cluster:
-        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+      Cluster: !GetAtt
+        - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+        - Arn
       LoadBalancers:
         - TargetGroupArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "AdminServiceTg"]]
