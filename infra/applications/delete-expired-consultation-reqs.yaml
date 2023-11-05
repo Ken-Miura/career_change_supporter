@@ -43,7 +43,7 @@ Resources:
       Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-consultation-reqs-scheduled-task"]]
       RoleArn:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
-      ScheduleExpression: "cron(0 18 * * ? *)"
+      ScheduleExpression: "cron(30 18 * * ? *)"
       State: "ENABLED"
       Targets:
         - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-consultation-reqs-scheduled-task"]]
