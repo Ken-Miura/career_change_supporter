@@ -224,3 +224,36 @@ Resources:
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-application-id"]]
             - Name: "SKY_WAY_SECRET_KEY"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-secret-key"]]
+  CcsUserServiceAutoScalingRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub
+        - "${ENV}-ccs-user-service-auto-scaling-role-${AWS::Region}"
+        - ENV: !If [IsProd, "prod", "dev"]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "application-autoscaling.amazonaws.com"
+            Action: "sts:AssumeRole"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+        - !Ref CcsUserServiceAutoScalingPolicy
+  CcsUserServiceAutoScalingPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsUserServiceAutoScalingPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - application-autoscaling:*
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:PutMetricAlarm
+              - ecs:DescribeServices
+              - ecs:UpdateService
+            Resource: "*"
