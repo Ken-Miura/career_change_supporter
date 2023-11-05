@@ -46,26 +46,20 @@ Resources:
       ManagedPolicyName: !Sub
         - "${ENV}CcsTaskExecutionPolicy-${AWS::Region}"
         - ENV: !If [IsProd, "Prod", "Dev"]
-      PolicyDocument: |
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "ecr:GetAuthorizationToken",
-                        "ecr:BatchCheckLayerAvailability",
-                        "ecr:GetDownloadUrlForLayer",
-                        "ecr:BatchGetImage",
-                        "logs:CreateLogStream",
-                        "logs:PutLogEvents",
-                        "logs:CreateLogGroup",
-                        "ssm:GetParameters"
-                    ],
-                    "Resource": "*"
-                }
-            ]
-        }
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "ecr:GetAuthorizationToken"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+              - "logs:CreateLogGroup"
+              - "ssm:GetParameters"
+            Resource: "*"
   CcsTaskRole:
     Type: "AWS::IAM::Role"
     Properties:
