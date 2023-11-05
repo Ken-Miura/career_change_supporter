@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdMigrationToolRollbackTask"、devの場合はスタック名に"DevMigrationToolRollbackTask"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+  ImageTag:
+    Type: String
+    Description: Enter ECR image tag for migration tool
+    AllowedPattern: ^[a-f0-9]{40}$
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  CcsInitializeDbTaskDefinition:
+    Type: "AWS::ECS::TaskDefinition"
+    Properties:
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool-rollback-task"]]
+      Cpu: "1024"
+      Memory: "2048"
+      NetworkMode: "awsvpc"
+      RequiresCompatibilities:
+        - "FARGATE"
+      ExecutionRoleArn:
+        Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
+      ContainerDefinitions:
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool-rollback"]]
+          Command:
+            - "migrate"
+            - "down"
+            - "-u"
+            - !Sub
+              - "postgres://${!DB_MASTER_USER}:${!DB_MASTER_PASSWORD}@${DB_HOST}/ccs_db"
+              - DB_HOST:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+          Essential: true
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-create-group: "true"
+              awslogs-group: !Sub
+                - "/ecs/${ENV}-ccs-migration-tool-rollback"
+                - ENV: !If [IsProd, "prod", "dev"]
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: "ecs"
+          Secrets:
+            - Name: "DB_MASTER_USER"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
+            - Name: "DB_MASTER_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-password"]]
