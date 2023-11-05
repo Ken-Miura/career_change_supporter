@@ -6,7 +6,8 @@ Metadata:
           default: Required parameters
         Parameters:
           - Environment
-          - InstanceCount
+          - MinInstanceCount
+          - MaxInstanceCount
           - ImageTag
           - AdminEmailAddress
           - BankCode
@@ -28,9 +29,13 @@ Parameters:
     AllowedValues:
       - prod
       - dev
-  InstanceCount:
+  MinInstanceCount:
     Type: Number
-    Description: Enter the number of user service instances. If you want to stop the service, set 0 to this value.
+    Description: Enter the minimum number of user service instances. If you want to stop the service, set 0 to this value.
+    MinValue: 0
+  MaxInstanceCount:
+    Type: Number
+    Description: Enter the maximum number of user service instances. This value must be MinInstanceCount or more.
     MinValue: 0
   ImageTag:
     Type: String
@@ -110,7 +115,7 @@ Resources:
           Rollback: true
       DeploymentController:
         Type: "ECS"
-      DesiredCount: !Ref InstanceCount
+      DesiredCount: !Ref MinInstanceCount
       HealthCheckGracePeriodSeconds: 1
       SchedulingStrategy: "REPLICA"
       PlatformVersion: "1.4.0"
@@ -250,10 +255,25 @@ Resources:
         Version: "2012-10-17"
         Statement:
           - Effect: "Allow"
-            Action:
+            Action: # TODO: 適切な権限をチェック
               - application-autoscaling:*
               - cloudwatch:DescribeAlarms
               - cloudwatch:PutMetricAlarm
               - ecs:DescribeServices
               - ecs:UpdateService
             Resource: "*"
+  CcsUserServiceAutoScalingTarget:
+    Type: "AWS::ApplicationAutoScaling::ScalableTarget"
+    DependsOn: CcsUserService
+    Properties:
+      ServiceNamespace: ecs
+      ResourceId: !Join
+        - "/"
+        - - service
+          - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
+          - !GetAtt CcsUserService.Name
+      ScalableDimension: 'ecs:service:DesiredCount'
+      MinCapacity: !Ref MinInstanceCount
+      MaxCapacity: !Ref MaxInstanceCount
+      RoleARN:
+        Fn::Sub: "arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService"
