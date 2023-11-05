@@ -14,7 +14,7 @@ Metadata:
         Parameters:
           - SystemEmailAddress
 Parameters:
-  # prodの場合はスタック名に"ProdDeleteExpiredTempAccounts"、devの場合はスタック名に"DevDeleteExpiredTempAccounts"を指定する
+  # prodの場合はスタック名に"ProdDeleteExpiredDeletedUserAccounts"、devの場合はスタック名に"DevDeleteExpiredDeletedUserAccounts"を指定する
   Environment:
     Type: String
     AllowedValues:
@@ -22,7 +22,7 @@ Parameters:
       - dev
   ImageTag:
     Type: String
-    Description: Enter ECR image tag for delete expired temp accounts
+    Description: Enter ECR image tag for delete expired deleted user accounts
     AllowedPattern: ^[a-f0-9]{40}$
   AdminEmailAddress:
     Type: String
@@ -37,22 +37,22 @@ Parameters:
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
-  CcsDeleteExpiredTempAccounts:
+  CcsDeleteExpiredDeletedUserAccounts:
     Type: AWS::Events::Rule
     Properties:
-      Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-scheduled-task"]]
+      Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts-scheduled-task"]]
       RoleArn:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
-      ScheduleExpression: "cron(0 18 * * ? *)"
+      ScheduleExpression: "cron(0 19 * * ? *)"
       State: "ENABLED"
       Targets:
-        - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-scheduled-task"]]
+        - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts-scheduled-task"]]
           Arn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
           RoleArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
           EcsParameters:
-            TaskDefinitionArn: !Ref CcsDeleteExpiredTempAccountsTask
+            TaskDefinitionArn: !Ref CcsDeleteExpiredDeletedUserAccountsTask
             CapacityProviderStrategy:
               - CapacityProvider: !If [IsProd, "FARGATE", "FARGATE_SPOT"]
                 Weight: 1
@@ -67,10 +67,10 @@ Resources:
                   - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
             PlatformVersion: "1.4.0"
             TaskCount: !Ref InstanceCount
-  CcsDeleteExpiredTempAccountsTask:
+  CcsDeleteExpiredDeletedUserAccountsTask:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
-      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts-task"]]
+      Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts-task"]]
       Cpu: "1024"
       Memory: "2048"
       NetworkMode: "awsvpc"
@@ -81,15 +81,15 @@ Resources:
       TaskRoleArn:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskRole"]]
       ContainerDefinitions:
-        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-temp-accounts"]]
+        - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-delete-expired-temp-accounts:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-delete-expired-deleted-user-accounts:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
             LogDriver: "awslogs"
             Options:
               awslogs-create-group: "true"
               awslogs-group: !Sub
-                - "/ecs/${ENV}-ccs-delete-expired-temp-accounts"
+                - "/ecs/${ENV}-ccs-delete-expired-deleted-user-accounts"
                 - ENV: !If [IsProd, "prod", "dev"]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
