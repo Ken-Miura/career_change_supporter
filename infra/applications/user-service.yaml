@@ -8,6 +8,13 @@ Metadata:
           - Environment
           - InstanceCount
           - ImageTag
+          - AdminEmailAddress
+          - BankCode
+          - BankName
+          - BankBranceCode
+          - BankBranceName
+          - BankAccountNumber
+          - BankAccountHolderName
       - Label:
           default: Parameter basically using default value
         Parameters:
@@ -29,18 +36,42 @@ Parameters:
     Type: String
     Description: Enter ECR image tag for user service
     AllowedPattern: ^[a-f0-9]{40}$
+  BankCode:
+    Type: String
+    Description: Enter bank code for service owner to mediate consulting fee between user and consultant.
+    AllowedPattern: ^[0-9]{4}$
+  BankName:
+    Type: String
+    Description: Enter bank name for service owner to mediate consulting fee between user and consultant.
+  BankBranceCode:
+    Type: String
+    Description: Enter bank branch code for service owner to mediate consulting fee between user and consultant.
+    AllowedPattern: ^[0-9]{3}$
+  BankBranceName:
+    Type: String
+    Description: Enter bank branch name for service owner to mediate consulting fee between user and consultant.
+  BankAccountNumber:
+    Type: String
+    Description: Enter bank account number for service owner to mediate consulting fee between user and consultant.
+    AllowedPattern: ^[0-9]{7,8}$
+  BankAccountHolderName:
+    Type: String
+    Description: Enter bank account holder name for service owner to mediate consulting fee between user and consultant.
   SystemEmailAddress:
     Type: String
     Default: no-reply@career-change-supporter.com
   InquiryEmailAddress:
     Type: String
     Default: inquiry-desk@career-change-supporter.com
+  AdminEmailAddress:
+    Type: String
+    Description: Enter email address to receive notification
   ServiceDomainName:
     Type: String
     Default: career-change-supporter.com
     Description: |-
-      admin.${ServiceDomainName} are registered for prod.
-      admin.dev.${ServiceDomainName} are registered for dev.
+      ${ServiceDomainName} are registered for prod.
+      dev.${ServiceDomainName} are registered for dev.
       In this template, those domain names are used for TOTP issuer.
     AllowedPattern: ^([a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.)+[a-zA-Z]{2,}$
 Conditions:
@@ -57,7 +88,7 @@ Resources:
         - TargetGroupArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdLoadBalancer", "DevLoadBalancer"], "UserServiceTg"]]
           ContainerName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service"]]
-          ContainerPort: 3001
+          ContainerPort: 3000
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: "ENABLED"
@@ -86,8 +117,8 @@ Resources:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
       Family: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service-task"]]
-      Cpu: !If [IsProd, "1024", "512"]
-      Memory: !If [IsProd, "2048", "1024"]
+      Cpu: !If [IsProd, "2048", "512"]
+      Memory: !If [IsProd, "4096", "1024"]
       NetworkMode: "awsvpc"
       RequiresCompatibilities:
         - "FARGATE"
@@ -109,12 +140,12 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
           PortMappings:
-            - ContainerPort: 3001
+            - ContainerPort: 3000
               Protocol: "tcp"
           Ulimits:
             - Name: "nofile" # 受け付け可能なリクエストの数（オープン可能なファイルディスクリプタの数）に関わるので大きめに変更する
-              SoftLimit: 65535
-              HardLimit: 65535
+              SoftLimit: 1048576
+              HardLimit: 1048576
           Environment:
             - Name: "DB_HOST"
               Value:
@@ -155,22 +186,40 @@ Resources:
               Value: "https://email.us-east-1.amazonaws.com"
             - Name: "USE_ECS_TASK_ROLE"
               Value: "true"
-            - Name: "DB_ADMIN_NAME"
-              Value: "admin_app"
-            - Name: "SOCKET_FOR_ADMIN_APP"
-              Value: "0.0.0.0:3001"
-            - Name: "ADMIN_TOTP_ISSUER"
-              Value: !If [IsProd, !Sub "admin.${ServiceDomainName}", !Sub "admin.dev.${ServiceDomainName}"]
-            - Name: "TRANSFER_FEE_IN_YEN"
-              Value: "300"
-            - Name: "PLATFORM_FEE_RATE_IN_PERCENTAGE"
-              Value: "50.0"
+            - Name: "DB_USER_NAME"
+              Value: "user_app"
+            - Name: "SOCKET_FOR_USER_APP"
+              Value: "0.0.0.0:3000"
+            - Name: "URL_FOR_FRONT_END"
+              Value: !Sub "https://${ServiceDomainName}"
+            - Name: "TERMS_OF_USE_VERSION"
+              Value: "1"
+            - Name: "USER_TOTP_ISSUER"
+              Value: !If [IsProd, !Sub "${ServiceDomainName}", !Sub "dev.${ServiceDomainName}"]
+            - Name: "ADMIN_EMAIL_ADDRESS"
+              Value: !Ref AdminEmailAddress
+            - Name: "BANK_CODE"
+              Value: !Ref BankCode
+            - Name: "BANK_NAME"
+              Value: !Ref BankName
+            - Name: "BANK_BRANCH_CODE"
+              Value: !Ref BankBranceCode
+            - Name: "BANK_BRANCH_NAME"
+              Value: !Ref BankBranceName
+            - Name: "BANK_ACCOUNT_NUMBER"
+              Value: !Ref BankAccountNumber
+            - Name: "BANK_ACCOUNT_HOLDER_NAME"
+              Value: !Ref BankAccountHolderName
           Secrets:
             - Name: "OPENSEARCH_USERNAME"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
             - Name: "OPENSEARCH_PASSWORD"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-password"]]
-            - Name: "DB_ADMIN_PASSWORD"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-admin-app-password"]]
-            - Name: "KEY_OF_SIGNED_COOKIE_FOR_ADMIN_APP"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "key-of-signed-cookie-for-admin-app"]]
+            - Name: "DB_USER_PASSWORD"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-user-app-password"]]
+            - Name: "KEY_OF_SIGNED_COOKIE_FOR_USER_APP"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "key-of-signed-cookie-for-user-app"]]
+            - Name: "SKY_WAY_APPLICATION_ID"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-application-id"]]
+            - Name: "SKY_WAY_SECRET_KEY"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-secret-key"]]
