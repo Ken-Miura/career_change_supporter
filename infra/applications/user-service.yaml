@@ -247,4 +247,26 @@ Resources:
   CcsUserServiceCpuAutoScalingPolicy:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: TODO
+      PolicyName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service-cpu-auto-scaling-policy"]]
+      PolicyType: "TargetTrackingScaling"
+      ScalingTargetId: !Ref CcsUserServiceAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 80.0
+        ScaleInCooldown: 180
+        ScaleOutCooldown: 60
+        DisableScaleIn: false
+        PredefinedMetricSpecification:
+          PredefinedMetricType: "ECSServiceAverageCPUUtilization"
+  CcsUserServiceMemoryAutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service-memory-auto-scaling-policy"]]
+      PolicyType: "TargetTrackingScaling"
+      ScalingTargetId: !Ref CcsUserServiceAutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 90.0
+        ScaleInCooldown: 180
+        ScaleOutCooldown: 60
+        DisableScaleIn: false
+        PredefinedMetricSpecification:
+          PredefinedMetricType: "ECSServiceAverageMemoryUtilization"
