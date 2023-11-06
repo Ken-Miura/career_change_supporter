@@ -8,11 +8,11 @@ Metadata:
           - Environment
           - ImageTag
           - AdminEmailAddress
-          - InstanceCount
       - Label:
           default: Parameter basically using default value
         Parameters:
           - SystemEmailAddress
+          - ScheduledTaskEnabled
 Parameters:
   # prodの場合はスタック名に"ProdDeleteExpiredDeletedUserAccounts"、devの場合はスタック名に"DevDeleteExpiredDeletedUserAccounts"を指定する
   Environment:
@@ -30,12 +30,15 @@ Parameters:
   SystemEmailAddress:
     Type: String
     Default: no-reply@career-change-supporter.com
-  InstanceCount:
-    Type: Number
-    Description: Enter the number of the instances. If you want to stop the scheduled task, set 0 to this value.
-    MinValue: 0
+  ScheduledTaskEnabled:
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
+  IsScheduledTaskEnabled: !Equals [!Ref ScheduledTaskEnabled, "true"]
 Resources:
   CcsDeleteExpiredDeletedUserAccounts:
     Type: AWS::Events::Rule
@@ -44,7 +47,7 @@ Resources:
       RoleArn:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ScheduleExpression: "cron(0 19 * * ? *)"
-      State: "ENABLED"
+      State: !If [IsScheduledTaskEnabled, "ENABLED", "DISABLED"]
       Targets:
         - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts-scheduled-task"]]
           Arn:
@@ -66,7 +69,7 @@ Resources:
                   - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet1Id"]]
                   - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdNetwork", "DevNetwork"], "PublicSubnet2Id"]]
             PlatformVersion: "1.4.0"
-            TaskCount: !Ref InstanceCount
+            TaskCount: 1
   CcsDeleteExpiredDeletedUserAccountsTask:
     Type: "AWS::ECS::TaskDefinition"
     Properties:
