@@ -140,6 +140,10 @@ Outputs:
     Value: !Ref CcsApplicationCluster
     Export:
       Name: !Sub "${AWS::StackName}-ApplicationCluster"
+  ApplicationClusterArn:
+    Value: !GetAtt CcsApplicationCluster.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ApplicationClusterArn"
   TaskExecutionRole:
     Value: !GetAtt CcsTaskExecutionRole.Arn
     Export:

@@ -47,9 +47,8 @@ Resources:
       State: "ENABLED"
       Targets:
         - Id: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts-scheduled-task"]]
-          Arn: !GetAtt
-            - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationCluster"]]
-            - Arn
+          Arn:
+            Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationClusterArn"]]
           RoleArn:
             Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
           EcsParameters:
