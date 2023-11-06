@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -eu
 
 NEW_PASSWORD=${NEW_DB_MASTER_PASSWORD:-${DB_MASTER_PASSWORD}}
