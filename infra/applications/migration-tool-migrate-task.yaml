@@ -26,16 +26,6 @@ Resources:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "TaskExecutionRole"]]
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool-migrate"]]
-          Command:
-            - "migrate"
-            - "up"
-            - "-u"
-            - !Sub
-              - "postgres://${!DB_MASTER_USER}:${!DB_MASTER_PASSWORD}@${DB_HOST_AND_PORT}/ccs_db"
-              - DB_HOST_AND_PORT: !Join
-                  - ":"
-                  - - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
-                    - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
@@ -47,6 +37,15 @@ Resources:
                 - ENV: !If [IsProd, "prod", "dev"]
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: "ecs"
+          Environment:
+            - Name: "DB_HOST"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+            - Name: "DB_PORT"
+              Value:
+                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
+            - Name: "UP_OR_DOWN"
+              Value: "up"
           Secrets:
             - Name: "DB_MASTER_USER"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "db-master-username"]]
