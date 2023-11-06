@@ -39,8 +39,10 @@ Resources:
               awslogs-stream-prefix: "ecs"
           Environment:
             - Name: "ENDPOINT_URI"
-              Value:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IndexHost"]]
+              Value: !Sub
+                - "https://${INDEX_HOST}"
+                - INDEX_HOST:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IndexHost"]]
           Secrets:
             - Name: "USER_NAME"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
