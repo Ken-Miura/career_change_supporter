@@ -20,6 +20,5 @@ pub(crate) async fn get_refresh(Admin { admin_info }: Admin) -> Result<StatusCod
     // Admin構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
     info!("refresh (admin account id: {})", admin_info.account_id);
-    Ok(StatusCode::INTERNAL_SERVER_ERROR) // TODO: アップデートの動作確認のために一時的に変更。動作確認後すぐにもとに戻す。
-                                          // Ok(StatusCode::OK)
+    Ok(StatusCode::OK)
 }
