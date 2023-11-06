@@ -141,8 +141,10 @@ Resources:
               Value:
                 Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
             - Name: "OPENSEARCH_ENDPOINT_URI"
-              Value:
-                Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IndexHost"]]
+              Value: !Sub
+                - "https://${INDEX_HOST}"
+                - INDEX_HOST:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IndexHost"]]
             - Name: "OPENSEARCH_AUTH"
               Value: "true"
             - Name: "SYSTEM_EMAIL_ADDRESS"
