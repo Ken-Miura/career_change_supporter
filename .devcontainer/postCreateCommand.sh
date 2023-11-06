@@ -17,18 +17,18 @@ echo "db launched"
 
 echo "db initialization start"
 
-# ロールの追加、DBインスタンスの作成を実施
 export DB_HOST=db
 export DB_PORT=5432
 export DB_MASTER_USER=postgres
 export DB_MASTER_PASSWORD=example
 export USER_APP_PASSWORD=test1234
 export ADMIN_APP_PASSWORD=test13579
+# ロールの追加、DBインスタンスの作成を実施
 ./data_store_setup_files/initdb/init.sh > /dev/null;
-
 # DBインスタンスにスキーマとテーブルを作成
-export DATABASE_URL=postgres://postgres:example@db/ccs_db
-sea-orm-cli migrate up > /dev/null;
+# UP_OR_DOWN (up => migrate, down => rollback)
+export UP_OR_DOWN=up
+./data_store_setup_files/initdb/migrate.sh > /dev/null;
 
 echo "db initialization finish"
 

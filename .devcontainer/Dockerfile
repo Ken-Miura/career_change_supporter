@@ -141,7 +141,7 @@ RUN export SEA_ORM_CLI_VERSION=0.12.3 && \
     cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
-ENTRYPOINT [ "sea-orm-cli" ]
+CMD [ "./data_store_setup_files/initdb/migrate.sh" ]
 
 # インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
