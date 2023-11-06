@@ -31,9 +31,11 @@ Resources:
             - "up"
             - "-u"
             - !Sub
-              - "postgres://${!DB_MASTER_USER}:${!DB_MASTER_PASSWORD}@${DB_HOST}/ccs_db"
-              - DB_HOST:
-                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+              - "postgres://${!DB_MASTER_USER}:${!DB_MASTER_PASSWORD}@${DB_HOST_AND_PORT}/ccs_db"
+              - DB_HOST_AND_PORT: !Join
+                  - ":"
+                  - - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbHost"]]
+                    - Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "DbPort"]]
           Essential: true
           Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
           LogConfiguration:
