@@ -10,12 +10,6 @@ Metadata:
           - MaxInstanceCount
           - ImageTag
           - AdminEmailAddress
-          - BankCode
-          - BankName
-          - BankBranceCode
-          - BankBranceName
-          - BankAccountNumber
-          - BankAccountHolderName
       - Label:
           default: Parameter basically using default value
         Parameters:
@@ -41,27 +35,6 @@ Parameters:
     Type: String
     Description: Enter ECR image tag for user service
     AllowedPattern: ^[a-f0-9]{40}$
-  BankCode:
-    Type: String
-    Description: Enter bank code for service owner to mediate consulting fee between user and consultant.
-    AllowedPattern: ^[0-9]{4}$
-  BankName:
-    Type: String
-    Description: Enter bank name for service owner to mediate consulting fee between user and consultant.
-  BankBranceCode:
-    Type: String
-    Description: Enter bank branch code for service owner to mediate consulting fee between user and consultant.
-    AllowedPattern: ^[0-9]{3}$
-  BankBranceName:
-    Type: String
-    Description: Enter bank branch name for service owner to mediate consulting fee between user and consultant.
-  BankAccountNumber:
-    Type: String
-    Description: Enter bank account number for service owner to mediate consulting fee between user and consultant.
-    AllowedPattern: ^[0-9]{7,8}$
-  BankAccountHolderName:
-    Type: String
-    Description: Enter bank account holder name for service owner to mediate consulting fee between user and consultant.
   SystemEmailAddress:
     Type: String
     Default: no-reply@career-change-supporter.com
@@ -206,17 +179,17 @@ Resources:
             - Name: "ADMIN_EMAIL_ADDRESS"
               Value: !Ref AdminEmailAddress
             - Name: "BANK_CODE"
-              Value: !Ref BankCode
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-code"]]
             - Name: "BANK_NAME"
-              Value: !Ref BankName
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-name"]]
             - Name: "BANK_BRANCH_CODE"
-              Value: !Ref BankBranceCode
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-code"]]
             - Name: "BANK_BRANCH_NAME"
-              Value: !Ref BankBranceName
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-name"]]
             - Name: "BANK_ACCOUNT_NUMBER"
-              Value: !Ref BankAccountNumber
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-number"]]
             - Name: "BANK_ACCOUNT_HOLDER_NAME"
-              Value: !Ref BankAccountHolderName
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-holder-name"]]
           Secrets:
             - Name: "OPENSEARCH_USERNAME"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
