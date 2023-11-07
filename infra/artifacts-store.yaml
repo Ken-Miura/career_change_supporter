@@ -139,11 +139,48 @@ Resources:
       ImageScanningConfiguration:
         ScanOnPush: false
       ImageTagMutability: "IMMUTABLE"
+  # 成果物を格納可能な権限を持ったIAMユーザー（CI、または手動でローカルから成果物をアップロードする際に利用する）
+  CcsArtifactsUploader:
+    Type: "AWS::IAM::User"
+    Properties:
+      UserName: !Sub "artifacts-uploader-${AWS::Region}"
+      ManagedPolicyArns:
+        - !Ref CcsUserAppCiResultStorageAccessPolicy
+        - !Ref CcsAdminAppCiResultStorageAccessPolicy
+        - !Ref IAMManagedPolicy2
+  CcsUserAppCiResultStorageAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub "CcsUserAppCiResultStorageAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${CcsUserAppCiResultStorage}"
+              - !Sub "arn:aws:s3:::${CcsUserAppCiResultStorage}/*"
+  CcsAdminAppCiResultStorageAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub "CcsAdminAppCiResultStorageAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${CcsAdminAppCiResultStorage}"
+              - !Sub "arn:aws:s3:::${CcsAdminAppCiResultStorage}/*"
 Outputs:
   UserAppCiResultStorage:
     Value: !Ref CcsUserAppCiResultStorage
+    Export:
+      Name: ArtifactsStore-UserAppCiResultStorage"
   AdminAppCiResultStorage:
     Value: !Ref CcsAdminAppCiResultStorage
+    Export:
+      Name: ArtifactsStore-AdminAppCiResultStorage"
   UserServiceRepositoryUri:
     Value: !GetAtt CcsUserServiceRepository.RepositoryUri
     Export:
