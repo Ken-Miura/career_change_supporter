@@ -50,7 +50,7 @@ Resources:
     Type: "AWS::ECS::Service"
     Properties:
       ServiceName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-service"]]
-      TaskDefinition: !Ref CcsAdminServiceTaskDefinition # TODO: タスク定義更新後にデプロイに失敗した場合、ちゃんと古いリビジョンのものを使うのか確認
+      TaskDefinition: !Ref CcsAdminServiceTaskDefinition
       Cluster:
         Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdApplicationCluster", "DevApplicationCluster"], "ApplicationClusterArn"]]
       LoadBalancers:
