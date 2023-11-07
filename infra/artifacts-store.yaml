@@ -148,6 +148,12 @@ Resources:
         - !Ref CcsUserAppCiResultStorageAccessPolicy
         - !Ref CcsAdminAppCiResultStorageAccessPolicy
         - !Ref CcsEcrImagePushPolicy
+  CcsArtifactsUploaderAccessKey:
+    Type: "AWS::IAM::AccessKey"
+    Properties:
+      Serial: 1
+      Status: "Active"
+      UserName: !Ref CcsArtifactsUploader
   CcsUserAppCiResultStorageAccessPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
