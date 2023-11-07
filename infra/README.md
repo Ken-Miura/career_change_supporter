@@ -11,6 +11,13 @@
   <li>request-controller.yaml</li>
 </ol>
 
+## 初回構築時の注意
+下記のCloudFormationテンプレートは構築時にTLS証明書を作成する。初めて構築する際は、TLS証明書でのドメイン検証をWeb UIから実施する必要がある（スタック構築中にUPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態になるので、Web UIからドメイン検証を行う）一度ドメイン検証を実施した後は、次回以降のスタック構築の際にドメイン検証の実施は必要ない（UPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態になることはない）
+<ol>
+  <li>load-balancer.yaml</li>
+  <li>request-controller.yaml</li>
+</ol>
+
 # 構築リージョン
 ## ap-northeast-1
 - request-controller.yaml以外のCloudFormationテンプレート
