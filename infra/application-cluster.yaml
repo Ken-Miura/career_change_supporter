@@ -92,13 +92,15 @@ Resources:
             Action: "s3:ListBucket"
             Resource: !Sub
               - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}"
-              - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
+              - CCS_IDENTITY_IMAGES:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
           - Sid: "AllObjectActions"
             Effect: "Allow"
             Action: "s3:*Object"
             Resource: !Sub
               - "arn:aws:s3:::${CCS_IDENTITY_IMAGES}/*"
-              - CCS_IDENTITY_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
+              - CCS_IDENTITY_IMAGES:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "IdentityImagesBucketName"]]
   CcsCareersImagesAccessPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -113,13 +115,15 @@ Resources:
             Action: "s3:ListBucket"
             Resource: !Sub
               - "arn:aws:s3:::${CCS_CAREER_IMAGES}"
-              - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
+              - CCS_CAREER_IMAGES:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
           - Sid: "AllObjectActions"
             Effect: "Allow"
             Action: "s3:*Object"
             Resource: !Sub
               - "arn:aws:s3:::${CCS_CAREER_IMAGES}/*"
-              - CCS_CAREER_IMAGES: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
+              - CCS_CAREER_IMAGES:
+                  Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdDataStore", "DevDataStore"], "CareerImagesBucketName"]]
   CcsSendMailAccessPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
