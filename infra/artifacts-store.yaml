@@ -143,12 +143,44 @@ Outputs:
   UserServiceRepositoryUri:
     Value: !GetAtt CcsUserServiceRepository.RepositoryUri
     Export:
-      Name: !Sub "${AWS::StackName}-UserServiceRepositoryUri"
+      Name: ArtifactsStore-UserServiceRepositoryUri"
   AdminServiceRepositoryUri:
     Value: !GetAtt CcsAdminServiceRepository.RepositoryUri
     Export:
-      Name: !Sub "${AWS::StackName}-AdminServiceRepositoryUri"
+      Name: ArtifactsStore-AdminServiceRepositoryUri"
   AdminAccountRepositoryUri:
     Value: !GetAtt CcsAdminAccountRepository.RepositoryUri
     Export:
-      Name: !Sub "${AWS::StackName}-AdminAccountRepositoryUri"
+      Name: ArtifactsStore-AdminAccountRepositoryUri"
+  DbInitializerRepositoryUri:
+    Value: !GetAtt CcsDbInitializerRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DbInitializerRepositoryUri"
+  MigrationToolRepositoryUri:
+    Value: !GetAtt CcsMigrationToolRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-MigrationToolRepositoryUri"
+  IndexInitializerRepositoryUri:
+    Value: !GetAtt CcsIndexInitializerRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-IndexInitializerRepositoryUri"
+  DeleteExpiredTempAccountsRepositoryUri:
+    Value: !GetAtt CcsDeleteExpiredTempAccountsRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DeleteExpiredTempAccountsRepositoryUri"
+  DeleteExpiredPwdChangeReqsRepositoryUri:
+    Value: !GetAtt CcsDeleteExpiredPwdChangeReqsRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DeleteExpiredPwdChangeReqsRepositoryUri"
+  DeleteExpiredTempMfaSecretsRepositoryUri:
+    Value: !GetAtt CcsDeleteExpiredTempMfaSecretsRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DeleteExpiredTempMfaSecretsRepositoryUri"
+  DeleteExpiredConsultationReqsRepositoryUri:
+    Value: !GetAtt CcsDeleteExpiredConsultationReqsRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DeleteExpiredConsultationReqsRepositoryUri"
+  DeleteExpiredDeletedUserAccountsRepositoryUri:
+    Value: !GetAtt CcsDeleteExpiredDeletedUserAccountsRepository.RepositoryUri
+    Export:
+      Name: ArtifactsStore-DeleteExpiredDeletedUserAccountsRepositoryUri"
