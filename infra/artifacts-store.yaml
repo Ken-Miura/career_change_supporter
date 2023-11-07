@@ -40,6 +40,15 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
   # backendの成果物の格納用のECR
+  CcsUserServiceRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-user-service"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
   CcsAdminServiceRepository:
     Type: "AWS::ECR::Repository"
     Properties:
@@ -49,8 +58,97 @@ Resources:
       ImageScanningConfiguration:
         ScanOnPush: false
       ImageTagMutability: "IMMUTABLE"
+  CcsAdminAccountRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-admin-account"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDbInitializerRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-db-initializer"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsMigrationToolRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-migration-tool"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsIndexInitializerRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-index-initializer"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDeleteExpiredTempAccountsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-delete-expired-temp-accounts"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDeleteExpiredPwdChangeReqsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-delete-expired-pwd-change-reqs"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDeleteExpiredTempMfaSecretsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-delete-expired-temp-mfa-secrets"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDeleteExpiredConsultationReqsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-delete-expired-consultation-reqs"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
+  CcsDeleteExpiredDeletedUserAccountsRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-delete-expired-deleted-user-accounts"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
 Outputs:
+  UserServiceRepositoryUri:
+    Value: !GetAtt CcsUserServiceRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-UserServiceRepositoryUri"
   AdminServiceRepositoryUri:
     Value: !GetAtt CcsAdminServiceRepository.RepositoryUri
     Export:
       Name: !Sub "${AWS::StackName}-AdminServiceRepositoryUri"
+  AdminAccountRepositoryUri:
+    Value: !GetAtt CcsAdminAccountRepository.RepositoryUri
+    Export:
+      Name: !Sub "${AWS::StackName}-AdminAccountRepositoryUri"
