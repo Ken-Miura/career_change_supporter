@@ -7,7 +7,7 @@ Resources:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: "ccs-user-app-ci-result-storage"
+      BucketName: "test-ccs-user-app-ci-result-storage"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -25,7 +25,7 @@ Resources:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
     Properties:
-      BucketName: "ccs-admin-app-ci-result-storage"
+      BucketName: "test-ccs-admin-app-ci-result-storage"
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - ServerSideEncryptionByDefault:
@@ -43,7 +43,7 @@ Resources:
   CcsUserServiceRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-user-service"
+      RepositoryName: "test-ccs-user-service"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -52,7 +52,7 @@ Resources:
   CcsAdminServiceRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-admin-service"
+      RepositoryName: "test-ccs-admin-service"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -61,7 +61,7 @@ Resources:
   CcsAdminAccountRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-admin-account"
+      RepositoryName: "test-ccs-admin-account"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -70,7 +70,7 @@ Resources:
   CcsDbInitializerRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-db-initializer"
+      RepositoryName: "test-ccs-db-initializer"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -79,7 +79,7 @@ Resources:
   CcsMigrationToolRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-migration-tool"
+      RepositoryName: "test-ccs-migration-tool"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -88,7 +88,7 @@ Resources:
   CcsIndexInitializerRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-index-initializer"
+      RepositoryName: "test-ccs-index-initializer"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -97,7 +97,7 @@ Resources:
   CcsDeleteExpiredTempAccountsRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-delete-expired-temp-accounts"
+      RepositoryName: "test-ccs-delete-expired-temp-accounts"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -106,7 +106,7 @@ Resources:
   CcsDeleteExpiredPwdChangeReqsRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-delete-expired-pwd-change-reqs"
+      RepositoryName: "test-ccs-delete-expired-pwd-change-reqs"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -115,7 +115,7 @@ Resources:
   CcsDeleteExpiredTempMfaSecretsRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-delete-expired-temp-mfa-secrets"
+      RepositoryName: "test-ccs-delete-expired-temp-mfa-secrets"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -124,7 +124,7 @@ Resources:
   CcsDeleteExpiredConsultationReqsRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-delete-expired-consultation-reqs"
+      RepositoryName: "test-ccs-delete-expired-consultation-reqs"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -133,7 +133,7 @@ Resources:
   CcsDeleteExpiredDeletedUserAccountsRepository:
     Type: "AWS::ECR::Repository"
     Properties:
-      RepositoryName: "ccs-delete-expired-deleted-user-accounts"
+      RepositoryName: "test-ccs-delete-expired-deleted-user-accounts"
       EncryptionConfiguration:
         EncryptionType: "AES256"
       ImageScanningConfiguration:
@@ -211,52 +211,52 @@ Outputs:
   UserAppCiResultStorage:
     Value: !Ref CcsUserAppCiResultStorage
     Export:
-      Name: ArtifactsStore-UserAppCiResultStorage"
+      Name: "ArtifactsStore-UserAppCiResultStorage"
   AdminAppCiResultStorage:
     Value: !Ref CcsAdminAppCiResultStorage
     Export:
-      Name: ArtifactsStore-AdminAppCiResultStorage"
+      Name: "ArtifactsStore-AdminAppCiResultStorage"
   UserServiceRepositoryUri:
     Value: !GetAtt CcsUserServiceRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-UserServiceRepositoryUri"
+      Name: "ArtifactsStore-UserServiceRepositoryUri"
   AdminServiceRepositoryUri:
     Value: !GetAtt CcsAdminServiceRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-AdminServiceRepositoryUri"
+      Name: "ArtifactsStore-AdminServiceRepositoryUri"
   AdminAccountRepositoryUri:
     Value: !GetAtt CcsAdminAccountRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-AdminAccountRepositoryUri"
+      Name: "ArtifactsStore-AdminAccountRepositoryUri"
   DbInitializerRepositoryUri:
     Value: !GetAtt CcsDbInitializerRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DbInitializerRepositoryUri"
+      Name: "ArtifactsStore-DbInitializerRepositoryUri"
   MigrationToolRepositoryUri:
     Value: !GetAtt CcsMigrationToolRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-MigrationToolRepositoryUri"
+      Name: "ArtifactsStore-MigrationToolRepositoryUri"
   IndexInitializerRepositoryUri:
     Value: !GetAtt CcsIndexInitializerRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-IndexInitializerRepositoryUri"
+      Name: "ArtifactsStore-IndexInitializerRepositoryUri"
   DeleteExpiredTempAccountsRepositoryUri:
     Value: !GetAtt CcsDeleteExpiredTempAccountsRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DeleteExpiredTempAccountsRepositoryUri"
+      Name: "ArtifactsStore-DeleteExpiredTempAccountsRepositoryUri"
   DeleteExpiredPwdChangeReqsRepositoryUri:
     Value: !GetAtt CcsDeleteExpiredPwdChangeReqsRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DeleteExpiredPwdChangeReqsRepositoryUri"
+      Name: "ArtifactsStore-DeleteExpiredPwdChangeReqsRepositoryUri"
   DeleteExpiredTempMfaSecretsRepositoryUri:
     Value: !GetAtt CcsDeleteExpiredTempMfaSecretsRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DeleteExpiredTempMfaSecretsRepositoryUri"
+      Name: "ArtifactsStore-DeleteExpiredTempMfaSecretsRepositoryUri"
   DeleteExpiredConsultationReqsRepositoryUri:
     Value: !GetAtt CcsDeleteExpiredConsultationReqsRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DeleteExpiredConsultationReqsRepositoryUri"
+      Name: "ArtifactsStore-DeleteExpiredConsultationReqsRepositoryUri"
   DeleteExpiredDeletedUserAccountsRepositoryUri:
     Value: !GetAtt CcsDeleteExpiredDeletedUserAccountsRepository.RepositoryUri
     Export:
-      Name: ArtifactsStore-DeleteExpiredDeletedUserAccountsRepositoryUri"
+      Name: "ArtifactsStore-DeleteExpiredDeletedUserAccountsRepositoryUri"
