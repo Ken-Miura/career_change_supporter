@@ -43,8 +43,29 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
 - DNSSECを有効にした際に監視すべき指標をCloudWatch Alarmに設定しておく
 
 ## Systems Manager
-下記のSecureStringパラメータを作成する
-TODO
+パラメータストアにSecureStringで下記のパラメータを作成する。
+<ol>
+  <li>prod-db-master-username (開発環境の場合は、dev-db-master-username)</li>
+  <li>prod-db-master-password (開発環境の場合は、dev-db-master-password)</li>
+  <li>prod-db-user-app-password (開発環境の場合は、dev-db-user-app-password)</li>
+  <li>prod-db-admin-app-password (開発環境の場合は、dev-db-admin-app-password)</li>
+  <li>prod-index-master-user (開発環境の場合は、dev-index-master-user)</li>
+  <li>prod-index-master-password (開発環境の場合は、dev-index-master-password)</li>
+  <li>prod-key-of-signed-cookie-for-user-app (開発環境の場合は、dev-key-of-signed-cookie-for-user-app)</li>
+  <li>prod-key-of-signed-cookie-for-admin-app (開発環境の場合は、dev-key-of-signed-cookie-for-admin-app)</li>
+  <li>prod-sky-way-application-id (開発環境の場合は、dev-sky-way-application-id)</li>
+  <li>prod-sky-way-secret-key (開発環境の場合は、dev-sky-way-secret-key)</li>
+</ol>
+
+パラメータストアにStringで下記のパラメータを作成する。
+<ol>
+  <li>prod-bank-code (開発環境の場合は、dev-bank-code)</li>
+  <li>prod-bank-name (開発環境の場合は、dev-bank-name)</li>
+  <li>prod-bank-branch-code (開発環境の場合は、dev-bank-branch-code)</li>
+  <li>prod-bank-branch-name (開発環境の場合は、dev-bank-branch-name)</li>
+  <li>prod-bank-account-number (開発環境の場合は、dev-bank-account-number)</li>
+  <li>prod-bank-account-holder-name (開発環境の場合は、dev-bank-account-holder-name)</li>
+</ol>
 
 ## SES
 下記の対応を行う
