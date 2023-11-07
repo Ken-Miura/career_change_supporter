@@ -2,6 +2,7 @@
 依存関係があるため構築順序の通りに構築する必要がある。
 <ol>
   <li>NOTEに記載のリソースを手動で構築</li>
+  <li>artifacts-store.yaml</li>
   <li>network.yaml</li>
   <li>static-files.yaml</li>
   <li>data-store.yaml</li>
