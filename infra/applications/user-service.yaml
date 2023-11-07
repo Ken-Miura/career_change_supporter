@@ -178,18 +178,6 @@ Resources:
               Value: !If [IsProd, !Sub "${ServiceDomainName}", !Sub "dev.${ServiceDomainName}"]
             - Name: "ADMIN_EMAIL_ADDRESS"
               Value: !Ref AdminEmailAddress
-            - Name: "BANK_CODE"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-code"]]
-            - Name: "BANK_NAME"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-name"]]
-            - Name: "BANK_BRANCH_CODE"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-code"]]
-            - Name: "BANK_BRANCH_NAME"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-name"]]
-            - Name: "BANK_ACCOUNT_NUMBER"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-number"]]
-            - Name: "BANK_ACCOUNT_HOLDER_NAME"
-              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-holder-name"]]
           Secrets:
             - Name: "OPENSEARCH_USERNAME"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "index-master-user"]]
@@ -203,6 +191,18 @@ Resources:
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-application-id"]]
             - Name: "SKY_WAY_SECRET_KEY"
               ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "sky-way-secret-key"]]
+            - Name: "BANK_CODE"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-code"]]
+            - Name: "BANK_NAME"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-name"]]
+            - Name: "BANK_BRANCH_CODE"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-code"]]
+            - Name: "BANK_BRANCH_NAME"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-branch-name"]]
+            - Name: "BANK_ACCOUNT_NUMBER"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-number"]]
+            - Name: "BANK_ACCOUNT_HOLDER_NAME"
+              ValueFrom: !Join ["-", [!If [IsProd, "prod", "dev"], "bank-account-holder-name"]]
   CcsUserServiceAutoScalingTarget:
     Type: "AWS::ApplicationAutoScaling::ScalableTarget"
     DependsOn: CcsUserService

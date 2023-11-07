@@ -33,7 +33,7 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
 （※）下記の二種類を手動で対応する。
 <ol>
   <li>パラメータストアにECSで利用するシークレットを含む環境変数をSecureStringのパラメータとして構築。SecureStringのパラメータは、テンプレート作成時点でCloudFormationに対応していない（作成は完全に未対応、読み込みも制限がある）ため手動で構築する。前述の通り使い勝手が悪いため、基本的に使わない想定でテンプレートを構築していた。しかし、ECSがコンテナを起動するとき、環境変数に平文としてシークレットを埋め込むのはリスクが高いと判断し、その箇所だけシークレットの読み込みをする際にのみ利用する。</li>
-  <li>パラメータストアに収納代行用の銀行口座に関連する情報をStringのパラメータとして構築。銀行口座に関連する情報は日本語を含んでおり、それらをCloudFormationテンプレート内で扱うことは困難である（CloudFormationテンプレートはASCII文字以外に対応していない）従って、それらの情報はパラメータストアに保管し、CloudFormationテンプレートからはパラメータストアを介して銀行口座に関連する情報を取得するようにする。</li>
+  <li>パラメータストアに収納代行用の銀行口座に関連する情報をSecureStringののパラメータとして構築。銀行口座に関連する情報は日本語を含んでおり、それらをCloudFormationテンプレート内で扱うことは困難である（CloudFormationテンプレートはASCII文字以外に対応していない）従って、それらの情報はパラメータストアに保管し、CloudFormationテンプレートからはパラメータストアを介して銀行口座に関連する情報を取得するようにする。StringでなくSecureStringを使う理由は、Cloudformationテンプレート内からパラメータストアのStringの値を参照する方法がないから。</li>
 </ol>
 
 ## Route53（Hosted Zone）
@@ -43,7 +43,7 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
 - DNSSECを有効にした際に監視すべき指標をCloudWatch Alarmに設定しておく
 
 ## Systems Manager
-パラメータストアにSecureStringで下記のパラメータを作成する。
+パラメータストアにSecureStringで下記のECSで利用するシークレットを含む環境変数のパラメータを作成する。
 <ol>
   <li>prod-db-master-username (開発環境の場合は、dev-db-master-username)</li>
   <li>prod-db-master-password (開発環境の場合は、dev-db-master-password)</li>
@@ -57,7 +57,7 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
   <li>prod-sky-way-secret-key (開発環境の場合は、dev-sky-way-secret-key)</li>
 </ol>
 
-パラメータストアにStringで下記のパラメータを作成する。
+パラメータストアにSecureStringで下記の収納代行用の銀行口座に関連する情報のパラメータを作成する。
 <ol>
   <li>prod-bank-code (開発環境の場合は、dev-bank-code)</li>
   <li>prod-bank-name (開発環境の場合は、dev-bank-name)</li>
