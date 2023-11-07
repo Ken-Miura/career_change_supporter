@@ -140,6 +140,10 @@ Resources:
         ScanOnPush: false
       ImageTagMutability: "IMMUTABLE"
 Outputs:
+  UserAppCiResultStorage:
+    Value: !Ref CcsUserAppCiResultStorage
+  AdminAppCiResultStorage:
+    Value: !Ref CcsAdminAppCiResultStorage
   UserServiceRepositoryUri:
     Value: !GetAtt CcsUserServiceRepository.RepositoryUri
     Export:
