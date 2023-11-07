@@ -147,7 +147,7 @@ Resources:
       ManagedPolicyArns:
         - !Ref CcsUserAppCiResultStorageAccessPolicy
         - !Ref CcsAdminAppCiResultStorageAccessPolicy
-        - !Ref IAMManagedPolicy2
+        - !Ref CcsEcrImagePushPolicy
   CcsUserAppCiResultStorageAccessPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -172,6 +172,35 @@ Resources:
             Resource:
               - !Sub "arn:aws:s3:::${CcsAdminAppCiResultStorage}"
               - !Sub "arn:aws:s3:::${CcsAdminAppCiResultStorage}/*"
+  CcsEcrImagePushPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub "CcsEcrImagePushPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "ecr:GetAuthorizationToken"
+            Resource: "*"
+          - Effect: "Allow"
+            Action:
+              - "ecr:CompleteLayerUpload"
+              - "ecr:UploadLayerPart"
+              - "ecr:InitiateLayerUpload"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:PutImage"
+            Resource:
+              - !GetAtt CcsUserServiceRepository.Arn
+              - !GetAtt CcsAdminServiceRepository.Arn
+              - !GetAtt CcsAdminAccountRepository.Arn
+              - !GetAtt CcsDbInitializerRepository.Arn
+              - !GetAtt CcsMigrationToolRepository.Arn
+              - !GetAtt CcsIndexInitializerRepository.Arn
+              - !GetAtt CcsDeleteExpiredTempAccountsRepository.Arn
+              - !GetAtt CcsDeleteExpiredPwdChangeReqsRepository.Arn
+              - !GetAtt CcsDeleteExpiredTempMfaSecretsRepository.Arn
+              - !GetAtt CcsDeleteExpiredConsultationReqsRepository.Arn
+              - !GetAtt CcsDeleteExpiredDeletedUserAccountsRepository.Arn
 Outputs:
   UserAppCiResultStorage:
     Value: !Ref CcsUserAppCiResultStorage
