@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 # 本番、開発の両環境で同じ成果物格納場所を参照するので、このテンプレートはProd、Devと分けて作成しない。
-# スタック名はArtifactsStoreとする。
+# スタック名は"ArtifactsStore"とする。
 Resources:
   # frontendの成果物の格納用S3バケット
   CcsUserAppCiResultStorage:
@@ -39,20 +39,18 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-    # backendの成果物の格納用のECR
-    CcsAdminServiceRepository:
-      Type: "AWS::ECR::Repository"
-      Properties:
-        RepositoryName: "ccs-admin-service"
-        EncryptionConfiguration:
-          EncryptionType: "AES256"
-        ImageScanningConfiguration:
-          ScanOnPush: false
-        ImageTagMutability: "IMMUTABLE"
-        LifecyclePolicy:
-          RegistryId: !Ref AWS::AccountId
+  # backendの成果物の格納用のECR
+  CcsAdminServiceRepository:
+    Type: "AWS::ECR::Repository"
+    Properties:
+      RepositoryName: "ccs-admin-service"
+      EncryptionConfiguration:
+        EncryptionType: "AES256"
+      ImageScanningConfiguration:
+        ScanOnPush: false
+      ImageTagMutability: "IMMUTABLE"
 Outputs:
-  ApplicationClusterArn:
+  AdminServiceRepositoryUri:
     Value: !GetAtt CcsAdminServiceRepository.RepositoryUri
     Export:
       Name: !Sub "${AWS::StackName}-AdminServiceRepositoryUri"
