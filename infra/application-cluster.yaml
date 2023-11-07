@@ -139,6 +139,50 @@ Resources:
               - "ses:SendEmail"
               - "ses:SendRawEmail"
             Resource: !Sub "arn:aws:ses:*:${AWS::AccountId}:identity/*"
+  CcsScheduledTaskExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub
+        - "${ENV}-ccs-scheduled-task-execution-role-${AWS::Region}"
+        - ENV: !If [IsProd, "prod", "dev"]
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "events.amazonaws.com"
+            Action: "sts:AssumeRole"
+      MaxSessionDuration: 3600
+      ManagedPolicyArns:
+        - !Ref CcsScheduledTaskExecutionPolicy
+  CcsScheduledTaskExecutionPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Sub
+        - "${ENV}CcsScheduledTaskExecutionPolicy-${AWS::Region}"
+        - ENV: !If [IsProd, "Prod", "Dev"]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "ecs:RunTask"
+            Resource:
+              - "*"
+          - Effect: "Allow"
+            Action: "iam:PassRole"
+            Resource:
+              - "*"
+            Condition:
+              StringLike:
+                "iam:PassedToService": "ecs-tasks.amazonaws.com"
+          - Effect: "Allow"
+            Action: "ecs:TagResource"
+            Resource: "*"
+            Condition:
+              StringEquals:
+                "ecs:CreateAction":
+                  - "RunTask"
 Outputs:
   ApplicationCluster:
     Value: !Ref CcsApplicationCluster
@@ -156,3 +200,7 @@ Outputs:
     Value: !GetAtt CcsTaskRole.Arn
     Export:
       Name: !Sub "${AWS::StackName}-TaskRole"
+  ScheduledTaskExecutionRole:
+    Value: !GetAtt CcsScheduledTaskExecutionRole.Arn
+    Export:
+      Name: !Sub "${AWS::StackName}-ScheduledTaskExecutionRole"
