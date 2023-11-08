@@ -36,7 +36,7 @@ TODO
 ymal内の該当するリソース（インスタンスタイプ等）を書き換えてCloudFormationにて更新する。更新の際は既存のリソースを削除する動作をしていないか確認するため、必ず変更セットを見て問題ないことがわかってから更新を行う。
 
 # NOTE
-Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を格納するS3バケットはCloudFormationの管理対象外としている（マネジメントコンソールから手動で構築している）
+Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの管理対象外としている（マネジメントコンソールから手動で構築している）
 
 （※）下記の二種類を手動で対応する。
 <ol>
@@ -80,9 +80,3 @@ Route53（Hosted Zone）、Systems Manager （※）、SES、ECR、CI結果を�
 - 問い合わせを受け付けるためのメールアドレスを用意し、アカウントを作成する。そして、メールの受信ができるようにRoute53にレコードを作成する（メール送信だけでなく、メール受信もできるようにus-east-1に構築する）
 - DMARCに対応させる（SPF、DKIMの対応を行う）
 - バウンスレートの指標をCloudWatch Alarmに設定しておく
-
-## ECR
-TODO
-
-## CI結果を格納するS3バケット
-TODO

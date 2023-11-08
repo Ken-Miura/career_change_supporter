@@ -140,6 +140,8 @@ Resources:
         ScanOnPush: false
       ImageTagMutability: "IMMUTABLE"
   # 成果物を格納可能な権限を持ったIAMユーザー（CI、または手動でローカルから成果物をアップロードする際に利用する）
+  # CloudFormationテンプレート内でアクセスキーとシークレットキーを同時に作成できるが、その場合Secrets Mangerとの連携が必須となる。
+  # Secrets Mangerはお金がかかるので使わない。従って、アクセスキーとシークレットキーはこのユーザーを作った後、Web UIから発行する。
   CcsArtifactsUploader:
     Type: "AWS::IAM::User"
     Properties:
@@ -202,14 +204,14 @@ Resources:
               - !GetAtt CcsDeleteExpiredConsultationReqsRepository.Arn
               - !GetAtt CcsDeleteExpiredDeletedUserAccountsRepository.Arn
 Outputs:
-  UserAppCiResultStorage:
-    Value: !Ref CcsUserAppCiResultStorage
+  UserAppCiResultStorageAccessPolicy:
+    Value: !Ref CcsUserAppCiResultStorageAccessPolicy
     Export:
-      Name: "ArtifactsStore-UserAppCiResultStorage"
-  AdminAppCiResultStorage:
-    Value: !Ref CcsAdminAppCiResultStorage
+      Name: "ArtifactsStore-UserAppCiResultStorageAccessPolicy"
+  AdminAppCiResultStorageAccessPolicy:
+    Value: !Ref CcsAdminAppCiResultStorageAccessPolicy
     Export:
-      Name: "ArtifactsStore-AdminAppCiResultStorage"
+      Name: "ArtifactsStore-AdminAppCiResultStorageAccessPolicy"
   UserServiceRepositoryUri:
     Value: !GetAtt CcsUserServiceRepository.RepositoryUri
     Export:
