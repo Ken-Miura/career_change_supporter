@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  # prodの場合はスタック名に"ProdDeployUser"、devの場合はスタック名に"DevDeployUser"を指定する
+  Environment:
+    Type: String
+    AllowedValues:
+      - prod
+      - dev
+Conditions:
+  IsProd: !Equals [!Ref Environment, "prod"]
+Resources:
+  # 成果物をデプロイするIAMユーザー（CD、または手動でローカルから成果物をデプロイする際に利用する）
+  # CloudFormationテンプレート内でアクセスキーとシークレットキーを同時に作成できるが、その場合Secrets Mangerとの連携が必須となる。
+  # Secrets Mangerはお金がかかるので使わない。従って、アクセスキーとシークレットキーはこのユーザーを作った後、Web UIから発行する。
+  CcsDeployUser:
+    Type: "AWS::IAM::User"
+    Properties:
+      UserName: !Join
+        - "-"
+        - - !If [IsProd, "prod", "dev"]
+          - !Sub "deploy-user-${AWS::Region}"
+          # ManagedPolicyArns:
+          #   - !Ref CcsUserAppCiResultStorageAccessPolicy
+          #   - !Ref CcsAdminAppCiResultStorageAccessPolicy
+          #   - !Ref CcsEcrImagePushPolicy
+Outputs:
+  DeployUser:
+    Value: !Ref CcsDeployUser

@@ -10,6 +10,7 @@
   <li>application-cluster.yaml</li>
   <li>applicationsディレクトリ以下の全てのCloudFormationテンプレート</li>
   <li>request-controller.yaml</li>
+  <li>deploy-user.yaml</li>
 </ol>
 
 ## 初回構築時の注意

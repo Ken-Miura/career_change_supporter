@@ -45,9 +45,12 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-# 他スタックに直接渡すことはないが、デバッグ用に実際に登録されたドメイン名は確認できるようにしておく
 Outputs:
-  CcsUserAppBucket:
+  UserAppBucketName:
     Value: !Ref CcsUserApp
-  CcsAdminAppBucket:
+    Export:
+      Name: !Sub "${AWS::StackName}-UserAppBucketName"
+  AdminAppBucketName:
     Value: !Ref CcsAdminApp
+    Export:
+      Name: !Sub "${AWS::StackName}-AdminAppBucketName"

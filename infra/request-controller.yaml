@@ -183,7 +183,7 @@ Resources:
           AliasTarget:
             HostedZoneId: "Z2FDTNDATAQYW2"
             DNSName: !GetAtt 'CcsUserServiceRequestController.DomainName'
-  CcsUserAppBucketPolicy:
+  CcsUserAppBucketPolicy: # 対象バケットに対しては、デプロイのためにIAMポリシーでのアクセス許可もしているため、明示的な拒否を記載してはならない
     Type: "AWS::S3::BucketPolicy"
     Properties:
       Bucket: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app"]]
@@ -336,7 +336,7 @@ Resources:
           AliasTarget:
             HostedZoneId: "Z2FDTNDATAQYW2"
             DNSName: !GetAtt 'CcsAdminServiceRequestController.DomainName'
-  CcsAdminAppBucketPolicy:
+  CcsAdminAppBucketPolicy: # 対象バケットに対しては、デプロイのためにIAMポリシーでのアクセス許可もしているため、明示的な拒否を記載してはならない
     Type: "AWS::S3::BucketPolicy"
     Properties:
       Bucket: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app"]]
