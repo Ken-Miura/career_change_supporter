@@ -1,17 +1,15 @@
 # 構築順
 依存関係があるため構築順序の通りに構築する必要がある。
-<ol>
-  <li>[CloudFormationの管理対象外のリソース](#CloudFormationの管理対象外のリソース) に記載のリソースを手動で構築</li>
-  <li>artifacts-store.yaml</li>
-  <li>network.yaml</li>
-  <li>static-files.yaml</li>
-  <li>data-store.yaml</li>
-  <li>load-balancer.yaml</li>
-  <li>application-cluster.yaml</li>
-  <li>applicationsディレクトリ以下の全てのCloudFormationテンプレート</li>
-  <li>request-controller.yaml</li>
-  <li>deploy-user.yaml</li>
-</ol>
+1. [CloudFormationの管理対象外のリソース](#CloudFormationの管理対象外のリソース) に記載のリソースを手動で構築
+2. artifacts-store.yaml
+3. network.yaml
+4. static-files.yaml
+5. data-store.yaml
+6. load-balancer.yaml
+7. application-cluster.yaml
+8. applicationsディレクトリ以下の全てのCloudFormationテンプレート
+9. request-controller.yaml
+10. deploy-user.yaml
 
 ## 初回構築時の注意
 下記のCloudFormationテンプレートは構築時にTLS証明書を作成する。初めて構築する際は、TLS証明書でのドメイン検証をWeb UIから実施する必要がある（スタック構築中にUPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態になるので、Web UIからドメイン検証を行う）一度ドメイン検証を実施した後は、次回以降のスタック構築の際にドメイン検証の実施は必要ない（UPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態になることはない）
