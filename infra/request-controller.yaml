@@ -663,3 +663,8 @@ Resources:
             SampledRequestsEnabled: true
             CloudWatchMetricsEnabled: true
             MetricName: "AWS-AWSManagedRulesSQLiRuleSet"
+Outputs:
+  UserServiceRequestControllerDistributionId:
+    Value: !Ref CcsUserServiceRequestController
+  AdminServiceRequestControllerDistributionId:
+    Value: !Ref CcsAdminServiceRequestController

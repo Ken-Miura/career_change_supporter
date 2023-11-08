@@ -6,10 +6,6 @@ Parameters:
     AllowedValues:
       - prod
       - dev
-  UserAppCloudFrontDistributionArn:
-    Type: String
-  AdminAppCloudFrontDistributionArn:
-    Type: String
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
@@ -87,9 +83,7 @@ Resources:
               - "cloudfront:GetInvalidation"
               - "cloudfront:ListInvalidations"
               - "cloudfront:CreateInvalidation"
-            Resource:
-              - !Ref UserAppCloudFrontDistributionArn
-              - !Ref AdminAppCloudFrontDistributionArn
+            Resource: "*"
   # 複数のユーザーを使う予定はないので、CloudFormation実行用ロールを作ってIAMユーザーからパスロールするような運用はしない。IAMユーザーで直接CloudFormationを実行する。
   CcsCloudFormationPolicy:
     Type: "AWS::IAM::ManagedPolicy"
