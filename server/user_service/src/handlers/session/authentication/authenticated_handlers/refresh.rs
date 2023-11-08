@@ -22,5 +22,6 @@ pub(crate) async fn get_refresh(User { user_info }: User) -> Result<StatusCode, 
     // User構造体を受け取る際のリクエストのプリプロセスで認証 (ログインセッションの延長) と利用規約の同意を実施済
     // そのため、ここまで到達した場合、OKを返すのみで良い
     info!("refresh (account id: {})", user_info.account_id);
-    Ok(StatusCode::OK)
+    // Ok(StatusCode::OK)
+    Ok(StatusCode::INTERNAL_SERVER_ERROR)
 }
