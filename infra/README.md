@@ -1,7 +1,7 @@
 # 構築順
 依存関係があるため構築順序の通りに構築する必要がある。
 <ol>
-  <li>NOTEに記載のリソースを手動で構築</li>
+  <li>[CloudFormationの管理対象外のリソース](#CloudFormationの管理対象外のリソース) に記載のリソースを手動で構築</li>
   <li>artifacts-store.yaml</li>
   <li>network.yaml</li>
   <li>static-files.yaml</li>
@@ -46,7 +46,7 @@ TODO
 # インフラリソースのスペックの更新方法
 ymal内の該当するリソース（インスタンスタイプ等）を書き換えてCloudFormationにて更新する。更新の際は既存のリソースを削除する動作をしていないか確認するため、必ず変更セットを見て問題ないことがわかってから更新を行う。
 
-# NOTE
+# CloudFormationの管理対象外のリソース
 Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの管理対象外としている（マネジメントコンソールから手動で構築している）
 
 （※）下記の二種類を手動で対応する。
