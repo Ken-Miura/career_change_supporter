@@ -19,10 +19,53 @@ Resources:
         - "-"
         - - !If [IsProd, "prod", "dev"]
           - !Sub "deploy-user-${AWS::Region}"
-          # ManagedPolicyArns:
-          #   - !Ref CcsUserAppCiResultStorageAccessPolicy
-          #   - !Ref CcsAdminAppCiResultStorageAccessPolicy
-          #   - !Ref CcsEcrImagePushPolicy
+      ManagedPolicyArns:
+        - Fn::ImportValue: "ArtifactsStore-UserAppCiResultStorageAccessPolicy"
+        - Fn::ImportValue: "ArtifactsStore-AdminAppCiResultStorageAccessPolicy"
+        - !Ref CcsUserAppAccessPolicy
+        - !Ref CcsAdminAppAccessPolicy
+  CcsUserAppAccessPolicy: # 対象バケットに対しては、CloudFrontからのアクセス制限のためのBucket Policyも設定しているため、明示的な拒否を記載してはならない
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsUserAppAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub
+                - "arn:aws:s3:::${USER_APP_BUCKET_NAME}"
+                - USER_APP_BUCKET_NAME:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdStaticFiles", "DevStaticFiles"], "UserAppBucketName"]]
+              - !Sub
+                - "arn:aws:s3:::${USER_APP_BUCKET_NAME}/*"
+                - USER_APP_BUCKET_NAME:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdStaticFiles", "DevStaticFiles"], "UserAppBucketName"]]
+  CcsAdminAppAccessPolicy: # 対象バケットに対しては、CloudFrontからのアクセス制限のためのBucket Policyも設定しているため、明示的な拒否を記載してはならない
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsAdminAppAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub
+                - "arn:aws:s3:::${ADMIN_APP_BUCKET_NAME}"
+                - ADMIN_APP_BUCKET_NAME:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdStaticFiles", "DevStaticFiles"], "AdminAppBucketName"]]
+              - !Sub
+                - "arn:aws:s3:::${ADMIN_APP_BUCKET_NAME}/*"
+                - ADMIN_APP_BUCKET_NAME:
+                    Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdStaticFiles", "DevStaticFiles"], "AdminAppBucketName"]]
 Outputs:
   DeployUser:
     Value: !Ref CcsDeployUser
