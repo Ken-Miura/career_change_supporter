@@ -29,6 +29,7 @@ Resources:
         - !Ref CcsUserAppAccessPolicy
         - !Ref CcsAdminAppAccessPolicy
         - !Ref CcsCloudFrontCacheInvalidationPolicy
+        - !Ref CcsBackendUpdatePolicy
   CcsUserAppAccessPolicy: # 対象バケットに対しては、CloudFrontからのアクセス制限のためのBucket Policyも設定しているため、明示的な拒否を記載してはならない
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -107,6 +108,22 @@ Resources:
               - "cloudformation:CancelUpdateStack"
               - "cloudformation:RollbackStack"
               - "cloudformation:ContinueUpdateRollback"
+            Resource: "*"
+  CcsBackendUpdatePolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsEcsPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "ecs:UpdateTaskSet"
+              - "ecs:UpdateService"
+              - "events:PutRule"
             Resource: "*"
 Outputs:
   DeployUser:
