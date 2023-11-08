@@ -89,6 +89,25 @@ Resources:
             Resource:
               - !Ref UserAppCloudFrontDistributionArn
               - !Ref AdminAppCloudFrontDistributionArn
+  # 複数のユーザーを使う予定はないので、CloudFormation実行用ロールを作ってIAMユーザーからパスロールするような運用はしない。IAMユーザーで直接CloudFormationを実行する。
+  CcsCloudFormationPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsCloudFormationPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "cloudformation:ValidateTemplate"
+              - "cloudformation:UpdateStack"
+              - "cloudformation:CancelUpdateStack"
+              - "cloudformation:RollbackStack"
+              - "cloudformation:ContinueUpdateRollback"
+            Resource: "*"
 Outputs:
   DeployUser:
     Value: !Ref CcsDeployUser
