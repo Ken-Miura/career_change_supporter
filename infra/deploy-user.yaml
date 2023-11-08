@@ -6,6 +6,10 @@ Parameters:
     AllowedValues:
       - prod
       - dev
+  UserAppCloudFrontDistributionArn:
+    Type: String
+  AdminAppCloudFrontDistributionArn:
+    Type: String
 Conditions:
   IsProd: !Equals [!Ref Environment, "prod"]
 Resources:
@@ -24,6 +28,7 @@ Resources:
         - Fn::ImportValue: "ArtifactsStore-AdminAppCiResultStorageAccessPolicy"
         - !Ref CcsUserAppAccessPolicy
         - !Ref CcsAdminAppAccessPolicy
+        - !Ref CcsCloudFrontCacheInvalidationPolicy
   CcsUserAppAccessPolicy: # 対象バケットに対しては、CloudFrontからのアクセス制限のためのBucket Policyも設定しているため、明示的な拒否を記載してはならない
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -66,6 +71,24 @@ Resources:
                 - "arn:aws:s3:::${ADMIN_APP_BUCKET_NAME}/*"
                 - ADMIN_APP_BUCKET_NAME:
                     Fn::ImportValue: !Join ["-", [!If [IsProd, "ProdStaticFiles", "DevStaticFiles"], "AdminAppBucketName"]]
+  CcsCloudFrontCacheInvalidationPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsCloudFrontCacheInvalidationPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "cloudfront:GetInvalidation"
+              - "cloudfront:ListInvalidations"
+              - "cloudfront:CreateInvalidation"
+            Resource:
+              - !Ref UserAppCloudFrontDistributionArn
+              - !Ref AdminAppCloudFrontDistributionArn
 Outputs:
   DeployUser:
     Value: !Ref CcsDeployUser
