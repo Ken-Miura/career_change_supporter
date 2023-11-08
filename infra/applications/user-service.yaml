@@ -107,7 +107,10 @@ Resources:
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-service"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-user-service:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Join
+            - ":"
+            - - Fn::ImportValue: "ArtifactsStore-UserServiceRepositoryUri"
+              - !Ref ImageTag
           LogConfiguration:
             LogDriver: "awslogs"
             Options:

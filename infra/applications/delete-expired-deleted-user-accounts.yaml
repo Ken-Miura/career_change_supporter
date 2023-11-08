@@ -84,7 +84,10 @@ Resources:
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-delete-expired-deleted-user-accounts"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-delete-expired-deleted-user-accounts:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Join
+            - ":"
+            - - Fn::ImportValue: "ArtifactsStore-DeleteExpiredDeletedUserAccountsRepositoryUri"
+              - !Ref ImageTag
           LogConfiguration:
             LogDriver: "awslogs"
             Options:

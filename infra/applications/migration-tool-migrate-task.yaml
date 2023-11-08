@@ -27,7 +27,10 @@ Resources:
       ContainerDefinitions:
         - Name: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-migration-tool-migrate"]]
           Essential: true
-          Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/ccs-migration-tool:${ImageTag}" # NOTE: image用のリポジトリは事前に作成済みであることを前提とする
+          Image: !Join
+            - ":"
+            - - Fn::ImportValue: "ArtifactsStore-MigrationToolRepositoryUri"
+              - !Ref ImageTag
           LogConfiguration:
             LogDriver: "awslogs"
             Options:
