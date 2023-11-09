@@ -27,3 +27,20 @@ jobs:
           AWS_DEFAULT_OUTPUT: json
           AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_USER_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_USER_AWS_SECRET_ACCESS_KEY }}
+      - name: Update frontend
+        run: |
+          if [ "${IS_PROD}" = "true" ]; then PREFIX="prod"; else PREFIX="dev"; fi
+          aws s3 sync "s3://${CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET}" "s3://${PREFIX}-ccs-user-app" --delete
+          aws s3 sync "s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET}" "s3://${PREFIX}-ccs-admin-app" --delete
+          aws cloudfront create-invalidation --distribution-id "${CCS_USER_APP_DISTRIBUTION_ID}" --paths "/*" --region "us-east-1"
+          aws cloudfront create-invalidation --distribution-id "${CCS_ADMIN_APP_DISTRIBUTION_ID}" --paths "/*" --region "us-east-1"
+        env:
+          IS_PROD: ${{ vars.IS_PROD }}
+          CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET }}
+          CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET: ${{ vars.CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET }}
+          CCS_USER_APP_DISTRIBUTION_ID: ${{ vars.CCS_USER_APP_DISTRIBUTION_ID }}
+          CCS_ADMIN_APP_DISTRIBUTION_ID: ${{ vars.CCS_ADMIN_APP_DISTRIBUTION_ID }}
+          AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
+          AWS_DEFAULT_OUTPUT: json
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_USER_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_USER_AWS_SECRET_ACCESS_KEY }}
