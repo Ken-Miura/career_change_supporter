@@ -11,11 +11,18 @@ jobs:
         uses: actions/checkout@v3
       - name: Update setup tool
         run: |
-          aws cloudformation update-stack --stack-name ProdDbInitializerTask --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
-          aws cloudformation update-stack --stack-name ProdMigrationToolMigrateTask --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
-          aws cloudformation update-stack --stack-name ProdMigrationToolRollbackTask --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
-          aws cloudformation update-stack --stack-name ProdIndexInitializerTask --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
+          if [ "${IS_PROD}" = "true" ]
+          then
+            PREFIX="Prod"
+          else
+            PREFIX="Dev"
+          fi
+          aws cloudformation update-stack --stack-name "${PREFIX}DbInitializerTask" --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
+          aws cloudformation update-stack --stack-name "${PREFIX}MigrationToolMigrateTask" --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
+          aws cloudformation update-stack --stack-name "${PREFIX}MigrationToolRollbackTask" --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
+          aws cloudformation update-stack --stack-name "${PREFIX}IndexInitializerTask" --use-previous-template --parameters ParameterKey=ImageTag,ParameterValue="$(git rev-parse HEAD)" ParameterKey=Environment,UsePreviousValue=true
         env:
+          IS_PROD: ${{ vars.IS_PROD }}
           AWS_DEFAULT_REGION: ${{ vars.AWS_DEFAULT_REGION }}
           AWS_DEFAULT_OUTPUT: json
           AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_USER_AWS_ACCESS_KEY_ID }}
