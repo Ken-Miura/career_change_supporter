@@ -17,6 +17,7 @@ RUN apt-get update && \
         lldb \
         pkg-config \
         postgresql-client-14 \
+        awscli \
         vim && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
