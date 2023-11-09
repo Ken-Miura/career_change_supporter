@@ -133,7 +133,7 @@ Resources:
                 "iam:PassedToService":
                   - "ecs-tasks.amazonaws.com"
                   - "events.amazonaws.com"
-  # フロントエンドで切り戻しが発生した場合に備えたバケット
+  # 切り戻しが発生した場合に備えて、リリース前のバージョンのフロントエンドを保管するバケット
   CcsPreviousVersionUserApp:
     Type: "AWS::S3::Bucket"
     DeletionPolicy: Delete
