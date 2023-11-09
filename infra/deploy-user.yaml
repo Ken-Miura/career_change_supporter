@@ -27,6 +27,8 @@ Resources:
         - !Ref CcsCloudFrontCacheInvalidationPolicy
         - !Ref CcsCloudFormationPolicy
         - !Ref CcsBackendUpdatePolicy
+        - !Ref CcsPreviousVersionUserAppAccessPolicy
+        - !Ref CcsPreviousVersionAdminAppAccessPolicy
   CcsUserAppAccessPolicy: # 対象バケットに対しては、CloudFrontからのアクセス制限のためのBucket Policyも設定しているため、明示的な拒否を記載してはならない
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -131,6 +133,81 @@ Resources:
                 "iam:PassedToService":
                   - "ecs-tasks.amazonaws.com"
                   - "events.amazonaws.com"
+  # フロントエンドで切り戻しが発生した場合に備えたバケット
+  CcsPreviousVersionUserApp:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-previous-version-user-app"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  CcsPreviousVersionUserAppAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsPreviousVersionUserAppAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub
+                - "arn:aws:s3:::${PREVIOUS_VERSION_USER_APP_BUCKET_NAME}"
+                - PREVIOUS_VERSION_USER_APP_BUCKET_NAME: !Ref CcsPreviousVersionUserApp
+              - !Sub
+                - "arn:aws:s3:::${PREVIOUS_VERSION_USER_APP_BUCKET_NAME}/*"
+                - PREVIOUS_VERSION_USER_APP_BUCKET_NAME: !Ref CcsPreviousVersionUserApp
+  CcsPreviousVersionAdminApp:
+    Type: "AWS::S3::Bucket"
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-previous-version-admin-app"]]
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: "AES256"
+            BucketKeyEnabled: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: "BucketOwnerEnforced"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  CcsPreviousVersionAdminAppAccessPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      ManagedPolicyName: !Join
+        - ""
+        - - !If [IsProd, "Prod", "Dev"]
+          - !Sub "CcsPreviousVersionAdminAppAccessPolicy-${AWS::Region}"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "s3:*"
+            Resource:
+              - !Sub
+                - "arn:aws:s3:::${PREVIOUS_VERSION_ADMIN_APP_BUCKET_NAME}"
+                - PREVIOUS_VERSION_ADMIN_APP_BUCKET_NAME: !Ref CcsPreviousVersionAdminApp
+              - !Sub
+                - "arn:aws:s3:::${PREVIOUS_VERSION_ADMIN_APP_BUCKET_NAME}/*"
+                - PREVIOUS_VERSION_ADMIN_APP_BUCKET_NAME: !Ref CcsPreviousVersionAdminApp
 Outputs:
   DeployUser:
     Value: !Ref CcsDeployUser
