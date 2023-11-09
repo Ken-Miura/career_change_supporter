@@ -174,7 +174,9 @@ Resources:
             - Name: "SOCKET_FOR_USER_APP"
               Value: "0.0.0.0:3000"
             - Name: "URL_FOR_FRONT_END"
-              Value: !Sub "https://${ServiceDomainName}"
+              Value: !Sub
+                - "https://${DOMAIN_NAME}"
+                - DOMAIN_NAME: !If [IsProd, !Sub "${ServiceDomainName}", !Sub "dev.${ServiceDomainName}"]
             - Name: "TERMS_OF_USE_VERSION"
               Value: "1"
             - Name: "USER_TOTP_ISSUER"
