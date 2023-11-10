@@ -85,6 +85,12 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 二段階認証有効化
 
 ## 手動でのタスクの実行
+1. マネジメントコンソールから「Amazon Elastic Container Service > クラスター > xxx-ccs-application-cluster (xxxはprodまたはdev) > タスク」へ移動する
+2. 「新しいタスクの実行」をクリックする
+3. 「ファミリー」に実行したいタスク定義を入れ、「リビジョン」は最新を指定する
+4. ネットワーキング内のVPCは「xxx-ccs-vpc」、サブネットは「xxx-ccs-public-subnet1-ap-north-east-1a」、セキュリティグループは「XxxCcsToolSecutiryGroup」を指定する (xxxはprodまたはdev、XxxはProdまたはDev)
+5. 「タスクの実行」をクリックする
+6. クラスター内のタスクとCloudWatch Logsで実行結果を確認する
 
 # サービスの停止
 1. admin-service.yamlで作成したスタックのInstanceCountを0、user-service.yamlで作成したスタックのMinInstanceCountとMaxInstanceCountを0にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはfalseに更新する
