@@ -30,8 +30,6 @@ jobs:
       - name: Update frontend
         run: |
           if [ "${IS_PROD}" = "true" ]; then PREFIX="prod"; else PREFIX="dev"; fi
-          aws s3 sync "s3://${PREFIX}-ccs-user-app" "s3://${PREFIX}-ccs-previous-version-user-app" --delete
-          aws s3 sync "s3://${PREFIX}-ccs-admin-app" "s3://${PREFIX}-ccs-previous-version-admin-app" --delete
           aws s3 sync "s3://${CCS_USER_APP_RELEASE_PREPARATION_S3_BUCKET}" "s3://${PREFIX}-ccs-user-app" --delete
           aws s3 sync "s3://${CCS_ADMIN_APP_RELEASE_PREPARATION_S3_BUCKET}" "s3://${PREFIX}-ccs-admin-app" --delete
           aws cloudfront create-invalidation --distribution-id "${CCS_USER_APP_DISTRIBUTION_ID}" --paths "/*" --region "us-east-1"
