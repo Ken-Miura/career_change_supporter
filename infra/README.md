@@ -46,19 +46,6 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 # インデックス初期化
 # 管理者用アカウントの作成
 
-# 構築順
-依存関係があるため構築順序の通りに構築する必要がある。
-1. [CloudFormationの管理対象外のリソース](#CloudFormationの管理対象外のリソース) に記載のリソースを手動で構築
-2. artifacts-store.yaml
-3. network.yaml
-4. static-files.yaml
-5. data-store.yaml
-6. load-balancer.yaml
-7. application-cluster.yaml
-8. applicationsディレクトリ以下の全てのCloudFormationテンプレート
-9. request-controller.yaml
-10. deploy-user.yaml
-
 # スタック削除時の注意
 - 依存関係があるため、[構築順](#構築順) とは逆の順序で削除する
 - data-store.yamlを削除する際は、RDSの削除保護がないか確認し、削除保護を無効化後に削除する
@@ -69,12 +56,6 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 - S3バケット（スタック削除時に一緒に削除されないように設定しているバケットがある）
 - CloudWatch Logs（スタック削除時に一緒に削除されないログがある）
 
-# DBのマイグレーション方法
-TODO
-
-# APサーバの更新方法
-TODO
-
 # リリースビルド、リリース用Dockerイメージの作成
 Github Actionsにてリリースビルド、リリース用Dockerイメージの作成を行っているため、[該当コード](../.github/workflows/ci.yaml)を参照
 
@@ -82,13 +63,7 @@ Github Actionsにてリリースビルド、リリース用Dockerイメージの
 ymal内の該当するリソース（インスタンスタイプ等）を書き換えてCloudFormationにて更新する。更新の際は既存のリソースを削除する動作をしていないか確認するため、必ず変更セットを見て問題ないことがわかってから更新を行う。
 
 # CloudFormationの管理対象外のリソース
-Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの管理対象外としている（マネジメントコンソールから手動で構築している）
-
-（※）下記の二種類を手動で対応する。
-<ol>
-  <li>パラメータストアにECSで利用するシークレットを含む環境変数をSecureStringのパラメータとして構築。SecureStringのパラメータは、テンプレート作成時点でCloudFormationに対応していない（作成は完全に未対応、読み込みも制限がある）ため手動で構築する。前述の通り使い勝手が悪いため、基本的に使わない想定でテンプレートを構築していた。しかし、ECSがコンテナを起動するとき、環境変数に平文としてシークレットを埋め込むのはリスクが高いと判断し、その箇所だけシークレットの読み込みをする際にのみ利用する。</li>
-  <li>パラメータストアに収納代行用の銀行口座に関連する情報をSecureStringののパラメータとして構築。銀行口座に関連する情報は日本語を含んでおり、それらをCloudFormationテンプレート内で扱うことは困難である（CloudFormationテンプレートはASCII文字以外に対応していない）従って、それらの情報はパラメータストアに保管し、CloudFormationテンプレートからはパラメータストアを介して銀行口座に関連する情報を取得するようにする。StringでなくSecureStringを使う理由は、Cloudformationテンプレート内からパラメータストアのStringの値を参照する方法がないから。</li>
-</ol>
+Route53（Hosted Zone）、SES、Systems ManagerはCloudFormationの管理対象外としている（マネジメントコンソールから手動で構築している）下記に対象サービスに対して手動で実施する必要のある内容を記載する。
 
 ## Route53（Hosted Zone）
 下記の対応を行う
@@ -96,8 +71,14 @@ Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの�
 - DNSSECに対応させる（DNSSECに対応させる際、KSKの管理にKMS上にCMKを作ることになる）
 - DNSSECを有効にした際に監視すべき指標をCloudWatch Alarmに設定しておく
 
+## SES
+下記の対応を行う
+- 問い合わせを受け付けるためのメールアドレスを用意し、アカウントを作成する。そして、メールの受信ができるようにRoute53にレコードを作成する（メール送信だけでなく、メール受信もできるようにus-east-1に構築する）
+- DMARCに対応させる（SPF、DKIMの対応を行う）
+- バウンスレートの指標をCloudWatch Alarmに設定しておく
+
 ## Systems Manager
-パラメータストアにSecureStringで下記のECSで利用するシークレットを含む環境変数のパラメータを作成する。
+パラメータストアにSecureStringで下記のパラメータを作成する（SecureStringのパラメータは、テンプレート作成時点でCloudFormationに対応していない（作成は完全に未対応、読み込みも制限がある）ため手動で構築する。xxx-bank-xxxの名称のパラメータは、収納代行用の銀行口座に関連する情報のパラメータ）
 <ol>
   <li>prod-db-master-username (開発環境の場合は、dev-db-master-username)</li>
   <li>prod-db-master-password (開発環境の場合は、dev-db-master-password)</li>
@@ -109,10 +90,6 @@ Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの�
   <li>prod-key-of-signed-cookie-for-admin-app (開発環境の場合は、dev-key-of-signed-cookie-for-admin-app)</li>
   <li>prod-sky-way-application-id (開発環境の場合は、dev-sky-way-application-id)</li>
   <li>prod-sky-way-secret-key (開発環境の場合は、dev-sky-way-secret-key)</li>
-</ol>
-
-パラメータストアにSecureStringで下記の収納代行用の銀行口座に関連する情報のパラメータを作成する。
-<ol>
   <li>prod-bank-code (開発環境の場合は、dev-bank-code)</li>
   <li>prod-bank-name (開発環境の場合は、dev-bank-name)</li>
   <li>prod-bank-branch-code (開発環境の場合は、dev-bank-branch-code)</li>
@@ -120,9 +97,3 @@ Route53（Hosted Zone）、Systems Manager （※）、SESはCloudFormationの�
   <li>prod-bank-account-number (開発環境の場合は、dev-bank-account-number)</li>
   <li>prod-bank-account-holder-name (開発環境の場合は、dev-bank-account-holder-name)</li>
 </ol>
-
-## SES
-下記の対応を行う
-- 問い合わせを受け付けるためのメールアドレスを用意し、アカウントを作成する。そして、メールの受信ができるようにRoute53にレコードを作成する（メール送信だけでなく、メール受信もできるようにus-east-1に構築する）
-- DMARCに対応させる（SPF、DKIMの対応を行う）
-- バウンスレートの指標をCloudWatch Alarmに設定しておく
