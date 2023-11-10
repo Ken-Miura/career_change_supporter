@@ -1,5 +1,5 @@
 # 環境の構築
-下記の手順に従い、環境を構築する。環境を構築する際、利用する各テンプレートのEnvironmentパラメータは手順を通して統一する（本番環境であればprod、開発環境であればdev）
+下記の手順に従い、環境を構築する。環境を構築する際、利用する各テンプレートのEnvironmentパラメータは手順を通して統一する（本番環境であればprod、開発環境であればdev）テンプレート毎にスタックを構築するリージョンが異なるため注意する（詳細はを参照）
 1. [CloudFormationの管理対象外のリソース](#CloudFormationの管理対象外のリソース)に記載のリソースを手動で構築する
 2. artifacts-store.yamlを使いスタックを構築する（prodとdevで共通のスタックを使うため、既に作成済の場合は、この項と次項はスキップする）
 3. 前項のスタックができると[リリースビルド](#リリースビルド)で利用するIAMユーザーができるので、そのユーザーのアクセスキーIDとシークレットアクセスキーをWeb UIから発行する
@@ -9,7 +9,8 @@
 7. data-store.yamlを使いスタックを構築する（postgresのユーザー名とパスワード、OpenSearchのユーザー名とパスワードは[Systems Manager](#Systems-Manager)で構築した際の値と同じものにする）
 8. load-balancer.yamlを使いスタックを構築する（2種類のカスタムヘッダの値には任意の値を入力する。ただし、それぞれ異なる値、かつ予測が困難なものとすること。初めてスタックを構築する際は[TLS証明書初回発行の際のドメイン検証](#TLS証明書初回発行の際のドメイン検証)を参照すること）
 9. application-cluster.yamlを使いスタックを構築する
-10. applicationsディレクトリ以下の各テンプレートを使い、スタックを構築する
+10. applicationsディレクトリ以下の各テンプレートを使い、スタックを構築する（ImageTagパラメータには[リリースビルド](#リリースビルド)にてtagをつけたコミットのコミットIDを指定する。またPostgresとOpenSearchの初期化が終わっていないため、それらにアクセスしないようパラメータを指定する（admin-service.yamlのInstanceCount、user-service.yamlのMinInstanceCountとMaxInstanceCountは0に、delete-expired-xxx.yamlのScheduledTaskEnabledはfalseを指定する））
+11. request-controller.yamlを使いスタックを構築する（**us-east-1**で構築する。2種類のカスタムヘッダの値にはload-balancer.yamlでスタックを構築した際に利用したものを同じ値を使う）
 
 ## 環境構築時の注意
 ### TLS証明書初回発行の際のドメイン検証
@@ -19,7 +20,7 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 3. UPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態となっていたスタックが構築完了することを確認する
 
 ### スタックを構築するリージョン
-スタックを構築する際、下記のリージョンに対してテンプレートを作成する
+スタックを構築する際、テンプレートに対して構築するリージョンが決まっているため注意する
 ## ap-northeast-1
 - request-controller.yaml以外のCloudFormationテンプレート
 
