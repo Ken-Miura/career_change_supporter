@@ -182,7 +182,6 @@ async fn send_consultation_req_rejection_mail_if_user_exists(
 }
 
 fn create_text(consultation_req_id: i64) -> String {
-    // TODO: 文面の調整
     format!(
         r"相談申し込み（相談申し込み番号: {}）が拒否されました。
         

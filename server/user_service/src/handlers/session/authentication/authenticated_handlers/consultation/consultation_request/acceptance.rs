@@ -877,7 +877,6 @@ fn create_text_for_user(
     fee_per_hour_in_yen: i32,
     consultation_date_time: &str,
 ) -> String {
-    // TODO: 文面の調整
     format!(
         r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
 
@@ -951,7 +950,6 @@ fn create_text_for_consultant(
     fee_per_hour_in_yen: i32,
     consultation_date_time: &str,
 ) -> String {
-    // TODO: 文面の調整
     format!(
         r"相談申し込み（相談申し込み番号: {}）が成立しました。下記に成立した相談申し込みの詳細を記載いたします。
 

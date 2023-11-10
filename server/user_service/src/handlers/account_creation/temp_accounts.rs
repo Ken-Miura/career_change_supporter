@@ -31,7 +31,6 @@ use crate::err::Code::ReachTempAccountsLimit;
 
 use super::TempAccount;
 
-// TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_TEMP_ACCOUNTS: u64 = 5;
 
 static SUBJECT: Lazy<String> = Lazy::new(|| format!("[{}] 新規登録用URLのお知らせ", WEB_SITE_NAME));
@@ -110,7 +109,6 @@ async fn handle_temp_accounts_req(
 }
 
 fn create_text(url: &str, uuid_str: &str) -> String {
-    // TODO: 文面の調整
     format!(
         r"!!注意!! まだ新規登録は完了していません。
 

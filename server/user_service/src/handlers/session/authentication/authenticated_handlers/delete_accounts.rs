@@ -264,7 +264,6 @@ async fn delete_career_from_index_with_document_exclusive_lock(
 }
 
 fn create_text() -> String {
-    // TODO: 文面の調整
     format!(
         r"アカウントの削除が完了しました。
 

@@ -29,7 +29,6 @@ use uuid::Uuid;
 use crate::err::unexpected_err_resp;
 use crate::err::Code::ReachPasswordChangeReqLimit;
 
-// TODO: 運用しながら上限を調整する
 const MAX_NUM_OF_PWD_CHANGE_REQ: u64 = 8;
 
 static SUBJECT: Lazy<String> =
@@ -128,7 +127,6 @@ struct PasswordChangeReq {
 }
 
 fn create_text(url: &str, uuid_str: &str) -> String {
-    // TODO: 文面の調整
     format!(
         r"!!注意!! まだパスワード変更は完了していません。
 

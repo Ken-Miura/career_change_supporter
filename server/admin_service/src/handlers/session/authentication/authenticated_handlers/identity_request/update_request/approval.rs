@@ -257,7 +257,6 @@ fn generate_identity_active_model(model: update_identity_req::Model) -> identity
 }
 
 fn create_text() -> String {
-    // TODO: 文面の調整
     format!(
         r"本人確認が完了し、ユーザー情報を更新致しました。
 

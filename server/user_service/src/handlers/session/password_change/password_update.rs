@@ -178,9 +178,8 @@ async fn handle_password_update_req(
 }
 
 fn create_text() -> String {
-    // TODO: 文面の調整
     format!(
-        r"パスワード変更が完了致しました。
+        r"パスワード変更が完了しました。
 
 本メールはシステムより自動配信されています。
 本メールに返信されましても、回答いたしかねます。

@@ -226,7 +226,6 @@ fn generate_rejected_create_identity_req_active_model(
 }
 
 fn create_text(rejection_reason: String) -> String {
-    // TODO: 文面の調整
     format!(
         r"下記の【拒否理由】により、ユーザー情報の登録を拒否いたしました。お手数ですが、再度本人確認依頼をお願いいたします。
 

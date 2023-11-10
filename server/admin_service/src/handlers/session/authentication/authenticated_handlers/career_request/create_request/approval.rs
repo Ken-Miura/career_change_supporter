@@ -462,7 +462,6 @@ async fn insert_new_career_into_document(
 }
 
 fn create_text() -> String {
-    // TODO: 文面の調整
     format!(
         r"職務経歴確認が完了し、職務経歴を登録致しました。
 
