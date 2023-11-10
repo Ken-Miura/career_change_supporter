@@ -40,11 +40,16 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 
 # リリース
 1. [リリースビルド](#リリースビルド)が完了していることを確認する
-2. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update setup tool"を実行する（これはマイグレーション処理（＋その他の処理）が記載されているタスク定義を更新する。正しく完了したかどうかはGithub ActionsとCloudFormationのスタックを確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-setup-tool.yaml)を参照し、ローカルで同じ処理を行う）
-3. サービス停止が必要な場合、[サービスの停止](#サービスの停止)を実行する
-4. [マイグレーション](#マイグレーション)の項目を実施する
-5. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update application"を実行する（正しく完了したかどうかはGithub Actions、CloudFormationのスタック、Webページの実際の表示で確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-application.yaml)を参照し、ローカルで同じ処理を行う）
-6. サービス停止をしている場合、admin-service.yamlで作成したスタックのInstanceCountを1、user-service.yamlで作成したスタックのMinInstanceCountを1、MaxInstanceCountを8にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはtrueに更新する（フロントエンドのコードは自動的にデプロイされているため、バックエンドの対応のみ行う）
+2. 切り戻しが発生した場合に備えて、下記のコマンドでフロントエンドのコードをローカルにバックアップしておく（アクセスキーIDとシークレットはdeploy-user.yamlで作られるユーザーのものを使う）
+   <ul>
+     <li>ユーザー向けフロントエンドコード: aws s3 sync s3://prod-ccs-user-app "ローカルのディレクトリ" --exact-timestamps</li>
+     <li>管理者向けフロントエンドコード: aws s3 sync s3://prod-ccs-admin-app "ローカルのディレクトリ" --exact-timestamps</li>
+   </ul>
+5. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update setup tool"を実行する（これはマイグレーション処理（＋その他の処理）が記載されているタスク定義を更新する。正しく完了したかどうかはGithub ActionsとCloudFormationのスタックを確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-setup-tool.yaml)を参照し、ローカルで同じ処理を行う）
+6. サービス停止が必要な場合、[サービスの停止](#サービスの停止)を実行する
+7. [マイグレーション](#マイグレーション)の項目を実施する
+8. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update application"を実行する（正しく完了したかどうかはGithub Actions、CloudFormationのスタック、Webページの実際の表示で確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-application.yaml)を参照し、ローカルで同じ処理を行う）
+9. サービス停止をしている場合、admin-service.yamlで作成したスタックのInstanceCountを1、user-service.yamlで作成したスタックのMinInstanceCountを1、MaxInstanceCountを8にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはtrueに更新する（フロントエンドのコードは自動的にデプロイされているため、バックエンドの対応のみ行う）
 
 # 切り戻し
 
