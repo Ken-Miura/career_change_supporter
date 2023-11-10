@@ -59,6 +59,8 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 # インデックス初期化
 # 管理者用アカウントの作成
 
+## 手動でのタスクの実行
+
 # サービスの停止
 1. admin-service.yamlで作成したスタックのInstanceCountを0、user-service.yamlで作成したスタックのMinInstanceCountとMaxInstanceCountを0にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはfalseに更新する
 2. ユーザー向けフロントエンドコードを保管しているバケットを空にする
