@@ -47,11 +47,23 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
    </ul>
 5. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update setup tool"を実行する（これはマイグレーション処理（＋その他の処理）が記載されているタスク定義を更新する。正しく完了したかどうかはGithub ActionsとCloudFormationのスタックを確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-setup-tool.yaml)を参照し、ローカルで同じ処理を行う）
 6. サービス停止が必要な場合、[サービスの停止](#サービスの停止)を実行する
-7. [マイグレーション](#マイグレーション)の項目を実施する
+7. マイグレーションが必要な場合、[マイグレーション](#マイグレーション)の項目を実施する
 8. [リリースビルド](#リリースビルド)で指定したtagで、Github Actionsの"Update application"を実行する（正しく完了したかどうかはGithub Actions、CloudFormationのスタック、Webページの実際の表示で確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-application.yaml)を参照し、ローカルで同じ処理を行う）
 9. サービス停止をしている場合、admin-service.yamlで作成したスタックのInstanceCountを1、user-service.yamlで作成したスタックのMinInstanceCountを1、MaxInstanceCountを8にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはtrueに更新する（フロントエンドのコードは自動的にデプロイされているため、バックエンドの対応のみ行う）
 
 # 切り戻し
+[リリース](#リリース)が完了し、動作確認した結果NGだった場合の手続きを記載する。
+1. サービス停止が必要な場合、[サービスの停止](#サービスの停止)を実行する
+2. マイグレーションをしていた場合、[ロールバック](#ロールバック)の項目を実施する
+3. [リリース](#リリース)で指定したタグから一つ前のバージョンのタグを指定し、Github Actionsの"Update setup tool"を実行する（正しく完了したかどうかはGithub ActionsとCloudFormationのスタックを確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-setup-tool.yaml)を参照し、ローカルで同じ処理を行う）
+4. [リリース](#リリース)で指定したタグから一つ前のバージョンのタグを指定し、Github Actionsの"Update application"を実行する（正しく完了したかどうかはGithub Actions、CloudFormationのスタック、Webページの実際の表示で確認する。無料利用枠がなくなりGithub Actionsを使えない場合、[該当コード](../.github/workflows/cd-application.yaml)を参照し、ローカルで同じ処理を行う）
+5. 切り戻しに備えてローカルにバックアップしていたフロントエンドのコードを下記のコマンドでアップロードする（アクセスキーIDとシークレットはdeploy-user.yamlで作られるユーザーのものを使う）
+   <ul>
+     <li>ユーザー向けフロントエンドコード: aws s3 sync "ローカルのディレクトリ" s3://prod-ccs-user-app --delete</li>
+     <li>管理者向けフロントエンドコード: aws s3 sync "ローカルのディレクトリ" s3://prod-ccs-admin-app --delete</li>
+   </ul>
+6. サービス停止をしている場合、admin-service.yamlで作成したスタックのInstanceCountを1、user-service.yamlで作成したスタックのMinInstanceCountを1、MaxInstanceCountを8にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはtrueに更新する（前項の対応でフロントエンドのコードはデプロイ済みのため、バックエンドの対応のみ行う）
+7. 必要に応じてユーザー向けフロントエンドコードと管理者向けフロントエンドコードを提供しているCloudFrontのキャッシュ無効化を行う
 
 # DB初期化
 # マイグレーション
@@ -65,7 +77,7 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 1. admin-service.yamlで作成したスタックのInstanceCountを0、user-service.yamlで作成したスタックのMinInstanceCountとMaxInstanceCountを0にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはfalseに更新する
 2. ユーザー向けフロントエンドコードを保管しているバケットを空にする
 3. [メンテナンス用のページ](maintenance_page/index.html)をユーザー向けフロントエンドコードを保管しているバケットにアップロードする
-4. 必要に応じて、ユーザー向けフロントエンドコードを提供しているCloudFrontのキャッシュ無効化を行う
+4. 必要に応じてユーザー向けフロントエンドコードを提供しているCloudFrontのキャッシュ無効化を行う
 
 # 環境の削除
 ## スタック削除時の注意
