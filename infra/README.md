@@ -11,6 +11,14 @@
 9. application-cluster.yamlを使いスタックを構築する
 10. applicationsディレクトリ以下の各テンプレートを使い、スタックを構築する（ImageTagパラメータには[リリースビルド](#リリースビルド)にてtagをつけたコミットのコミットIDを指定する。またPostgresとOpenSearchの初期化が終わっていないため、それらにアクセスしないようパラメータを指定する（admin-service.yamlのInstanceCount、user-service.yamlのMinInstanceCountとMaxInstanceCountは0に、delete-expired-xxx.yamlのScheduledTaskEnabledはfalseを指定する））
 11. request-controller.yamlを使いスタックを構築する（**us-east-1**で構築する。2種類のカスタムヘッダの値にはload-balancer.yamlでスタックを構築した際に利用したものを同じ値を使う）
+12. deploy-user.yamlを使いスタックを構築する
+13. 前項のスタックができると[リリース](#リリース)で利用するIAMユーザーができるので、そのユーザーのアクセスキーIDとシークレットアクセスキーをWeb UIから発行する
+14. [DB初期化](#DB初期化)の項目を実施する
+15. [マイグレーション](#マイグレーション)の項目を実施する
+16. [インデックス初期化](#インデックス初期化)の項目を実施する
+17. [管理者用アカウントの作成](#管理者用アカウントの作成)の項目を実施する
+18. admin-service.yamlで作成したスタックのInstanceCountを1、user-service.yamlで作成したスタックのMinInstanceCountを1、MaxInstanceCountを8にし、delete-expired-xxx.yamlで作成したスタックのScheduledTaskEnabledはtrueに更新する
+19. [リリースビルド](#リリースビルド)を実施した結果、フロントエンドのリリース用コードがCIの結果格納用のS3バケットにアップロードされているので、それをリリース用のバケットにコピーする（ユーザー向けはccs-user-app-ci-result-storageからxxx-ccs-user-appへコピーし、管理者向けはccs-admin-app-ci-result-storageからxxx-ccs-admin-appへコピーする）
 
 ## 環境構築時の注意
 ### TLS証明書初回発行の際のドメイン検証
@@ -20,16 +28,23 @@ TLS証明書発行の際、証明書の発行者がその証明書に記載す�
 3. UPDATE_IN_PROGRESSの状態でドメイン検証待ちの状態となっていたスタックが構築完了することを確認する
 
 ### スタックを構築するリージョン
-スタックを構築する際、テンプレートに対して構築するリージョンが決まっているため注意する
-## ap-northeast-1
-- request-controller.yaml以外のCloudFormationテンプレート
+#### request-controller.yaml以外のCloudFormationテンプレート
+- ap-northeast-1
 
-## us-east-1
-- request-controller.yaml (CloudFrontに紐づくWebACLやACMがus-east-1でしか構築できないため)
+#### request-controller.yaml
+- us-east-1 (CloudFrontに紐づくWebACLやACMがus-east-1でしか構築できないため)
 
 # リリースビルド
 1. リリースビルド対象のコミットに対して、gitでtagをつけておく
 2. ソースコードの静的解析、単体テスト、リリースビルドを行い、その成果物をAWS上にアップロードする（）
+
+# リリース
+
+# DB初期化
+# マイグレーション
+# ロールバック
+# インデックス初期化
+# 管理者用アカウントの作成
 
 # 構築順
 依存関係があるため構築順序の通りに構築する必要がある。
