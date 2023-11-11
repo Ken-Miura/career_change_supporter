@@ -171,8 +171,32 @@ impl SendMail for SmtpClient {
     ) -> Result<(), ErrResp> {
         let dest = Destination::builder().to_addresses(to).build();
 
-        let subject_content = Content::builder().data(subject).charset("UTF-8").build();
-        let body_content = Content::builder().data(text).charset("UTF-8").build();
+        let subject_content = Content::builder()
+            .data(subject)
+            .charset("UTF-8")
+            .build()
+            .map_err(|e| {
+                error!("failed to build subject ({}): {}", subject, e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err::Code::UnexpectedErr as u32,
+                    }),
+                )
+            })?;
+        let body_content = Content::builder()
+            .data(text)
+            .charset("UTF-8")
+            .build()
+            .map_err(|e| {
+                error!("failed to build text ({}): {}", text, e);
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ApiError {
+                        code: err::Code::UnexpectedErr as u32,
+                    }),
+                )
+            })?;
         let body = Body::builder().text(body_content).build();
         let msg = Message::builder()
             .subject(subject_content)
