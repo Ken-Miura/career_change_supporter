@@ -134,12 +134,7 @@ FROM psql-client as db-initializer
 COPY data_store_setup_files/initdb/init.sh .
 CMD [ "./init.sh" ]
 
-FROM --platform=linux/amd64 rust:1.73.0-alpine as migration-tool
-RUN apk add --update build-base pkgconfig openssl-dev && \
-        rm -rf /var/cache/apk/*
-WORKDIR /workspace
-RUN export SEA_ORM_CLI_VERSION=0.12.4 && \
-    cargo install --locked --version ${SEA_ORM_CLI_VERSION} sea-orm-cli
+FROM development as migration-tool
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 CMD [ "./data_store_setup_files/initdb/migrate.sh" ]
