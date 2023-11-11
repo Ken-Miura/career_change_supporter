@@ -38,7 +38,7 @@ ENV HOME=/home/${USERNAME}
 RUN mkdir ${HOME}/workspace
 WORKDIR ${HOME}/workspace
 
-RUN export RUST_VERSION=1.70.0 && \
+RUN export RUST_VERSION=1.73.0 && \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${RUST_VERSION}
 ENV PATH=${PATH}:${HOME}/.cargo/bin
 RUN export SEA_ORM_CLI_VERSION=0.12.4 && \
@@ -134,7 +134,7 @@ FROM psql-client as db-initializer
 COPY data_store_setup_files/initdb/init.sh .
 CMD [ "./init.sh" ]
 
-FROM --platform=linux/amd64 rust:1.70.0-alpine as migration-tool
+FROM --platform=linux/amd64 rust:1.73.0-alpine as migration-tool
 RUN apk add --update build-base pkgconfig openssl-dev && \
         rm -rf /var/cache/apk/*
 WORKDIR /workspace
