@@ -385,7 +385,7 @@ async fn enable_mfa(
             Box::pin(async move {
                 let admin_account_model = select_admin_account_for_update(txn, admin_account_id)
                     .await
-                    .map_err(|e| TxErr(e))?;
+                    .map_err(TxErr)?;
                 let admin_account_model = admin_account_model
                     .ok_or_else(|| TxErr(Box::new(NoAccountFoundError(email_addr))))?;
 
@@ -467,7 +467,7 @@ async fn disable_mfa(
         Box::pin(async move {
             let admin_account_model = select_admin_account_for_update(txn, admin_account_id)
                 .await
-                .map_err(|e| TxErr(e))?;
+                .map_err(TxErr)?;
             let admin_account_model = admin_account_model
                 .ok_or_else(|| TxErr(Box::new(NoAccountFoundError(email_addr))))?;
 
