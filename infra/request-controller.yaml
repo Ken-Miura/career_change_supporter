@@ -122,7 +122,7 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-user-app.s3.ap-northeast-1.amazonaws.com"]]
           Compress: true
-          ViewerProtocolPolicy: "https-only"
+          ViewerProtocolPolicy: "redirect-to-https"
           AllowedMethods:
             - "HEAD"
             - "GET"
@@ -275,7 +275,7 @@ Resources:
         DefaultCacheBehavior:
           TargetOriginId: !Join ["-", [!If [IsProd, "prod", "dev"], "ccs-admin-app.s3.ap-northeast-1.amazonaws.com"]]
           Compress: true
-          ViewerProtocolPolicy: "https-only"
+          ViewerProtocolPolicy: "redirect-to-https"
           AllowedMethods:
             - "HEAD"
             - "GET"
