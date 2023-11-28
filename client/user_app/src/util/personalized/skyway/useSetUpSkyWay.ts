@@ -8,7 +8,14 @@ export function useSetupSkyWay () {
   const remoteMediaStream = ref(null as MediaStream | null)
 
   const setupSkyWay = (audioMeetingRoom: SkyWayAudioMeetingRoom) => {
+    audioMeetingRoom.getContext().onFatalError.add(args => {
+      skyWayErrorMessage.value = `${Message.SKY_WAY_ROOM_ON_FATAL_ERROR}: ${args}`
+    })
+
     const member = audioMeetingRoom.getMember()
+    member.onFatalError.add(args => {
+      skyWayErrorMessage.value = `${Message.SKY_WAY_MEMBER_ON_FATAL_ERROR}: ${args}`
+    })
     member.publish(audioMeetingRoom.getLocalAudioStream())
 
     const subscribe = async (publication: RoomPublication) => {
@@ -42,14 +49,6 @@ export function useSetupSkyWay () {
       } catch (e) {
         console.error(e)
       }
-
-      audioMeetingRoom.getContext().onFatalError.add(args => {
-        skyWayErrorMessage.value = `${Message.SKY_WAY_ROOM_ON_FATAL_ERROR}: ${args}`
-      })
-
-      member.onFatalError.add(args => {
-        skyWayErrorMessage.value = `${Message.SKY_WAY_MEMBER_ON_FATAL_ERROR}: ${args}`
-      })
     })
   }
 
