@@ -1,6 +1,6 @@
 // Copyright 2021 Ken Miura
 
-use aws_config::{ecs::EcsCredentialsProvider, meta::region::RegionProviderChain};
+use aws_config::{ecs::EcsCredentialsProvider, meta::region::RegionProviderChain, BehaviorVersion};
 use aws_sdk_sesv2::{
     config::{Builder, Credentials, Region},
     types::{Body, Content, Destination, EmailContent, Message},
@@ -124,7 +124,7 @@ impl SmtpClient {
             "aws_ses_credential_provider",
         );
 
-        let config = aws_config::from_env()
+        let config = aws_config::defaults(BehaviorVersion::v2023_11_09())
             .region(region_provider)
             .credentials_provider(credentials)
             .load()
@@ -146,7 +146,7 @@ impl SmtpClient {
         let region_provider = RegionProviderChain::first_try(Region::new(cloned_region));
         let credentials = EcsCredentialsProvider::builder().build();
 
-        let config = aws_config::from_env()
+        let config = aws_config::defaults(BehaviorVersion::v2023_11_09())
             .region(region_provider)
             .credentials_provider(credentials)
             .load()
