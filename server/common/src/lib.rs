@@ -226,7 +226,7 @@ pub const MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: u32 = 604800;
 /// 適切な値は実行環境により異なる。実行環境が変わる際は計測し、適切な値を設定する。<br>
 /// 下記リンクによると一回の処理に250ms以上計算にかかる値を選択するのが適切と紹介されている。<br>
 /// 参考: https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt <br>
-const BCRYPT_COST: u32 = 7;
+const BCRYPT_COST: u32 = 10;
 
 /// アプリケーションサーバが保持可能な状態
 ///
