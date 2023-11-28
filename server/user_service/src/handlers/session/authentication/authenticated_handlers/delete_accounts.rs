@@ -64,7 +64,7 @@ pub(crate) async fn delete_accounts(
     }
     Ok((
         StatusCode::OK,
-        jar.remove(Cookie::named(SESSION_ID_COOKIE_NAME)),
+        jar.remove(Cookie::from(SESSION_ID_COOKIE_NAME)),
     ))
 }
 

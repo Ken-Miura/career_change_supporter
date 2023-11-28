@@ -581,12 +581,14 @@ async fn main_internal(num_of_cpus: u32) {
                 KEY_TO_SOCKET
             )
         });
-    let addr = socket
-        .parse()
-        .unwrap_or_else(|_| panic!("failed to parse socket: {}", socket));
-    tracing::info!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(socket.as_str())
+        .await
+        .unwrap_or_else(|_| panic!("failed to create tcp listener: {}", socket));
+    tracing::info!(
+        "listening on {}",
+        listener.local_addr().expect("failed to get local address")
+    );
+    axum::serve(listener, app)
         .await
         .expect("failed to serve app");
 }

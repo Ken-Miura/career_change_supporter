@@ -28,12 +28,12 @@ pub fn check_env_vars(env_vars: Vec<String>) -> Result<(), Vec<String>> {
 
 /// SameSiteがStrict、Secure、HttpOnlyのセッションCookie（ブラウザが閉じられたら消えるCookie）を返す。
 pub fn create_session_cookie<'a>(name: String, value: String, path: String) -> Cookie<'a> {
-    Cookie::build(name, value)
+    Cookie::build((name, value))
         .same_site(SameSite::Strict)
         .path(path)
         .secure(true)
         .http_only(true)
-        .finish()
+        .build()
 }
 
 /// タイムゾーンを含まない日付（西暦、月（1-12）、日付（1-31））

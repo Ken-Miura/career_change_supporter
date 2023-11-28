@@ -29,14 +29,14 @@ pub(crate) async fn post_logout(
             info!("no sessoin cookie found");
             return Ok((
                 StatusCode::OK,
-                jar.remove(Cookie::named(ADMIN_SESSION_ID_COOKIE_NAME)),
+                jar.remove(Cookie::from(ADMIN_SESSION_ID_COOKIE_NAME)),
             ));
         }
     };
     handle_logout_req(session_id, &store).await?;
     Ok((
         StatusCode::OK,
-        jar.remove(Cookie::named(ADMIN_SESSION_ID_COOKIE_NAME)),
+        jar.remove(Cookie::from(ADMIN_SESSION_ID_COOKIE_NAME)),
     ))
 }
 

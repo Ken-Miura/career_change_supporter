@@ -23,11 +23,11 @@ use ::opensearch::OpenSearch;
 use async_fred_session::RedisSessionStore;
 use axum::{
     async_trait,
-    body::{Body, HttpBody},
+    body::Body,
     extract::FromRequest,
     extract::{self, FromRef},
     http::{Request, StatusCode},
-    BoxError, Json,
+    Json,
 };
 use axum_extra::extract::cookie::Key;
 use chrono::FixedOffset;
@@ -99,16 +99,13 @@ pub struct Credential {
 pub struct ValidCred(pub Credential);
 
 #[async_trait]
-impl<S, B> FromRequest<S, B> for ValidCred
+impl<S> FromRequest<S> for ValidCred
 where
     S: Send + Sync,
-    B: HttpBody + Send + 'static,
-    B::Data: Send,
-    B::Error: Into<BoxError>,
 {
     type Rejection = ErrResp;
 
-    async fn from_request(req: Request<B>, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request(req: Request<Body>, state: &S) -> Result<Self, Self::Rejection> {
         let payload = extract::Json::<Credential>::from_request(req, state)
             .await
             .map_err(|e| {

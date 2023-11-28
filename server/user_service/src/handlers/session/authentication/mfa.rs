@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn extract_session_id_from_cookie_success() {
         let value = "4d/UQZs+7mY0kF16rdf8qb07y2TzyHM2LCooSqBJB4GuF5LHw8h5jFLoJmbR3wYbwpy9bGQB2DExLM4lxvD62A==";
-        let cookie = Cookie::build(SESSION_ID_COOKIE_NAME, value).finish();
+        let cookie = Cookie::build((SESSION_ID_COOKIE_NAME, value)).build();
 
         let result = extract_session_id_from_cookie(Some(cookie)).expect("failed to get Ok");
 

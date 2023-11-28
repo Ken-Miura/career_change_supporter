@@ -52,6 +52,7 @@ use async_fred_session::RedisSessionStore;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
+use axum::body::Body;
 use common::db::{KEY_TO_DB_HOST, KEY_TO_DB_PORT, KEY_TO_DB_NAME, construct_db_url};
 use common::log::{LOG_LEVEL, init_log};
 use common::opensearch::{
@@ -71,7 +72,7 @@ use handlers::session::authentication::authenticated_handlers::consultation::con
 use dotenv::dotenv;
 use entity::sea_orm::{ConnectOptions, Database};
 use handlers::session::authentication::authenticated_handlers::terms_of_use::KEY_TO_TERMS_OF_USE_VERSION;
-use hyper::{Body, Request};
+use hyper::{Request};
 use handlers::session::authentication::mfa::KEY_TO_USER_TOTP_ISSUER;
 use once_cell::sync::Lazy;
 use std::env::set_var;
@@ -335,12 +336,14 @@ async fn main_internal(num_of_cpus: u32) {
                 KEY_TO_SOCKET
             )
         });
-    let addr = socket
-        .parse()
-        .unwrap_or_else(|_| panic!("failed to parse socket: {}", socket));
-    tracing::info!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
+    let listener = tokio::net::TcpListener::bind(socket.as_str())
+        .await
+        .unwrap_or_else(|_| panic!("failed to create tcp listener: {}", socket));
+    tracing::info!(
+        "listening on {}",
+        listener.local_addr().expect("failed to get local address")
+    );
+    axum::serve(listener, app)
         .await
         .expect("failed to serve app");
 }

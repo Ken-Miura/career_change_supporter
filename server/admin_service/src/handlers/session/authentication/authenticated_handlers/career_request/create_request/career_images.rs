@@ -2,9 +2,9 @@
 
 use axum::async_trait;
 use axum::extract::State;
-use axum::headers::{HeaderMap, HeaderValue};
 use axum::http::StatusCode;
 use axum::{extract::Path, Json};
+use axum_extra::headers::{HeaderMap, HeaderValue};
 use common::storage::StorageClient;
 use common::{
     err::Code::InvalidUuidFormat, storage::CAREER_IMAGES_BUCKET_NAME,
@@ -78,8 +78,8 @@ mod tests {
     use std::io::Cursor;
 
     use axum::async_trait;
-    use axum::headers::HeaderValue;
     use axum::http::StatusCode;
+    use axum_extra::headers::HeaderValue;
     use common::{err::Code::InvalidUuidFormat, ErrResp};
     use image::{ImageBuffer, ImageOutputFormat, RgbImage};
 
