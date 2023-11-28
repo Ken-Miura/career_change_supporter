@@ -12,7 +12,7 @@ use axum_extra::extract::SignedCookieJar;
 use chrono::{DateTime, FixedOffset, Utc};
 use common::password::is_password_match;
 use common::util::create_session_cookie;
-use common::{ApiError, ErrResp};
+use common::{ApiError, ErrResp, DUMMY_HASHED_PASSWORD};
 use common::{ValidCred, JAPANESE_TIME_ZONE};
 use entity::prelude::UserAccount;
 use entity::sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
@@ -113,9 +113,7 @@ async fn find_account_by_email_address(
         // 処理時間からアカウントが見つからなかったのか、パスワードが見つからなかったのかを露見させないようにするため
         // アカウントが見つからなかった場合でもis_password_matchの処理を行い、パスワードが一致しなかった場合の計算量に近づける
         // 計算量を同等にするためだけにis_password_matchを呼ぶので、戻り値は意図的に無視する
-        // TODO: Bcryptのコストが決まったら更新する
-        let dummy = "$2b$07$crI33XZdfhjE4oZwjn9Sc.0WWpTRjdAhFV3vbmd2unM6F70Rdr8im".as_bytes();
-        let _ = is_password_match(password, dummy);
+        let _ = is_password_match(password, DUMMY_HASHED_PASSWORD);
         error!("unauthorized: no email address ({}) found", email_addr);
         (
             StatusCode::UNAUTHORIZED,

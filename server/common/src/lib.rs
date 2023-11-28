@@ -226,7 +226,17 @@ pub const MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: u32 = 604800;
 /// 適切な値は実行環境により異なる。実行環境が変わる際は計測し、適切な値を設定する。<br>
 /// 下記リンクによると一回の処理に250ms以上計算にかかる値を選択するのが適切と紹介されている。<br>
 /// 参考: https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt <br>
-const BCRYPT_COST: u32 = 10;
+const BCRYPT_COST: u32 = 11;
+
+/// ダミー用のハッシュ化済みのパスワード
+///
+/// 処理時間からアカウントが見つからなかったのか、パスワードが見つからなかったのかを露見させないようにするため、
+/// アカウントが見つからなかった場合でもパスワードが一致しなかった場合の計算量に近づける必要がある。
+/// 従って、アカウントが見つからなかった場合でもパスワード一致の確認の計算をする。その計算の際に利用するダミー用パスワードをハッシュ化したもの。
+///
+/// [BCRYPT_COST]を変更した際は、こちらの値もその[BCRYPT_COST]のコストでハッシュ化されたものに更新する。
+pub const DUMMY_HASHED_PASSWORD: &[u8] =
+    "$2b$11$tbsUCoFSM4BAB8BY2QPNDueqxNHzZ770tUzjVAi6HUt53Xu0zX4wy".as_bytes();
 
 /// アプリケーションサーバが保持可能な状態
 ///
