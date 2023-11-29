@@ -219,14 +219,13 @@ pub const NEWS_RETRIEVAL_CRITERIA_IN_DAYS: i64 = 180;
 /// 受け付けた相談を承認する際、相談開始日時までに空いていなければならない最小期間（単位：秒）
 pub const MIN_DURATION_BEFORE_CONSULTATION_ACCEPTANCE_IN_SECONDS: u32 = 604800;
 
-// TODO: リリース前に値を調整する
 /// パスワード、パスコードをハッシュ化する際のストレッチング回数（ストレッチングが2^[BCRYPT_COST]回実行される) <br>
 /// <br>
 /// NOTE:<br>
 /// 適切な値は実行環境により異なる。実行環境が変わる際は計測し、適切な値を設定する。<br>
-/// 下記リンクによると一回の処理に250ms以上計算にかかる値を選択するのが適切と紹介されている。<br>
+/// 下記リンクによると一回の処理に240ms以上計算にかかる値を選択するのが適切と紹介されている。<br>
 /// 参考: https://security.stackexchange.com/questions/17207/recommended-of-rounds-for-bcrypt <br>
-const BCRYPT_COST: u32 = 11;
+const BCRYPT_COST: u32 = 12;
 
 /// ダミー用のハッシュ化済みのパスワード
 ///
@@ -236,7 +235,7 @@ const BCRYPT_COST: u32 = 11;
 ///
 /// [BCRYPT_COST]を変更した際は、こちらの値もその[BCRYPT_COST]のコストでハッシュ化されたものに更新する。
 pub const DUMMY_HASHED_PASSWORD: &[u8] =
-    "$2b$11$tbsUCoFSM4BAB8BY2QPNDueqxNHzZ770tUzjVAi6HUt53Xu0zX4wy".as_bytes();
+    "$2b$12$5M.b/cIw1aWow4hAshZrc.wE4qjWgKEIPUJt4gQC9LCJ3xNcxUffa".as_bytes();
 
 /// アプリケーションサーバが保持可能な状態
 ///
