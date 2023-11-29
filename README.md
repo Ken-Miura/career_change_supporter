@@ -15,15 +15,10 @@
 Vueのデバッグ（ブレークポイントを貼って、そこで止めること）ができなくなった問題の解決
 
 クライアント側のコードでオーディオを使うためにgetUserMediaを使う。インターネット上にデプロイした際にその関数を使う際にFeature-Policyが必要確認する。
-参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
-参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
+- 参考1: https://developer.mozilla.org/ja/docs/Web/API/MediaDevices/getUserMedia
+- 参考2: https://developer.mozilla.org/ja/docs/Web/HTTP/Headers/Permissions-Policy
 
 client/admin_app以下の一部用意していない単体テストコード
-
-スモークテストで下記を確認する
-- WAFのAWSマネージドのルールに関して、クエリ、パスのサイズを制限するものに引っかからないか確認する
-- 送信するメールの文面全般
-- ログイン時にログイン処理が250msかかるコストを見つけておく
 
 # NOTE
 
