@@ -101,6 +101,9 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
                         }
                     })?;
 
+                    insert_user_rating(&ap, txn).await?;
+                    insert_consultant_rating(&ap, txn).await?;
+
                     let id =
                         find_identity_by_user_account_id_in_transaction(txn, ap.user_account_id)
                             .await?;
@@ -146,6 +149,54 @@ impl AwaitingWithdrawalOperation for AwaitingWithdrawalOperationImpl {
             })?;
         Ok(())
     }
+}
+
+async fn insert_user_rating(
+    ap: &entity::awaiting_payment::Model,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let ur = entity::user_rating::ActiveModel {
+        consultation_id: Set(ap.consultation_id),
+        user_account_id: Set(ap.user_account_id),
+        consultant_id: Set(ap.consultant_id),
+        meeting_at: Set(ap.meeting_at),
+        rating: Set(None),
+        rated_at: Set(None),
+    };
+    let _ = ur.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert user_rating (awaiting_payment: {:?}): {}",
+            ap, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
+}
+
+async fn insert_consultant_rating(
+    ap: &entity::awaiting_payment::Model,
+    txn: &DatabaseTransaction,
+) -> Result<(), ErrRespStruct> {
+    let cr = entity::consultant_rating::ActiveModel {
+        consultation_id: Set(ap.consultation_id),
+        user_account_id: Set(ap.user_account_id),
+        consultant_id: Set(ap.consultant_id),
+        meeting_at: Set(ap.meeting_at),
+        rating: Set(None),
+        rated_at: Set(None),
+    };
+    let _ = cr.insert(txn).await.map_err(|e| {
+        error!(
+            "failed to insert consultant_rating (awaiting_payment: {:?}): {}",
+            ap, e
+        );
+        ErrRespStruct {
+            err_resp: unexpected_err_resp(),
+        }
+    })?;
+    Ok(())
 }
 
 async fn insert_awaiting_withdrawal(
