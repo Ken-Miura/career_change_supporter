@@ -62,8 +62,7 @@ Resources:
         Enabled: true
         PriceClass: "PriceClass_All"
         HttpVersion: "http2"
-        WebACLId:
-          - !If [IsProd, !GetAtt CcsWaf.Arn, !GetAtt CcsWafWithIpRestriction.Arn]
+        WebACLId: !If [IsProd, !GetAtt CcsWaf.Arn, !GetAtt CcsWafWithIpRestriction.Arn]
         Aliases:
           - !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
         ViewerCertificate:
