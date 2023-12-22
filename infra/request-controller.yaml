@@ -62,7 +62,8 @@ Resources:
         Enabled: true
         PriceClass: "PriceClass_All"
         HttpVersion: "http2"
-        WebACLId: !GetAtt CcsWafWithIpRestriction.Arn # TODO: 本番リリース時にIsProdでCcsWafとCcsWafWithIpRestrictionを切り替える
+        WebACLId:
+          - !If [IsProd, !GetAtt CcsWaf.Arn, !GetAtt CcsWafWithIpRestriction.Arn]
         Aliases:
           - !If [IsProd, !Ref ServiceDomainName, !Sub "dev.${ServiceDomainName}"]
         ViewerCertificate:
@@ -607,7 +608,7 @@ Resources:
             ManagedRuleGroupStatement:
               VendorName: "AWS"
               Name: "AWSManagedRulesCommonRuleSet"
-              RuleActionOverrides:
+              RuleActionOverrides: # APサーバはデフォルトでボディサイズのチェックしているのでそれに任せる（https://docs.rs/axum/latest/axum/extract/struct.DefaultBodyLimit.html#difference-between-defaultbodylimit-and-requestbodylimit）
                 - Name: "SizeRestrictions_BODY"
                   ActionToUse:
                     Count: {}
