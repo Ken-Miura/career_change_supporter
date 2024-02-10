@@ -95,12 +95,13 @@ impl UserRatingOperation for UserRatingOperationImpl {
                             user_account_id,
                         )
                         .await?;
+                    // ユーザーアカウントが削除されていた場合でも評価用のレコードは残っているので評価は行う
+                    // （評価時に対象のユーザーアカウントが削除済みかどうかは記録しておく）
                     if user_account_option.is_none() {
                         info!(
                             "no user (user_account_id: {}) found on rating",
                             user_account_id
                         );
-                        return Ok(());
                     }
                     let model_option = entity::user_rating::Entity::find_by_id(consultation_id)
                         .one(txn)

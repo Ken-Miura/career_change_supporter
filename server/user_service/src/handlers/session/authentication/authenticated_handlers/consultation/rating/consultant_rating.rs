@@ -114,12 +114,13 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                             consultant_id,
                         )
                         .await?;
+                    // コンサルタントのアカウントが削除されていた場合でも評価用のレコードは残っているので評価は行う
+                    // （評価時に対象のコンサルタントのアカウントが削除済みかどうかは記録しておく）
                     if consultant_option.is_none() {
                         info!(
-                            "no consultant (consultant_id: {}) found on rating",
+                            "no consultant (consultant_id: {}) found when recording rating on database",
                             consultant_id
                         );
-                        return Ok(());
                     }
                     let model_option =
                         entity::consultant_rating::Entity::find_by_id(consultation_id)
@@ -229,8 +230,10 @@ impl ConsultantRatingOperation for ConsultantRatingOperationImpl {
                     let consultant = match consultant_option {
                         Some(c) => c,
                         None => {
+                            // コンサルタントのアカウントが削除されていた場合、そのコンサルタント用のインデックスも削除済みとなっている
+                            // 従って、ログに残すだけで評価を登録せず即リターンする（一方でDBのレコードは残しているので評価を行っている）
                             info!(
-                                "no consultant (consultant_id: {}) found on rating",
+                                "no consultant (consultant_id: {}) found when recording rating on index",
                                 consultant_id
                             );
                             return Ok(());
