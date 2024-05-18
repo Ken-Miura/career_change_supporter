@@ -32,3 +32,6 @@ client、serverの開発環境にはVS Code (IDE) とRemote Container (VS Code�
 
 ## ccs
 Career Change Supporterの略称
+
+# License
+[MIT license](/LICENSE)
