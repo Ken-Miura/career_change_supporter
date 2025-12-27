@@ -4,7 +4,7 @@
 # 異なるCPUアーキテクチャ向けのイメージをビルドしようとするとかなりの時間を要することになるため、CI/CDでのビルド環境のCPUアーキテクチャに合わせる
 # ビルド後のイメージを実際に走らせる環境（AWS ECS）のマシンのCPUアーキテクチャは、デフォルトでLinux、x86_64のためCI/CD環境でビルドしたものがそのまま動作する
 #   参考: https://docs.aws.amazon.com/ja_jp/AmazonECS/latest/developerguide/task_definition_parameters.html#runtime-platform
-FROM --platform=linux/amd64 ubuntu:22.04 as development
+FROM --platform=linux/amd64 ubuntu:22.04 AS development
 
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
@@ -52,7 +52,7 @@ RUN export NODE_JS_VERSION=18.16.0 && \
     nvm install ${NODE_JS_VERSION} && \
     nvm use ${NODE_JS_VERSION}
 
-FROM development as server-test-and-build
+FROM development AS server-test-and-build
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 RUN cargo fmt --check && \
@@ -60,7 +60,7 @@ RUN cargo fmt --check && \
     cargo test && \
     cargo build --release
 
-FROM --platform=linux/amd64 ubuntu:22.04 as application-base
+FROM --platform=linux/amd64 ubuntu:22.04 AS application-base
 RUN apt-get update && \
     export DEBIAN_FRONTEND=noninteractive && \
     apt-get install -y ca-certificates language-pack-en && \
@@ -68,7 +68,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 ENV LANG="en_US.UTF-8"
 
-FROM application-base as user-service
+FROM application-base AS user-service
 RUN useradd -m -s /bin/bash -U user-service-operator
 USER user-service-operator
 RUN mkdir -p /home/user-service-operator/workspace
@@ -77,7 +77,7 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/user_
 EXPOSE 3000
 CMD [ "./user_service" ]
 
-FROM application-base as admin-service
+FROM application-base AS admin-service
 RUN useradd -m -s /bin/bash -U admin-service-operator
 USER admin-service-operator
 RUN mkdir -p /home/admin-service-operator/workspace
@@ -86,7 +86,7 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/admin
 EXPOSE 3001
 CMD [ "./admin_service" ]
 
-FROM application-base as admin-account
+FROM application-base AS admin-account
 RUN useradd -m -s /bin/bash -U admin-account-operator
 USER admin-account-operator
 RUN mkdir -p /home/admin-account-operator/workspace
@@ -95,53 +95,53 @@ COPY --from=server-test-and-build /home/developer/workspace/target/release/admin
 ENV PATH="${PATH}:/home/admin-account-operator/workspace"
 ENTRYPOINT [ "admin_account" ]
 
-FROM application-base as batch-processor-base
+FROM application-base AS batch-processor-base
 RUN useradd -m -s /bin/bash -U batch-processor
 USER batch-processor
 RUN mkdir -p /home/batch-processor/workspace
 WORKDIR /home/batch-processor/workspace
 ENV PATH="${PATH}:/home/batch-processor/workspace"
 
-FROM batch-processor-base as delete-expired-consultation-reqs
+FROM batch-processor-base AS delete-expired-consultation-reqs
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_consultation_reqs ./
 ENTRYPOINT [ "delete_expired_consultation_reqs" ]
 
-FROM batch-processor-base as delete-expired-deleted-user-accounts
+FROM batch-processor-base AS delete-expired-deleted-user-accounts
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_deleted_user_accounts ./
 ENTRYPOINT [ "delete_expired_deleted_user_accounts" ]
 
-FROM batch-processor-base as delete-expired-pwd-change-reqs
+FROM batch-processor-base AS delete-expired-pwd-change-reqs
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_pwd_change_reqs ./
 ENTRYPOINT [ "delete_expired_pwd_change_reqs" ]
 
-FROM batch-processor-base as delete-expired-temp-accounts
+FROM batch-processor-base AS delete-expired-temp-accounts
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_accounts ./
 ENTRYPOINT [ "delete_expired_temp_accounts" ]
 
-FROM batch-processor-base as delete-expired-temp-mfa-secrets
+FROM batch-processor-base AS delete-expired-temp-mfa-secrets
 COPY --from=server-test-and-build /home/developer/workspace/target/release/delete_expired_temp_mfa_secrets ./
 ENTRYPOINT [ "delete_expired_temp_mfa_secrets" ]
 
 # DB初期化以外のpsql操作が必要になった場合は、このイメージを利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
-FROM --platform=linux/amd64 alpine:3.18.2 as psql-client
+FROM --platform=linux/amd64 alpine:3.18.2 AS psql-client
 RUN apk add --update bash postgresql14-client && \
         rm -rf /var/cache/apk/*
 CMD [ "psql", "--help" ]
 
-FROM psql-client as db-initializer
+FROM psql-client AS db-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY data_store_setup_files/initdb/init.sh .
 CMD [ "./init.sh" ]
 
-FROM development as migration-tool
+FROM development AS migration-tool
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY . .
 CMD [ "./data_store_setup_files/initdb/migrate.sh" ]
 
 # インデックス初期化以外のcurl操作が必要になった場合は https://hub.docker.com/r/alpine/curl/tags を利用し、
 # 利用頻度により随時必要なイメージとして切り出すか検討する
-FROM --platform=linux/amd64 alpine/curl:8.1.2 as index-initializer
+FROM --platform=linux/amd64 alpine/curl:8.1.2 AS index-initializer
 # ビルドコンテキストはserverディレクトリ直下であると仮定
 COPY data_store_setup_files/opensearch/index_definition/index.json .
 CMD [ "sh", "-c", "curl -XPUT -H \"Content-Type: application/json\" --data @index.json -u ${USER_NAME}:${PASSWORD} ${ENDPOINT_URI}/users" ]
